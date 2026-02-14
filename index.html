@@ -2576,12 +2576,33 @@
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 const jaFezMigracao = localStorage.getItem('firebaseMigrado');
-                const temDadosLocais = localStorage.getItem('igrejas') || 
-                                      localStorage.getItem('notasFiscais') || 
-                                      localStorage.getItem('materiaisIgrejas') ||
-                                      localStorage.getItem('checklistsIgrejas');
                 
-                if (!jaFezMigracao && temDadosLocais && typeof firebase !== 'undefined') {
+                // Verifica se tem dados REAIS no localStorage (não só chaves vazias)
+                function temDadosReais() {
+                    try {
+                        const igrejas = JSON.parse(localStorage.getItem('igrejas') || '[]');
+                        const notasFiscais = JSON.parse(localStorage.getItem('notasFiscais') || '[]');
+                        const materiais = JSON.parse(localStorage.getItem('materiaisIgrejas') || '{}');
+                        const checklists = JSON.parse(localStorage.getItem('checklistsIgrejas') || '{}');
+                        
+                        // Tem dados se:
+                        // - Tem igrejas cadastradas
+                        // - OU tem notas fiscais
+                        // - OU tem materiais (objeto com chaves)
+                        // - OU tem checklists (objeto com chaves)
+                        return (
+                            (Array.isArray(igrejas) && igrejas.length > 0) ||
+                            (Array.isArray(notasFiscais) && notasFiscais.length > 0) ||
+                            (typeof materiais === 'object' && Object.keys(materiais).length > 0) ||
+                            (typeof checklists === 'object' && Object.keys(checklists).length > 0)
+                        );
+                    } catch (e) {
+                        console.error('Erro ao verificar dados locais:', e);
+                        return false;
+                    }
+                }
+                
+                if (!jaFezMigracao && temDadosReais() && typeof firebase !== 'undefined') {
                     document.getElementById('modalMigracaoFirebase').style.display = 'flex';
                 }
             }, 2000); // Espera 2 segundos para mostrar o modal
@@ -2906,80 +2927,8 @@
                         temArquivosVinculados = true;
                     }
                 } catch (e) { }
-
-                if (temArquivosVinculados) {
-                    mostrarBotaoConectar();
-                }
             }, 1000);
         });
-
-        // Mostra botão para conectar arquivos JSON
-        function mostrarBotaoConectar() {
-            // Remove se já existir
-            const existente = document.getElementById('banner-conectar-json');
-            if (existente) existente.remove();
-
-            const banner = document.createElement('div');
-            banner.id = 'banner-conectar-json';
-            banner.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                background: linear-gradient(135deg, #4A6FDC 0%, #6B8DD6 100%);
-                color: white;
-                padding: 15px 20px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 20px;
-                z-index: 10001;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                animation: slideDown 0.3s ease;
-            `;
-            banner.innerHTML = `
-                <span style="font-size: 16px;">
-                    <i class="fas fa-database"></i>
-                    <strong>Clique para conectar os arquivos JSON</strong>
-                </span>
-                <button id="btn-conectar-json" style="
-                    background: white;
-                    color: #4A6FDC;
-                    border: none;
-                    padding: 10px 25px;
-                    border-radius: 5px;
-                    font-weight: bold;
-                    cursor: pointer;
-                    font-size: 14px;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                ">
-                    <i class="fas fa-plug"></i> Conectar Arquivos
-                </button>
-                <button onclick="this.parentElement.remove()" style="
-                    background: transparent;
-                    color: white;
-                    border: none;
-                    padding: 5px 10px;
-                    cursor: pointer;
-                    font-size: 18px;
-                ">✕</button>
-            `;
-
-            document.body.prepend(banner);
-
-            // Adiciona evento ao botão
-            document.getElementById('btn-conectar-json').addEventListener('click', async function () {
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
-                this.disabled = true;
-
-                await pedirPermissaoArquivos();
-
-                // Remove o banner após conectar
-                banner.remove();
-            });
-        }
     </script>
 
     <!-- Service Worker Registration -->
