@@ -1,0 +1,14 @@
+<!-- Este é um placeholder SVG para o ícone 192x192 -->
+<!-- Substitua por uma imagem PNG real -->
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" fill="url(#grad)" rx="40"/>
+  <path d="M96 40 L96 60 M96 132 L96 152 M60 96 L40 96 M152 96 L132 96" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="96" cy="96" r="36" fill="none" stroke="white" stroke-width="8"/>
+  <text x="96" y="106" font-family="Arial" font-size="48" font-weight="bold" fill="white" text-anchor="middle">I</text>
+</svg>

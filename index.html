@@ -1,0 +1,3030 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Orçamentos - Inpacto</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Sistema automatizado para geração de orçamentos personalizados com checklists técnicos">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Orçamentos">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            /* Cores principais com gradientes */
+            --primary-color: #6366f1;
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-color: #ec4899;
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-color: #10b981;
+            --success-gradient: linear-gradient(135deg, #0093E9 0%, #80D0C7 100%);
+            --warning-color: #f59e0b;
+            --warning-gradient: linear-gradient(135deg, #FDEB71 0%, #F8D800 100%);
+            --danger-color: #ef4444;
+            --danger-gradient: linear-gradient(135deg, #FA8BFF 0%, #2BD2FF 90%);
+            
+            /* Cores neutras */
+            --light-color: #f8fafc;
+            --dark-color: #1e293b;
+            --border-color: #e2e8f0;
+            --text-color: #334155;
+            --text-muted: #64748b;
+            
+            /* Sombras */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            
+            /* Animações */
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            animation: fadeIn 0.5s ease;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-xl);
+            border-radius: 24px;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            animation: scaleIn 0.5s ease;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--primary-gradient);
+            animation: shimmer 3s linear infinite;
+            background-size: 1000px 100%;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 40px 20px 20px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 3em;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin: 0;
+            animation: slideIn 0.6s ease;
+        }
+
+        h2 {
+            color: var(--dark-color);
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        h2::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 70%;
+            background: var(--primary-gradient);
+            border-radius: 2px;
+        }
+
+        h3 {
+            color: var(--text-color);
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            color: var(--text-color);
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 100%);
+            padding: 0 20px;
+            gap: 8px;
+            overflow-x: auto;
+            border-bottom: 2px solid var(--border-color);
+            position: relative;
+            --tab-indicator-left: 0px;
+            --tab-indicator-width: 0px;
+            --tab-indicator-height: 100%;
+        }
+
+        /* Fundo roxo animado que desliza entre as abas */
+        .tabs::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: var(--tab-indicator-left, 0);
+            width: var(--tab-indicator-width, 0);
+            height: var(--tab-indicator-height, 100%);
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px 12px 0 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            z-index: 0;
+        }
+
+        .tabs::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .tabs::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .tabs::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        .tab-button {
+            padding: 16px 28px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: color 0.3s ease;
+            position: relative;
+            white-space: nowrap;
+            border-radius: 12px 12px 0 0;
+            text-decoration: none;
+            z-index: 1;
+        }
+
+        .tab-button:hover {
+            color: var(--primary-color);
+        }
+
+        .tab-button.active {
+            color: white;
+            text-decoration: none;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 40px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 28px;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            background: white;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            animation: slideIn 0.4s ease;
+        }
+
+        .section:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 0.95em;
+            letter-spacing: 0.3px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95em;
+            transition: var(--transition);
+            background: white;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            transform: translateY(-1px);
+        }
+
+        input:hover,
+        select:hover,
+        textarea:hover {
+            border-color: var(--primary-color);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--success-gradient);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: var(--warning-gradient);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            color: var(--dark-color);
+        }
+
+        .btn-warning:hover {
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger-gradient);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .igreja-item {
+            padding: 24px;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            position: relative;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            animation: slideIn 0.4s ease;
+        }
+
+        .igreja-item:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            transform: translateX(8px);
+        }
+
+        .igreja-item h4 {
+            margin: 0 0 16px 0;
+            color: var(--primary-color);
+            font-size: 1.3em;
+        }
+
+        .igreja-item p {
+            margin: 8px 0;
+            color: var(--text-muted);
+            font-size: 0.95em;
+        }
+
+        .igreja-item p strong {
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .remover-igreja {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--danger-gradient);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            border: none;
+        }
+
+        .remover-igreja:hover {
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .progress-container {
+            height: 28px;
+            background: linear-gradient(to right, #f1f5f9, #e2e8f0);
+            border-radius: 14px;
+            margin-bottom: 24px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .progress-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.3) 50%, 
+                transparent 100%
+            );
+            animation: shimmer 2s linear infinite;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--success-gradient);
+            width: 0;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 14px;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .pdf-card {
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            animation: scaleIn 0.4s ease;
+        }
+
+        .pdf-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .igreja-info {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .igreja-info h3 {
+            color: var(--primary-color);
+            margin-bottom: 12px;
+        }
+
+        .download-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .btn-download {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-download:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .btn-download i {
+            font-size: 1.1em;
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.95em;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            border-left: 4px solid;
+            animation: slideIn 0.4s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #991b1b;
+            border-color: #ef4444;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            color: #166534;
+            border-color: #10b981;
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            color: #1e40af;
+            border-color: #3b82f6;
+        }
+
+        /* Estilos para a guia de logos */
+        .logos-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .logo-item {
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            animation: scaleIn 0.4s ease;
+        }
+
+        .logo-item:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .logo-item h3 {
+            color: var(--primary-color);
+            font-size: 1.1em;
+            margin-bottom: 16px;
+        }
+
+        .logo-preview {
+            width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border: 2px dashed var(--border-color);
+            padding: 16px;
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+
+        .logo-preview:hover {
+            border-color: var(--primary-color);
+            border-style: solid;
+        }
+
+        .logo-input {
+            margin-top: 16px;
+        }
+
+        .logo-input input[type="file"] {
+            padding: 12px;
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            background: white;
+            transition: var(--transition);
+        }
+
+        .logo-input input[type="file"]:hover {
+            border-color: var(--primary-color);
+            border-style: solid;
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .logo-instruction {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin: 12px 0 8px;
+            font-weight: 500;
+        }
+
+        .logo-status {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            margin-top: 12px;
+            font-style: italic;
+            padding: 8px 12px;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .logos-instructions {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 32px;
+            box-shadow: var(--shadow);
+        }
+
+        .logos-instructions h3 {
+            color: var(--primary-color);
+            margin-bottom: 16px;
+        }
+
+        .logos-instructions ul {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+
+        .logos-instructions li {
+            margin: 8px 0;
+            color: var(--text-color);
+        }
+
+        .nf-container {
+            margin: 24px 0;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .nf-empresa {
+            margin-bottom: 32px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            border: 2px solid var(--border-color);
+            transition: var(--transition);
+            animation: scaleIn 0.4s ease;
+        }
+
+        .nf-empresa:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .nf-empresa h3 {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 3px solid;
+            border-image: var(--primary-gradient);
+            border-image-slice: 1;
+            font-size: 1.4em;
+            font-weight: 700;
+        }
+
+        .nf-igreja {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            margin: 12px 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 2px solid var(--border-color);
+            transition: var(--transition);
+            animation: slideIn 0.3s ease;
+        }
+
+        .nf-igreja:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%);
+            transform: translateX(8px);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .nf-igreja-nome {
+            font-size: 1.15em;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .nf-valor {
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            padding: 8px 16px;
+            border-radius: 8px;
+            min-width: 120px;
+            text-align: right;
+            font-size: 1.1em;
+        }
+
+        .nf-empresa-total {
+            margin-top: 20px;
+            padding: 20px;
+            border-top: 3px solid;
+            border-image: var(--primary-gradient);
+            border-image-slice: 1;
+            text-align: right;
+            font-weight: 700;
+            font-size: 1.3em;
+            background: var(--success-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nf-data {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-left: 12px;
+            padding: 4px 12px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 6px;
+        }
+
+        .nf-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 24px 0;
+            background: white;
+            box-shadow: var(--shadow-lg);
+            border-radius: 16px;
+            overflow: hidden;
+            animation: scaleIn 0.4s ease;
+        }
+
+        .nf-table th,
+        .nf-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nf-table thead {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .nf-table thead th {
+            background: transparent;
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            border-bottom: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .nf-empresa-header th {
+            background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
+            color: var(--primary-color);
+            font-size: 1.3em;
+            font-weight: 700;
+            padding: 20px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .nf-table tbody tr {
+            transition: var(--transition);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .nf-table tbody tr:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%);
+            transform: scale(1.01);
+        }
+
+        .nf-valor {
+            font-weight: 700;
+            background: var(--success-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nf-acoes {
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .nf-acoes button {
+            padding: 10px 16px;
+            margin: 0 6px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            color: var(--text-color);
+            transition: var(--transition);
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .nf-acoes button:hover {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .nf-table tbody tr:nth-child(odd) {
+            background: #ffffff;
+        }
+
+        .nf-table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .nf-total-row {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+            font-weight: 700;
+            border-top: 3px solid var(--primary-color);
+        }
+
+        .nf-total-label {
+            text-align: right;
+            color: var(--primary-color);
+            font-size: 1.1em;
+        }
+
+        .nf-total-valor {
+            background: var(--success-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.3em;
+            font-weight: 800;
+        }
+
+        .nf-botoes-container {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 40px;
+            padding: 32px;
+            border-top: 2px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .nf-botoes-container button {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 32px;
+            font-size: 1.1em;
+            transition: var(--transition);
+            box-shadow: var(--shadow-md);
+        }
+
+        .nf-botoes-container button:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .nf-botoes-container i {
+            font-size: 1.3em;
+        }
+
+        /* Estilos para o modal de relatório */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: var(--shadow-xl);
+            max-height: 90vh;
+            overflow-y: auto;
+            max-width: 800px;
+            width: 90%;
+            animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid var(--border-color);
+        }
+
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: var(--light-color);
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 4px;
+        }
+
+        .modal-content h2 {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 24px;
+            font-size: 2em;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--danger-gradient);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        .modal-close:hover {
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Loading spinner */
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(99, 102, 241, 0.2);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Cards e containers especiais */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            border: 2px solid var(--border-color);
+            transition: var(--transition);
+            animation: fadeIn 0.4s ease;
+        }
+
+        .card:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            padding: 20px;
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 16px 16px 0 0;
+            margin: -24px -24px 24px -24px;
+            font-weight: 600;
+            font-size: 1.2em;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-primary {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+
+        .badge-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+
+        /* Grid layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        /* Tooltips */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+
+        [data-tooltip]::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            padding: 8px 12px;
+            background: var(--dark-color);
+            color: white;
+            border-radius: 8px;
+            font-size: 0.85em;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: var(--transition);
+            box-shadow: var(--shadow-lg);
+        }
+
+        [data-tooltip]:hover::before {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+
+        /* Animações de entrada para elementos da lista */
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--light-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5558d9 0%, #6b47a2 100%);
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px;
+                border-radius: 16px;
+            }
+
+            h1 {
+                font-size: 2em;
+                padding: 24px 16px 16px;
+            }
+
+            .tabs {
+                padding: 0 12px;
+            }
+
+            .tab-button {
+                padding: 12px 16px;
+                font-size: 0.85em;
+            }
+
+            .tab-content {
+                padding: 24px 16px;
+            }
+
+            .section {
+                padding: 20px 16px;
+            }
+
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .nf-botoes-container {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .nf-botoes-container button {
+                width: 100%;
+            }
+
+            .download-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                padding: 24px;
+                width: 95%;
+            }
+        }
+
+        /* Efeitos hover adicionais */
+        .hover-lift {
+            transition: var(--transition);
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Divider decorativo */
+        .divider {
+            height: 2px;
+            background: var(--primary-gradient);
+            border: none;
+            margin: 32px 0;
+            border-radius: 2px;
+        }
+
+        /* Status indicators */
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.success {
+            background: var(--success-color);
+        }
+
+        .status-dot.warning {
+            background: var(--warning-color);
+        }
+
+        .status-dot.danger {
+            background: var(--danger-color);
+        }
+
+        /* Skeleton loading */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            color: var(--border-color);
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .empty-state h3 {
+            color: var(--text-color);
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            font-size: 0.95em;
+        }
+
+        /* Estilos para modais adicionais */
+        .modal-content-inner {
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Modais do Material */
+        .material-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .material-modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .material-modal-content-small {
+            max-width: 500px;
+        }
+
+        .material-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 2px solid var(--border-color);
+            background: var(--gradient-subtle);
+        }
+
+        .material-modal-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 1.3em;
+        }
+
+        .material-modal-close {
+            background: rgba(220, 74, 74, 0.1);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--danger-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .material-modal-close:hover {
+            background: var(--danger-color);
+            color: white;
+            transform: rotate(90deg);
+        }
+
+        .material-modal-body {
+            padding: 24px;
+        }
+
+        .material-modal-form-body {
+            padding: 24px;
+        }
+
+        .material-modal-form-body .form-group {
+            margin-bottom: 20px;
+        }
+
+        .material-modal-form-body .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .material-modal-form-body .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: var(--transition);
+            box-sizing: border-box;
+        }
+
+        .material-modal-form-body .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .material-actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .material-modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .material-lista h4 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .material-items-table {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .material-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-light);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+
+        .material-item:hover {
+            background: white;
+            border-color: var(--primary-color);
+            transform: translateX(4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .material-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .material-item-nome {
+            font-weight: 600;
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+
+        .material-item-info:hover .material-item-nome {
+            color: var(--primary-color);
+        }
+
+        .material-item-qtd {
+            font-size: 0.9em;
+            color: var(--text-muted);
+        }
+
+        .material-count {
+            font-size: 0.85em;
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .material-col-igreja strong {
+            display: flex;
+            align-items: center;
+        }
+
+        /* ===== CHECKLIST STYLES ===== */
+        .checklist-container {
+            margin-top: 24px;
+        }
+
+        .checklist-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .checklist-tab-button {
+            padding: 12px 24px;
+            border: 2px solid var(--border-color);
+            background: white;
+            color: var(--text-color);
+            cursor: pointer;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checklist-tab-button:hover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.05);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .checklist-tab-button.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .checklist-table {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .checklist-header {
+            display: grid;
+            grid-template-columns: 1fr 200px 250px;
+            padding: 16px 20px;
+            background: var(--primary-gradient);
+            color: white;
+            font-weight: 600;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .checklist-header div:nth-child(2),
+        .checklist-header div:last-child {
+            text-align: center;
+        }
+
+        .checklist-row {
+            display: grid;
+            grid-template-columns: 1fr 200px 250px;
+            padding: 16px 20px;
+            border-bottom: 2px solid var(--border-color);
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .checklist-row:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(236, 72, 153, 0.03) 100%);
+            border-color: var(--primary-color);
+            transform: translateX(4px);
+        }
+
+        .checklist-row:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+
+        .checklist-col-igreja strong {
+            display: block;
+            font-size: 1.05em;
+            color: var(--text-color);
+            margin-bottom: 4px;
+        }
+
+        .checklist-id {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .checklist-status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .checklist-status.preenchido {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            border: 2px solid #16a34a;
+        }
+
+        .checklist-status.pendente {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+            border: 2px solid #dc2626;
+        }
+
+        .checklist-row>div:nth-child(2) {
+            text-align: center;
+        }
+
+        .checklist-col-acoes {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Canvas de Assinatura */
+        .signature-canvas-wrapper {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .signature-canvas {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            cursor: crosshair;
+            background: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .signature-buttons {
+            margin-top: 12px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        /* Form Checklist */
+        .checklist-form-section {
+            margin-bottom: 32px;
+        }
+
+        .checklist-form-section h4 {
+            color: var(--primary-color);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checklist-question {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bg-light);
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .checklist-question:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .checklist-question-text {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .checklist-options {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .checklist-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checklist-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        .checklist-option label {
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #4A6FDC;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #DC4A4A;
+        }
+
+        /* Estilos para a lista de relatórios */
+        .relatorio-container {
+            margin-top: 24px;
+        }
+
+        .relatorio-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .relatorio-tab-button {
+            padding: 12px 24px;
+            border: 2px solid var(--border-color);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            color: var(--text-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .relatorio-tab-button:hover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.05);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .relatorio-tab-button.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+            box-shadow: var(--shadow-md);
+        }
+
+        .relatorio-header {
+            display: grid;
+            grid-template-columns: 1fr 150px 200px;
+            padding: 16px 20px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 700;
+            border-radius: 12px 12px 0 0;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .relatorio-header div:nth-child(2),
+        .relatorio-header div:last-child {
+            text-align: center;
+        }
+
+        .relatorio-row {
+            display: grid;
+            grid-template-columns: 1fr 150px 200px;
+            padding: 16px 20px;
+            border: 2px solid var(--border-color);
+            border-top: none;
+            align-items: center;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .relatorio-row:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(236, 72, 153, 0.03) 100%);
+            border-color: var(--primary-color);
+            transform: translateX(4px);
+        }
+
+        .relatorio-row:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+
+        .relatorio-col-igreja strong {
+            display: block;
+            font-size: 1.05em;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .relatorio-id {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .relatorio-status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 700;
+            text-align: center;
+            display: inline-block;
+            letter-spacing: 0.3px;
+        }
+
+        .relatorio-row>div:nth-child(2) {
+            text-align: center;
+        }
+
+        .status-pendente {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            border: 2px solid var(--danger-color);
+        }
+
+        .status-gerado {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+            border: 2px solid var(--success-color);
+        }
+
+        .status-sandro {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .relatorio-col-acoes {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-relatorio {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-relatorio:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-relatorio-gerar {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .btn-relatorio-download {
+            background: var(--success-gradient);
+            color: white;
+        }
+
+        .btn-relatorio-editar {
+            background: var(--warning-gradient);
+            color: var(--dark-color);
+        }
+
+        .btn-relatorio-excluir {
+            background: var(--danger-gradient);
+            color: white;
+        }
+
+        .btn-relatorio-icon {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            padding: 10px 12px;
+        }
+
+        /* Estilos para aba Material - Padronizado */
+        .material-container {
+            margin-top: 24px;
+        }
+
+        .material-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .material-tab-button {
+            padding: 12px 24px;
+            border: 2px solid var(--border-color);
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            color: var(--text-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .material-tab-button:hover {
+            border-color: var(--primary-color);
+            background: rgba(99, 102, 241, 0.05);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .material-tab-button.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+            box-shadow: var(--shadow-md);
+        }
+
+        .material-header {
+            display: grid;
+            grid-template-columns: 1fr 150px 200px;
+            padding: 16px 20px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 700;
+            border-radius: 12px 12px 0 0;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .material-header div:nth-child(2),
+        .material-header div:last-child {
+            text-align: center;
+        }
+
+        .material-row {
+            display: grid;
+            grid-template-columns: 1fr 150px 200px;
+            padding: 16px 20px;
+            border: 2px solid var(--border-color);
+            border-top: none;
+            align-items: center;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .material-row:hover {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(236, 72, 153, 0.03) 100%);
+            border-color: var(--primary-color);
+            transform: translateX(4px);
+        }
+
+        .material-row:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+
+        .material-col-igreja strong {
+            display: block;
+            font-size: 1.05em;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .material-id {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .material-status {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 700;
+            text-align: center;
+            display: inline-block;
+            letter-spacing: 0.3px;
+        }
+
+        .material-row>div:nth-child(2) {
+            text-align: center;
+        }
+
+        .material-col-acoes {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-material {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-material:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-material-gerar {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .btn-material-download {
+            background: var(--success-gradient);
+            color: white;
+        }
+    </style>
+
+    <!-- Incluindo libraries necessárias -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header style="text-align: center; padding-bottom: 20px;">
+            <h1>
+                <i class="fas fa-church" style="margin-right: 12px;"></i>
+                Gerador de Orçamentos
+            </h1>
+            <p style="color: var(--text-muted); font-size: 1.1em; margin-top: 8px; font-weight: 500;">
+                Sistema automatizado para geração de orçamentos personalizados
+            </p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="orcamentos">
+                <i class="fas fa-file-invoice"></i> Gerar Orçamentos
+            </button>
+            <button class="tab-button" data-tab="resultados">
+                <i class="fas fa-chart-line"></i> Resultados
+            </button>
+            <button class="tab-button" data-tab="logos">
+                <i class="fas fa-images"></i> Logos
+            </button>
+            <button class="tab-button" data-tab="relatorioTecnico">
+                <i class="fas fa-file-alt"></i> Relatório Técnico
+            </button>
+            <button class="tab-button" data-tab="material">
+                <i class="fas fa-boxes"></i> Material
+            </button>
+            <button class="tab-button" data-tab="notasFiscais">
+                <i class="fas fa-receipt"></i> Notas Fiscais
+            </button>
+            <button class="tab-button" data-tab="checklist">
+                <i class="fas fa-clipboard-check"></i> Checklist
+            </button>
+        </div>
+
+        <div id="orcamentos" class="tab-content active">
+            <div class="section">
+                <h2>Dados das Igrejas</h2>
+                <p>Preencha os campos abaixo para adicionar uma igreja à lista de orçamentos</p>
+
+                <div class="form-group">
+                    <label for="nomeIgreja">Nome da Igreja</label>
+                    <input type="text" id="nomeIgreja" placeholder="Ex: ILHA DAS CAIEIRAS">
+                </div>
+
+                <div class="form-group">
+                    <label for="idIgreja">ID da Igreja</label>
+                    <input type="text" id="idIgreja" placeholder="Ex: 83541">
+                </div>
+
+                <div class="form-group">
+                    <label for="codigoIgreja">Código da Igreja</label>
+                    <input type="text" id="codigoIgreja" placeholder="Ex: (060137)">
+                </div>
+
+                <div class="form-group">
+                    <label for="linkIgreja">Link</label>
+                    <input type="text" id="linkIgreja" placeholder="Ex: https://exemplo.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="empresaSelecionada">Empresa Responsável</label>
+                    <select id="empresaSelecionada">
+                        <option value="Impacto Soluções">Impacto Soluções</option>
+                        <option value="SPG da Silva Sonorização e Iluminação">SPG da Silva Sonorização e Iluminação
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="tipoValorOrcamento">Tipo de Valor do Orçamento</label>
+                    <select id="tipoValorOrcamento">
+                        <option value="" disabled selected hidden>Selecione o tipo de valor</option>
+                        <option value="auto">Gerar valor automaticamente</option>
+                        <option value="manual">Informar valor manualmente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tipoIgreja">Tipo de igreja</label>
+                    <select id="tipoIgreja">
+                        <option value="" disabled selected hidden>Selecione o tipo de igreja</option>
+                        <option value="padrao">Padrão</option>
+                        <option value="som_para_tras">Som para trás</option>
+                        <option value="longe_2">Longe (Até 2 igrejas)</option>
+                        <option value="longe_3">Longe (Acima de 3 igrejas)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tipoTexto">Tipo de texto</label>
+                    <select id="tipoTexto">
+                        <option value="padrao" selected>Padrão</option>
+                        <option value="forro">Forro</option>
+                        <option value="tenda">Tenda</option>
+                        <option value="vidro">Vidro</option>
+                        <option value="personalizado">Personalizado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tipoPedido">Tipo de pedido</label>
+                    <select id="tipoPedido">
+                        <option value="padrao" selected>Padrão</option>
+                        <option value="especial">Especial</option>
+                    </select>
+                </div>
+                <div class="form-group" id="grupoValorManual" style="display:none;">
+                    <label for="valorManual">Valor do Orçamento (R$)</label>
+                    <input type="number" id="valorManual" min="0" step="0.01" placeholder="Ex: 3500.00">
+                </div>
+
+                <!-- Texto personalizado (apenas quando tipo de igreja = texto_personalizado) -->
+                <div class="form-group" id="blocoTextoOrcamento" style="display:none; margin-top:10px;">
+                    <label for="textoOrcamentoSuaEmpresa">Texto do orçamento (sua empresa)</label>
+                    <textarea id="textoOrcamentoSuaEmpresa" rows="4"
+                        placeholder="Texto que aparecerá no orçamento da sua empresa..."></textarea>
+                    <label for="textoOrcamentoConcorrente" style="margin-top:10px; display:block;">Texto do
+                        concorrente (opcional – será gerado automaticamente se vazio)</label>
+                    <textarea id="textoOrcamentoConcorrente" rows="4"
+                        placeholder="Texto que aparecerá no orçamento do concorrente..."></textarea>
+                </div>
+
+                <button id="adicionarIgreja" class="btn-primary">
+                    <i class="fas fa-plus-circle"></i> Adicionar Igreja
+                </button>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="listaIgrejas">Igrejas Adicionadas</label>
+                    <div id="listaIgrejas" class="lista-igrejas"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dataOrcamento">Data dos Orçamentos</label>
+                    <input type="date" id="dataOrcamento">
+                </div>
+
+                <div class="form-group">
+                    <label for="prazoExecucao">Prazo para Execução (em dias)</label>
+                    <input type="number" id="prazoExecucao" value="30" min="1">
+                </div>
+
+
+            </div>
+
+            <!-- Configuração de Pasta de Trabalho -->
+            <div class="section" style="margin-top: 20px; background: #f0f8ff; border: 2px solid #4A6FDC;">
+                <h3 style="color: #4A6FDC; margin-bottom: 15px;">📁 Pasta de Trabalho</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">
+                    Configure uma pasta para salvar automaticamente os orçamentos organizados por igreja.
+                </p>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <button id="escolherPastaTrabalho" class="btn-secondary" style="padding: 10px 15px;">
+                        <i class="fas fa-folder-open"></i> Escolher Pasta
+                    </button>
+                    <span id="pastaTrabalhoStatus" style="font-size: 13px; color: #666;">
+                        Nenhuma pasta selecionada
+                    </span>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="salvarAutomaticoPasta" checked>
+                        <span style="font-size: 13px;">Criar pasta e salvar PDFs automaticamente ao gerar</span>
+                    </label>
+                </div>
+            </div>
+
+            <button id="gerarOrcamentosBtn" class="btn-success">
+                <i class="fas fa-file-pdf"></i> Gerar Orçamentos
+            </button>
+            <button id="limparIgrejas" class="btn-warning">
+                <i class="fas fa-trash-alt"></i> Limpar Lista
+            </button>
+        </div>
+
+        <div id="relatorioTecnico" class="tab-content">
+            <div class="section">
+                <h2>Relatório Técnico das Igrejas</h2>
+                <p>Selecione uma igreja da lista para gerar o relatório técnico. As igrejas são sincronizadas
+                    automaticamente das Notas Fiscais.</p>
+
+                <!-- Lista de Igrejas para Relatório -->
+                <div id="relatorioIgrejasList" class="relatorio-container">
+                    <!-- A lista de igrejas e os botões de gerenciamento serão inseridos aqui dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Gerar Relatório -->
+        <div id="modalRelatorio" class="modal-overlay" style="display: none;">
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h3 id="modalRelatorioTitulo">Gerar Relatório - IGREJA</h3>
+                    <button class="modal-close" onclick="fecharModalRelatorio()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="modalTipoRelatorio">Tipo de Relatório:</label>
+                        <select id="modalTipoRelatorio">
+                            <option value="manutencao">MANUTENÇÃO</option>
+                            <option value="igreja_nova">IGREJA NOVA</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Imagens do Relatório (até 5 imagens, em ordem)</label>
+                        <input type="file" id="modalImagensRelatorio" accept="image/*" multiple>
+                        <small style="color: #666;">Selecione as imagens na ordem que devem aparecer no
+                            relatório</small>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="modalUsarTextoPersonalizado"
+                                onchange="toggleTextoPersonalizadoModal()">
+                            <span>Usar texto personalizado no relatório</span>
+                        </label>
+                        <textarea id="modalTextoPersonalizado" rows="6"
+                            placeholder="Cole aqui o texto que deseja usar no relatório..."
+                            style="display: none; margin-top: 10px; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
+                    </div>
+                    <div class="form-group"
+                        style="margin-top: 15px; padding: 10px; background: #f0f8ff; border-radius: 5px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="modalSalvarPastaImprimir" checked>
+                            <span>Salvar automaticamente na pasta IMPRIMIR</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer"
+                    style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button class="btn-secondary" onclick="fecharModalRelatorio()">Cancelar</button>
+                    <button class="btn-success" onclick="gerarRelatorioDoModal()">
+                        <i class="fas fa-file-pdf"></i> Gerar Relatório
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="logos" class="tab-content">
+            <div class="section">
+                <h2>Logos das Empresas</h2>
+                <p>Carregue as logos das empresas para incluir nos PDFs gerados. As logos serão exibidas nos cabeçalhos
+                    dos documentos.</p>
+
+                <div class="logos-container">
+                    <div class="logo-item">
+                        <h4>Impacto Soluções</h4>
+                        <img id="logoImpacto" class="logo-preview" src="" alt="Logo não carregada">
+                        <p class="logo-instruction">Clique para selecionar uma imagem:</p>
+                        <input type="file" id="inputLogoImpacto" class="logo-input" accept="image/*">
+                        <p class="logo-status" id="statusLogoImpacto">Status: Aguardando upload</p>
+                    </div>
+
+                    <div class="logo-item">
+                        <h4>SPG da Silva</h4>
+                        <img id="logoSPG" class="logo-preview" src="" alt="Logo não carregada">
+                        <p class="logo-instruction">Clique para selecionar uma imagem:</p>
+                        <input type="file" id="inputLogoSPG" class="logo-input" accept="image/*">
+                        <p class="logo-status" id="statusLogoSPG">Status: Aguardando upload</p>
+                    </div>
+
+                    <div class="logo-item">
+                        <h4>Virtual Guitar Shop</h4>
+                        <img id="logoVirtualGuitar" class="logo-preview" src="" alt="Logo não carregada">
+                        <p class="logo-instruction">Clique para selecionar uma imagem:</p>
+                        <input type="file" id="inputLogoVirtualGuitar" class="logo-input" accept="image/*">
+                        <p class="logo-status" id="statusLogoVirtualGuitar">Status: Aguardando upload</p>
+                    </div>
+
+                    <!-- Novas empresas -->
+                    <div class="logo-item">
+                        <h3>Logo GG PROAUTO LTDA</h3>
+                        <img id="logoGGProauto" src="" alt="Logo GG PROAUTO LTDA"
+                            style="max-width:100%; max-height:100px; display:none;">
+                        <p id="statusLogoGGProauto">Status: Nenhuma logo carregada</p>
+                        <input type="file" id="inputLogoGGProauto" accept="image/*">
+                    </div>
+
+                    <div class="logo-item">
+                        <h3>Logo STV IMAGEM E SOM</h3>
+                        <img id="logoSTV" src="" alt="Logo STV IMAGEM E SOM"
+                            style="max-width:100%; max-height:100px; display:none;">
+                        <p id="statusLogoSTV">Status: Nenhuma logo carregada</p>
+                        <input type="file" id="inputLogoSTV" accept="image/*">
+                    </div>
+
+                    <div class="logo-item">
+                        <h3>Logo UP SERVIÇOS</h3>
+                        <img id="logoUPServicos" src="" alt="Logo UP SERVIÇOS"
+                            style="max-width:100%; max-height:100px; display:none;">
+                        <p id="statusLogoUPServicos">Status: Nenhuma logo carregada</p>
+                        <input type="file" id="inputLogoUPServicos" accept="image/*">
+                    </div>
+
+                    <div class="logo-item">
+                        <h3>Logo SENA AUDIOVISUAL PRODUÇÕES</h3>
+                        <img id="logoSena" src="" alt="Logo SENA AUDIOVISUAL PRODUÇÕES"
+                            style="max-width:100%; max-height:100px; display:none;">
+                        <p id="statusLogoSena">Status: Nenhuma logo carregada</p>
+                        <input type="file" id="inputLogoSena" accept="image/*">
+                    </div>
+
+                    <div class="logo-item">
+                        <h3>Logo INSTALASSOM</h3>
+                        <img id="logoInstalassom" src="" alt="Logo INSTALASSOM"
+                            style="max-width:100%; max-height:100px; display:none;">
+                        <p id="statusLogoInstalassom">Status: Nenhuma logo carregada</p>
+                        <input type="file" id="inputLogoInstalassom" accept="image/*">
+                    </div>
+
+                    <div class="logo-item">
+                        <h3>Logo GLAUBER SISTEMAS CONSTRUTIVOS</h3>
+                        <img id="logoGlauber" src="" alt="Logo GLAUBER"
+                            style="max-width:100%; max-height:100px; display:none;">
+                        <p id="statusLogoGlauber">Status: Nenhuma logo carregada</p>
+                        <input type="file" id="inputLogoGlauber" accept="image/*">
+                    </div>
+
+                    <!-- Concorrentes Especiais -->
+                    <div class="logo-item">
+                        <h3>Mega Eventos</h3>
+                        <img id="logoMegaEventos" class="logo-preview" src="" alt="Logo não carregada">
+                        <p class="logo-instruction">Logo (clique para selecionar):</p>
+                        <input type="file" id="inputLogoMegaEventos" class="logo-input" accept="image/*">
+                        <p class="logo-status" id="statusLogoMegaEventos">Status: Aguardando upload</p>
+                        <hr>
+                        <p class="logo-instruction">Carimbo (clique para selecionar):</p>
+                        <img id="carimboMegaEventos" class="logo-preview" src="" alt="Carimbo não carregado">
+                        <input type="file" id="inputCarimboMegaEventos" class="logo-input" accept="image/*">
+                        <p class="logo-status" id="statusCarimboMegaEventos">Status: Aguardando upload</p>
+                    </div>
+
+                    <div class="logo-item">
+                        <h3>Tella Vídeo</h3>
+                        <img id="logoTellaVideo" class="logo-preview" src="" alt="Logo não carregada">
+                        <p class="logo-instruction">Logo (clique para selecionar):</p>
+                        <input type="file" id="inputLogoTellaVideo" class="logo-input" accept="image/*">
+                        <p class="logo-status" id="statusLogoTellaVideo">Status: Aguardando upload</p>
+                        <hr>
+                        <p class="logo-instruction">Carimbo (clique para selecionar):</p>
+                        <img id="carimboTellaVideo" class="logo-preview" src="" alt="Carimbo não carregado">
+                        <input type="file" id="inputCarimboTellaVideo" class="logo-input" accept="image/*">
+                        <p class="logo-status" id="statusCarimboTellaVideo">Status: Aguardando upload</p>
+                    </div>
+
+                    <div class="logo-item">
+                        <div class="logos-instructions">
+                            <p><strong>Instruções:</strong></p>
+                            <ul>
+                                <li>As imagens devem ter formato PNG, JPG ou GIF.</li>
+                                <li>Recomendado: imagens com fundo transparente (PNG).</li>
+                                <li>Depois de carregar as logos, elas aparecerão nos PDFs gerados.</li>
+                                <li>Você pode gerar orçamentos sem logos, mas os PDFs ficarão mais profissionais com
+                                    elas.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultados" class="tab-content">
+            <div class="section">
+                <h2>Orçamentos Gerados</h2>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div id="statusMessage"></div>
+                <div id="pdfsDisplay"></div>
+                <div class="download-buttons">
+                    <button id="downloadAllBtn" class="btn-success" disabled>Baixar Todos os PDFs</button>
+                    <button id="limparResultados" class="btn-warning">Limpar Resultados</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="material" class="tab-content" style="display: none;">
+            <div class="section">
+                <h2>Gerenciamento de Material</h2>
+                <p>Gerencie o material de cada igreja. As igrejas são sincronizadas automaticamente das Notas Fiscais.</p>
+
+                <!-- Lista de Igrejas para Material -->
+                <div id="materialList" class="material-container">
+                    <!-- A lista de igrejas será inserida aqui dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <div id="notasFiscais" class="tab-content" style="display: none;">
+            <div class="section">
+                <h2>Notas Fiscais por Empresa</h2>
+                <div id="nfList" class="nf-container">
+                    <!-- As empresas e suas igrejas serão inseridas aqui dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <div id="checklist" class="tab-content" style="display: none;">
+            <div class="section">
+                <h2><i class="fas fa-clipboard-check"></i> Checklist das Igrejas</h2>
+                <p>Gerencie os checklists técnicos de cada igreja. Os checklists são sincronizados automaticamente das Notas Fiscais.</p>
+                <div id="checklistList" class="checklist-container">
+                    <!-- A lista de igrejas será inserida aqui dinamicamente -->
+                </div>
+            </div>
+        </div>
+
+        <div id="relatorio" class="tab-content" style="display: none;"></div>
+    </div>
+
+    <!-- Modal de Migração Firebase -->
+    <div id="modalMigracaoFirebase" class="material-modal" style="display: none;">
+        <div class="material-modal-content" style="animation: modalSlideIn 0.3s ease; max-width: 600px;">
+            <div class="material-modal-header">
+                <h3><i class="fas fa-cloud-upload-alt" style="margin-right: 10px;"></i>Migração para Firebase</h3>
+            </div>
+            
+            <div class="material-modal-body">
+                <div style="text-align: center; padding: 20px;">
+                    <i class="fas fa-database" style="font-size: 64px; color: var(--primary-color); margin-bottom: 20px;"></i>
+                    
+                    <h4 style="color: var(--text-color); margin-bottom: 16px;">Conectar ao Firebase</h4>
+                    
+                    <p style="color: var(--text-muted); margin-bottom: 24px;">
+                        Detectamos dados salvos localmente. Deseja migrar seus dados para o Firebase e ativar a sincronização em nuvem?
+                    </p>
+                    
+                    <div style="background: var(--bg-light); padding: 20px; border-radius: 12px; margin-bottom: 24px; text-align: left;">
+                        <h5 style="color: var(--primary-color); margin-bottom: 12px;">
+                            <i class="fas fa-check-circle"></i> Benefícios:
+                        </h5>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0; color: var(--text-color);">
+                                <i class="fas fa-cloud" style="color: var(--success-color); margin-right: 8px;"></i>
+                                Backup automático na nuvem
+                            </li>
+                            <li style="padding: 8px 0; color: var(--text-color);">
+                                <i class="fas fa-sync" style="color: var(--success-color); margin-right: 8px;"></i>
+                                Sincronização em tempo real
+                            </li>
+                            <li style="padding: 8px 0; color: var(--text-color);">
+                                <i class="fas fa-mobile-alt" style="color: var(--success-color); margin-right: 8px;"></i>
+                                Acesso de qualquer dispositivo
+                            </li>
+                            <li style="padding: 8px 0; color: var(--text-color);">
+                                <i class="fas fa-shield-alt" style="color: var(--success-color); margin-right: 8px;"></i>
+                                Dados seguros e protegidos
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div id="progressoMigracao" style="display: none; margin-bottom: 20px;">
+                        <div style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
+                            <div id="barraMigracao" style="width: 0%; height: 100%; background: var(--primary-gradient); transition: width 0.3s ease;"></div>
+                        </div>
+                        <p id="textoMigracao" style="margin-top: 12px; color: var(--text-muted); font-size: 0.9em;"></p>
+                    </div>
+                    
+                    <div id="resultadoMigracao" style="display: none; padding: 16px; border-radius: 8px; margin-bottom: 20px;"></div>
+                </div>
+                
+                <div class="material-modal-buttons">
+                    <button id="btnIniciarMigracao" class="btn-primary" onclick="iniciarMigracaoFirebase()">
+                        <i class="fas fa-cloud-upload-alt"></i> Migrar para Firebase
+                    </button>
+                    <button class="btn-secondary" onclick="fecharModalMigracao()">
+                        <i class="fas fa-times"></i> Agora Não
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verifica se precisa mostrar modal de migração
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const jaFezMigracao = localStorage.getItem('firebaseMigrado');
+                const temDadosLocais = localStorage.getItem('igrejas') || 
+                                      localStorage.getItem('notasFiscais') || 
+                                      localStorage.getItem('materiaisIgrejas') ||
+                                      localStorage.getItem('checklistsIgrejas');
+                
+                if (!jaFezMigracao && temDadosLocais && typeof firebase !== 'undefined') {
+                    document.getElementById('modalMigracaoFirebase').style.display = 'flex';
+                }
+            }, 2000); // Espera 2 segundos para mostrar o modal
+        });
+        
+        function fecharModalMigracao() {
+            document.getElementById('modalMigracaoFirebase').style.display = 'none';
+        }
+        
+        async function iniciarMigracaoFirebase() {
+            const btnMigrar = document.getElementById('btnIniciarMigracao');
+            const progresso = document.getElementById('progressoMigracao');
+            const barra = document.getElementById('barraMigracao');
+            const texto = document.getElementById('textoMigracao');
+            const resultado = document.getElementById('resultadoMigracao');
+            
+            btnMigrar.disabled = true;
+            btnMigrar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Migrando...';
+            progresso.style.display = 'block';
+            
+            try {
+                // Simula progresso
+                const etapas = [
+                    { progresso: 20, texto: 'Conectando ao Firebase...' },
+                    { progresso: 40, texto: 'Migrando igrejas...' },
+                    { progresso: 60, texto: 'Migrando notas fiscais...' },
+                    { progresso: 80, texto: 'Migrando materiais e checklists...' },
+                    { progresso: 90, texto: 'Enviando logos...' },
+                    { progresso: 100, texto: 'Finalizando migração...' }
+                ];
+                
+                for (const etapa of etapas) {
+                    barra.style.width = etapa.progresso + '%';
+                    texto.textContent = etapa.texto;
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                // Executa migração real
+                const resultadoMigracao = await window.firebaseDB.migrarDados();
+                
+                if (resultadoMigracao.sucesso) {
+                    // Marca como migrado
+                    localStorage.setItem('firebaseMigrado', 'true');
+                    
+                    // Inicia sincronização
+                    window.firebaseDB.iniciarSync();
+                    
+                    resultado.style.display = 'block';
+                    resultado.style.background = 'rgba(34, 197, 94, 0.1)';
+                    resultado.style.border = '2px solid #16a34a';
+                    resultado.innerHTML = `
+                        <i class="fas fa-check-circle" style="color: #16a34a; font-size: 48px; margin-bottom: 12px;"></i>
+                        <h4 style="color: #16a34a; margin-bottom: 8px;">Migração Concluída!</h4>
+                        <p style="color: var(--text-color); font-size: 0.9em; margin: 0;">
+                            Todos os seus dados foram migrados com sucesso para o Firebase.<br>
+                            A sincronização em tempo real está ativa!
+                        </p>
+                    `;
+                    
+                    btnMigrar.style.display = 'none';
+                    
+                    setTimeout(() => {
+                        fecharModalMigracao();
+                        location.reload(); // Recarrega para aplicar mudanças
+                    }, 3000);
+                } else {
+                    throw new Error(resultadoMigracao.erro);
+                }
+                
+            } catch (error) {
+                console.error('Erro na migração:', error);
+                
+                resultado.style.display = 'block';
+                resultado.style.background = 'rgba(239, 68, 68, 0.1)';
+                resultado.style.border = '2px solid #dc2626';
+                resultado.innerHTML = `
+                    <i class="fas fa-exclamation-circle" style="color: #dc2626; font-size: 48px; margin-bottom: 12px;"></i>
+                    <h4 style="color: #dc2626; margin-bottom: 8px;">Erro na Migração</h4>
+                    <p style="color: var(--text-color); font-size: 0.9em; margin: 0;">
+                        ${error.message}<br>
+                        Seus dados locais estão seguros. Tente novamente mais tarde.
+                    </p>
+                `;
+                
+                btnMigrar.disabled = false;
+                btnMigrar.innerHTML = '<i class="fas fa-redo"></i> Tentar Novamente';
+            }
+        }
+    </script>
+
+    <!-- Carregar script original primeiro -->
+    <script src="index.js"></script>
+
+    <!-- Carregar scripts em ordem - sem usar módulos ES6 -->
+    <script src="js/utils.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/ui-controller.js"></script>
+    <script src="js/orcamentos.js"></script>
+    <script src="js/pdf-concorrentes.js"></script>
+    <script src="js/pdf-generator.js"></script>
+    <script src="js/empresa-ggproauto.js"></script>
+    <script src="js/empresa-stv.js"></script>
+    <script src="js/empresa-upservicos.js"></script>
+    <script src="js/empresa-sena.js"></script>
+    <script src="js/empresa-instalassom.js"></script>
+    <script src="js/empresa-megaeventos.js"></script>
+    <script src="js/empresa-tellavideo.js"></script>
+    <script src="js/empresa-virtualguitar.js"></script>
+    <script src="js/empresa-glauber.js"></script>
+    <script src="js/nf-manager.js"></script>
+    <script src="js/material-manager.js"></script>
+    <script src="js/checklist-manager.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/relatorio.js"></script>
+
+    <script>
+        // Função para pedir permissão dos arquivos JSON vinculados - SEMPRE PEDE
+        async function pedirPermissaoArquivos() {
+            // Aguarda os scripts carregarem completamente
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            console.log('🔐 ========================================');
+            console.log('🔐 INICIANDO VERIFICAÇÃO DE PERMISSÕES...');
+            console.log('🔐 ========================================');
+
+            let arquivosVinculados = [];
+            let permissoesObtidas = [];
+
+            // ========== NF ==========
+            console.log('📁 Verificando NF...');
+            if (typeof window.forcarPermissaoNF === 'function') {
+                try {
+                    const resultado = await window.forcarPermissaoNF();
+                    console.log('📋 Resultado NF:', resultado);
+                    if (resultado.vinculado) {
+                        arquivosVinculados.push('nf_data.json');
+                        if (resultado.permissao) permissoesObtidas.push('nf_data.json');
+                    }
+                } catch (e) {
+                    console.error('❌ Erro NF:', e);
+                }
+            } else {
+                console.warn('⚠️ forcarPermissaoNF não encontrada');
+            }
+
+            // ========== MATERIAL ==========
+            console.log('📁 Verificando Material...');
+            if (typeof window.forcarPermissaoMaterial === 'function') {
+                try {
+                    const resultado = await window.forcarPermissaoMaterial();
+                    console.log('📋 Resultado Material:', resultado);
+                    if (resultado.vinculado) {
+                        arquivosVinculados.push('material_data.json');
+                        if (resultado.permissao) permissoesObtidas.push('material_data.json');
+                    }
+                } catch (e) {
+                    console.error('❌ Erro Material:', e);
+                }
+            } else {
+                console.warn('⚠️ forcarPermissaoMaterial não encontrada');
+            }
+
+            // ========== RELATÓRIOS ==========
+            console.log('📁 Verificando Relatórios...');
+            if (typeof window.forcarPermissaoRelatorio === 'function') {
+                try {
+                    const resultado = await window.forcarPermissaoRelatorio();
+                    console.log('📋 Resultado Relatórios:', resultado);
+                    if (resultado.vinculado) {
+                        arquivosVinculados.push('relatorios_data.json');
+                        if (resultado.permissao) permissoesObtidas.push('relatorios_data.json');
+                    }
+                } catch (e) {
+                    console.error('❌ Erro Relatórios:', e);
+                }
+            } else {
+                console.warn('⚠️ forcarPermissaoRelatorio não encontrada');
+            }
+
+            // Mostra resultado
+            console.log('🔐 ========================================');
+            console.log('📊 Arquivos vinculados:', arquivosVinculados);
+            console.log('✅ Permissões obtidas:', permissoesObtidas);
+            console.log('🔐 ========================================');
+
+            if (arquivosVinculados.length > 0) {
+                if (permissoesObtidas.length === arquivosVinculados.length) {
+                    mostrarNotificacao('✅ Todos os arquivos JSON conectados!', 'success');
+                } else {
+                    const faltando = arquivosVinculados.filter(a => !permissoesObtidas.includes(a));
+                    mostrarNotificacao('⚠️ Permita acesso aos arquivos: ' + faltando.join(', '), 'warning', true);
+                }
+            } else {
+                console.log('📭 Nenhum arquivo JSON vinculado');
+            }
+        }
+
+        // Função para mostrar notificação temporária
+        function mostrarNotificacao(mensagem, tipo, persistente) {
+            // Remove notificação anterior se existir
+            const notificacaoAnterior = document.getElementById('notificacao-permissao');
+            if (notificacaoAnterior) notificacaoAnterior.remove();
+
+            const notificacao = document.createElement('div');
+            notificacao.id = 'notificacao-permissao';
+            notificacao.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 8px;
+                color: white;
+                font-weight: bold;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                cursor: pointer;
+                max-width: 400px;
+                animation: slideIn 0.3s ease;
+            `;
+
+            if (tipo === 'success') {
+                notificacao.style.backgroundColor = '#4ADC77';
+            } else if (tipo === 'warning') {
+                notificacao.style.backgroundColor = '#DCC74A';
+                notificacao.style.color = '#333';
+            } else {
+                notificacao.style.backgroundColor = '#4A6FDC';
+            }
+
+            notificacao.textContent = mensagem;
+            notificacao.onclick = function () {
+                this.remove();
+                // Se for warning, tenta pedir permissão novamente
+                if (tipo === 'warning') {
+                    pedirPermissaoArquivos();
+                }
+            };
+
+            document.body.appendChild(notificacao);
+
+            // Remove automaticamente após alguns segundos (se não for persistente)
+            if (!persistente) {
+                setTimeout(() => {
+                    if (notificacao.parentNode) {
+                        notificacao.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => notificacao.remove(), 300);
+                    }
+                }, 3000);
+            }
+        }
+
+        // Adiciona animações CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Exibe ou esconde o campo de valor manual conforme a escolha
+        document.addEventListener('DOMContentLoaded', function () {
+            var tipoValor = document.getElementById('tipoValorOrcamento');
+            var grupoValorManual = document.getElementById('grupoValorManual');
+            var blocoTxtOrc = document.getElementById('blocoTextoOrcamento');
+            var usarTxtRel = document.getElementById('usarTextoPersonalizadoRelatorio');
+            var txtRel = document.getElementById('textoRelatorioCustom');
+            var selTipoIgreja = document.getElementById('tipoIgreja');
+            tipoValor.addEventListener('change', function () {
+                if (this.value === 'manual') {
+                    grupoValorManual.style.display = '';
+                } else {
+                    grupoValorManual.style.display = 'none';
+                }
+            });
+            var selTipoTexto = document.getElementById('tipoTexto');
+
+            // Mostra o bloco de texto personalizado quando tipoTexto = 'personalizado'
+            if (selTipoTexto && blocoTxtOrc) {
+                selTipoTexto.addEventListener('change', function () {
+                    blocoTxtOrc.style.display = (this.value === 'personalizado') ? '' : 'none';
+                });
+            }
+            if (usarTxtRel && txtRel) {
+                usarTxtRel.addEventListener('change', function () {
+                    txtRel.style.display = this.checked ? '' : 'none';
+                });
+            }
+
+            // Adiciona listener para atualizar materiais quando a aba for aberta
+            const tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const tab = this.getAttribute('data-tab');
+                    if (tab === 'material') {
+                        // Aguarda um momento para a aba ser exibida e então atualiza
+                        setTimeout(() => {
+                            if (typeof window.recarregarMateriais === 'function') {
+                                console.log('🔄 Atualizando materiais automaticamente...');
+                                window.recarregarMateriais();
+                            }
+                        }, 100);
+                    }
+                });
+            });
+
+            // Verifica se há arquivos vinculados e mostra botão para conectar
+            setTimeout(async () => {
+                let temArquivosVinculados = false;
+
+                // Verifica se há handles salvos
+                try {
+                    if (typeof window.forcarPermissaoNF === 'function' ||
+                        typeof window.forcarPermissaoMaterial === 'function' ||
+                        typeof window.forcarPermissaoRelatorio === 'function') {
+                        temArquivosVinculados = true;
+                    }
+                } catch (e) { }
+
+                if (temArquivosVinculados) {
+                    mostrarBotaoConectar();
+                }
+            }, 1000);
+        });
+
+        // Mostra botão para conectar arquivos JSON
+        function mostrarBotaoConectar() {
+            // Remove se já existir
+            const existente = document.getElementById('banner-conectar-json');
+            if (existente) existente.remove();
+
+            const banner = document.createElement('div');
+            banner.id = 'banner-conectar-json';
+            banner.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, #4A6FDC 0%, #6B8DD6 100%);
+                color: white;
+                padding: 15px 20px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 20px;
+                z-index: 10001;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                animation: slideDown 0.3s ease;
+            `;
+            banner.innerHTML = `
+                <span style="font-size: 16px;">
+                    <i class="fas fa-database"></i>
+                    <strong>Clique para conectar os arquivos JSON</strong>
+                </span>
+                <button id="btn-conectar-json" style="
+                    background: white;
+                    color: #4A6FDC;
+                    border: none;
+                    padding: 10px 25px;
+                    border-radius: 5px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    font-size: 14px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                ">
+                    <i class="fas fa-plug"></i> Conectar Arquivos
+                </button>
+                <button onclick="this.parentElement.remove()" style="
+                    background: transparent;
+                    color: white;
+                    border: none;
+                    padding: 5px 10px;
+                    cursor: pointer;
+                    font-size: 18px;
+                ">✕</button>
+            `;
+
+            document.body.prepend(banner);
+
+            // Adiciona evento ao botão
+            document.getElementById('btn-conectar-json').addEventListener('click', async function () {
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
+                this.disabled = true;
+
+                await pedirPermissaoArquivos();
+
+                // Remove o banner após conectar
+                banner.remove();
+            });
+        }
+    </script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/inpacto/sw.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker registrado com sucesso!', registration.scope);
+                        
+                        // Verifica atualizações
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Nova versão disponível
+                                    if (confirm('Nova versão disponível! Recarregar para atualizar?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ Erro ao registrar Service Worker:', error);
+                    });
+            });
+        }
+
+        // Detecta quando o app está instalado
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Mostra banner de instalação customizado (opcional)
+            console.log('📱 PWA pode ser instalado!');
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            console.log('🎉 PWA foi instalado!');
+            deferredPrompt = null;
+        });
+    </script>
+</body>
+
+</html>

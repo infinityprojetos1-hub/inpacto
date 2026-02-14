@@ -1,0 +1,45 @@
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Diretórios de dependências
+node_modules/
+bower_components/
+
+# Arquivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# Arquivos de build (se usar bundler no futuro)
+dist/
+build/
+
+# Arquivos de ambiente (se tiver)
+.env
+.env.local
+.env.production
+
+# Arquivos de teste
+coverage/
+.nyc_output/
+
+# Outros
+*.zip
+*.rar
+*.7z
