@@ -42,6 +42,14 @@ function inicializarTabs() {
             allContents.forEach(content => content.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
 
+            // Callbacks específicos por aba
+            if (tabId === 'pagamento' && typeof window.renderizarAbaPagamento === 'function') {
+                setTimeout(window.renderizarAbaPagamento, 80);
+            }
+            if (tabId === 'notasFiscais' && typeof window.atualizarListaNF === 'function') {
+                setTimeout(window.atualizarListaNF, 50);
+            }
+
             // Scroll suave para o topo no mobile
             if (window.innerWidth <= 768) {
                 requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
