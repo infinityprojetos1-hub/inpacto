@@ -10,9 +10,32 @@ const MESES_PT = [
 let pagamentoState = {
     mesSelecionado: new Date().getMonth(),
     anoSelecionado: new Date().getFullYear(),
-    igrejasSelecionadas: {},  // { chave: { nome, id, valor } }
-    itensExtras: []           // [{ nome, valor }]
+    igrejasSelecionadas: {},   // { chave: { nome, id, valor } }
+    itensExtras: [],           // [{ nome, valor }]
+    igrejasArquivadas: new Set(), // Set de chaves arquivadas
+    mostrarArquivadas: false
 };
+
+// Carrega igrejas arquivadas do localStorage
+function carregarArquivadasPagamento() {
+    try {
+        var salvo = localStorage.getItem('pagamento_arquivadas');
+        if (salvo) {
+            var arr = JSON.parse(salvo);
+            pagamentoState.igrejasArquivadas = new Set(Array.isArray(arr) ? arr : []);
+        }
+    } catch (e) {
+        pagamentoState.igrejasArquivadas = new Set();
+    }
+}
+
+function salvarArquivadasPagamento() {
+    try {
+        localStorage.setItem('pagamento_arquivadas', JSON.stringify(Array.from(pagamentoState.igrejasArquivadas)));
+    } catch (e) {
+        console.error('[Pagamento] Erro ao salvar arquivadas:', e);
+    }
+}
 
 // =============================================
 // HELPERS DE DADOS
@@ -72,15 +95,56 @@ function renderizarAbaPagamento() {
             return;
         }
 
-        const igrejas = obterIgrejasPagamento();
-        const mesAtual = pagamentoState.mesSelecionado;
-        const anoAtual = pagamentoState.anoSelecionado;
+        var todasIgrejas = obterIgrejasPagamento();
+        var mesAtual = pagamentoState.mesSelecionado;
+        var anoAtual = pagamentoState.anoSelecionado;
+        var mostrarArq = pagamentoState.mostrarArquivadas;
 
-        let listaIgrejasHTML = '';
-        if (igrejas.length === 0) {
+        var igrejasAtivas = todasIgrejas.filter(function(ig) {
+            return !pagamentoState.igrejasArquivadas.has(chaveIgreja(ig));
+        });
+        var igrejasArq = todasIgrejas.filter(function(ig) {
+            return pagamentoState.igrejasArquivadas.has(chaveIgreja(ig));
+        });
+
+        // HTML do painel de igrejas
+        var listaIgrejasHTML = '';
+        if (todasIgrejas.length === 0) {
             listaIgrejasHTML = '<div class="pag-empty"><i class="fas fa-church"></i><p>Nenhuma igreja encontrada.<br>Adicione igrejas nas Notas Fiscais.</p></div>';
         } else {
-            listaIgrejasHTML = '<div class="pag-busca-wrapper"><i class="fas fa-search"></i><input type="text" id="pagBusca" placeholder="Buscar igreja..." oninput="filtrarIgrejasPagamento(this.value)" class="pag-busca-input"></div><div id="pagIgrejaLista" class="pag-igreja-lista">' + renderizarListaIgrejas(igrejas, '') + '</div>';
+            // Abas Ativas / Arquivadas
+            listaIgrejasHTML =
+                '<div class="pag-subtabs">' +
+                '<button class="pag-subtab' + (!mostrarArq ? ' pag-subtab-ativa' : '') + '" onclick="alternarAbaPagamento(false)">' +
+                '<i class="fas fa-church"></i> Ativas <span class="pag-subtab-count">' + igrejasAtivas.length + '</span>' +
+                '</button>' +
+                '<button class="pag-subtab' + (mostrarArq ? ' pag-subtab-ativa' : '') + '" onclick="alternarAbaPagamento(true)">' +
+                '<i class="fas fa-archive"></i> Arquivadas <span class="pag-subtab-count">' + igrejasArq.length + '</span>' +
+                '</button>' +
+                '</div>';
+
+            if (!mostrarArq) {
+                // Lista ativas
+                listaIgrejasHTML +=
+                    '<div class="pag-busca-wrapper"><i class="fas fa-search"></i>' +
+                    '<input type="text" id="pagBusca" placeholder="Buscar igreja..." oninput="filtrarIgrejasPagamento(this.value)" class="pag-busca-input">' +
+                    '</div>' +
+                    '<div id="pagIgrejaLista" class="pag-igreja-lista">' +
+                    (igrejasAtivas.length === 0
+                        ? '<div class="pag-empty-busca">Todas as igrejas estão arquivadas.</div>'
+                        : renderizarListaIgrejas(igrejasAtivas, '', false)
+                    ) +
+                    '</div>';
+            } else {
+                // Lista arquivadas
+                listaIgrejasHTML +=
+                    '<div id="pagIgrejaLista" class="pag-igreja-lista">' +
+                    (igrejasArq.length === 0
+                        ? '<div class="pag-empty-busca">Nenhuma igreja arquivada.</div>'
+                        : renderizarListaIgrejas(igrejasArq, '', true)
+                    ) +
+                    '</div>';
+            }
         }
 
         container.innerHTML =
@@ -99,7 +163,7 @@ function renderizarAbaPagamento() {
 
             // Lista de igrejas
             '<div class="pag-card">' +
-            '<div class="pag-card-header"><h3 class="pag-card-titulo"><i class="fas fa-church"></i> Igrejas</h3><span class="pag-badge">' + igrejas.length + ' igrejas</span></div>' +
+            '<div class="pag-card-header"><h3 class="pag-card-titulo"><i class="fas fa-church"></i> Igrejas</h3><span class="pag-badge">' + igrejasAtivas.length + ' ativas</span></div>' +
             listaIgrejasHTML +
             '</div>' +
 
@@ -151,18 +215,18 @@ function renderizarAbaPagamento() {
 // RENDERIZADORES PARCIAIS
 // =============================================
 
-function renderizarListaIgrejas(igrejas, busca) {
+function renderizarListaIgrejas(igrejas, busca, modoArquivadas) {
     try {
-        var termo = busca.toLowerCase().trim();
+        var termo = busca ? busca.toLowerCase().trim() : '';
         var filtradas = termo ? igrejas.filter(function(ig) { return ig.nome.toLowerCase().indexOf(termo) !== -1; }) : igrejas;
 
         if (filtradas.length === 0) {
-            return '<div class="pag-empty-busca">Nenhuma igreja encontrada para "' + busca + '"</div>';
+            return '<div class="pag-empty-busca">Nenhuma igreja encontrada' + (termo ? ' para "' + busca + '"' : '') + '.</div>';
         }
 
         return filtradas.map(function(ig) {
             var chave = chaveIgreja(ig);
-            var selecionada = !!pagamentoState.igrejasSelecionadas[chave];
+            var selecionada = !modoArquivadas && !!pagamentoState.igrejasSelecionadas[chave];
             var valorAtual = selecionada ? pagamentoState.igrejasSelecionadas[chave].valor : '';
             var chaveEsc = chave.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             var nomeEsc = ig.nome.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -172,7 +236,25 @@ function renderizarListaIgrejas(igrejas, busca) {
                 ? '<input type="text" class="pag-valor-input" placeholder="R$ 0,00" value="' + valorAtual + '" oninput="mascararValorInput(this); atualizarValorIgreja(\'' + chaveEsc + '\', this.value)" onfocus="this.select()">'
                 : '';
 
+            // Botão de arquivar / desarquivar
+            var btnArquivo = modoArquivadas
+                ? '<button class="pag-btn-arquivo pag-btn-desarquivar" onclick="desarquivarIgrejaPagamento(\'' + chaveEsc + '\')" title="Desarquivar"><i class="fas fa-box-open"></i></button>'
+                : '<button class="pag-btn-arquivo" onclick="arquivarIgrejaPagamento(\'' + chaveEsc + '\')" title="Arquivar"><i class="fas fa-archive"></i></button>';
+
+            if (modoArquivadas) {
+                // Modo arquivadas: mostra item simples (sem checkbox) + botão desarquivar
+                return '<div class="pag-igreja-item pag-igreja-arquivada" data-chave="' + chave.replace(/"/g, '&quot;') + '">' +
+                    '<div class="pag-igreja-info pag-info-arq">' +
+                    '<strong>' + ig.nome + '</strong>' +
+                    (ig.id ? '<span class="pag-ig-id">ID: ' + ig.id + '</span>' : '') +
+                    '</div>' +
+                    btnArquivo +
+                    '</div>';
+            }
+
+            // Modo ativas: checkbox + campo de valor + botão arquivar
             return '<div class="pag-igreja-item' + (selecionada ? ' pag-selecionada' : '') + '" data-chave="' + chave.replace(/"/g, '&quot;') + '">' +
+                '<div class="pag-item-row">' +
                 '<label class="pag-check-label">' +
                 '<input type="checkbox" class="pag-checkbox"' + (selecionada ? ' checked' : '') +
                 ' onchange="toggleIgrejaPagamento(\'' + chaveEsc + '\', this.checked, \'' + nomeEsc + '\', \'' + idEsc + '\')">' +
@@ -182,6 +264,8 @@ function renderizarListaIgrejas(igrejas, busca) {
                 (ig.id ? '<span class="pag-ig-id">ID: ' + ig.id + '</span>' : '') +
                 '</div>' +
                 '</label>' +
+                btnArquivo +
+                '</div>' +
                 inputValor +
                 '</div>';
         }).join('');
@@ -250,9 +334,12 @@ function alterarAnoPagamento(valor) {
 }
 
 function filtrarIgrejasPagamento(busca) {
-    var igrejas = obterIgrejasPagamento();
+    var todasIgrejas = obterIgrejasPagamento();
+    var igrejasAtivas = todasIgrejas.filter(function(ig) {
+        return !pagamentoState.igrejasArquivadas.has(chaveIgreja(ig));
+    });
     var lista = document.getElementById('pagIgrejaLista');
-    if (lista) lista.innerHTML = renderizarListaIgrejas(igrejas, busca);
+    if (lista) lista.innerHTML = renderizarListaIgrejas(igrejasAtivas, busca, false);
 }
 
 function toggleIgrejaPagamento(chave, marcada, nome, id) {
@@ -327,6 +414,84 @@ function atualizarResumoPagamento() {
     var totalBox = document.getElementById('pagTotalBox');
     if (resumo) resumo.innerHTML = renderizarResumo();
     if (totalBox) totalBox.innerHTML = renderizarTotal();
+}
+
+// =============================================
+// ARQUIVAMENTO
+// =============================================
+
+function alternarAbaPagamento(mostrarArquivadas) {
+    pagamentoState.mostrarArquivadas = mostrarArquivadas;
+    atualizarPainelIgrejas();
+}
+
+function arquivarIgrejaPagamento(chave) {
+    pagamentoState.igrejasArquivadas.add(chave);
+    // Remove da seleção se estiver selecionada
+    if (pagamentoState.igrejasSelecionadas[chave]) {
+        delete pagamentoState.igrejasSelecionadas[chave];
+        atualizarResumoPagamento();
+    }
+    salvarArquivadasPagamento();
+    atualizarPainelIgrejas();
+}
+
+function desarquivarIgrejaPagamento(chave) {
+    pagamentoState.igrejasArquivadas.delete(chave);
+    salvarArquivadasPagamento();
+    atualizarPainelIgrejas();
+}
+
+// Atualiza apenas o painel de lista de igrejas (sem re-renderizar tudo)
+function atualizarPainelIgrejas() {
+    var todasIgrejas = obterIgrejasPagamento();
+    var mostrarArq = pagamentoState.mostrarArquivadas;
+
+    var igrejasAtivas = todasIgrejas.filter(function(ig) {
+        return !pagamentoState.igrejasArquivadas.has(chaveIgreja(ig));
+    });
+    var igrejasArq = todasIgrejas.filter(function(ig) {
+        return pagamentoState.igrejasArquivadas.has(chaveIgreja(ig));
+    });
+
+    // Atualiza abas (contagem)
+    var subtabs = document.querySelectorAll('.pag-subtab');
+    if (subtabs.length === 2) {
+        subtabs[0].className = 'pag-subtab' + (!mostrarArq ? ' pag-subtab-ativa' : '');
+        subtabs[0].innerHTML = '<i class="fas fa-church"></i> Ativas <span class="pag-subtab-count">' + igrejasAtivas.length + '</span>';
+        subtabs[1].className = 'pag-subtab' + (mostrarArq ? ' pag-subtab-ativa' : '');
+        subtabs[1].innerHTML = '<i class="fas fa-archive"></i> Arquivadas <span class="pag-subtab-count">' + igrejasArq.length + '</span>';
+    }
+
+    // Atualiza badge do card
+    var badge = document.querySelector('.pag-card-header .pag-badge');
+    if (badge) badge.textContent = igrejasAtivas.length + ' ativas';
+
+    // Atualiza busca e lista
+    var buscaWrapper = document.querySelector('.pag-busca-wrapper');
+    var lista = document.getElementById('pagIgrejaLista');
+
+    if (!mostrarArq) {
+        // Mostra campo de busca
+        if (!buscaWrapper) {
+            var subTabsEl = document.querySelector('.pag-subtabs');
+            if (subTabsEl) {
+                var div = document.createElement('div');
+                div.className = 'pag-busca-wrapper';
+                div.innerHTML = '<i class="fas fa-search"></i><input type="text" id="pagBusca" placeholder="Buscar igreja..." oninput="filtrarIgrejasPagamento(this.value)" class="pag-busca-input">';
+                subTabsEl.parentNode.insertBefore(div, lista);
+            }
+        }
+        if (lista) lista.innerHTML = igrejasAtivas.length === 0
+            ? '<div class="pag-empty-busca">Todas as igrejas estão arquivadas.</div>'
+            : renderizarListaIgrejas(igrejasAtivas, '', false);
+    } else {
+        // Esconde campo de busca
+        if (buscaWrapper) buscaWrapper.remove();
+        if (lista) lista.innerHTML = igrejasArq.length === 0
+            ? '<div class="pag-empty-busca">Nenhuma igreja arquivada.</div>'
+            : renderizarListaIgrejas(igrejasArq, '', true);
+    }
 }
 
 // =============================================
@@ -738,6 +903,9 @@ function mostrarToastPagamento(htmlMsg) {
 // =============================================
 
 function inicializarPagamento() {
+    // Carrega arquivadas persistidas
+    carregarArquivadasPagamento();
+
     // Dispara o render quando o usuário clica na aba
     document.querySelectorAll('.tab-button').forEach(function(btn) {
         if (btn.getAttribute('data-tab') === 'pagamento') {
