@@ -1391,49 +1391,186 @@
                 font-size: 0.85em !important;
             }
             
-            /* Lista de igrejas */
+            /* Lista de igrejas - COMPACTA PARA MOBILE */
             .igreja-item {
-                padding: 10px !important;
-                margin-bottom: 8px !important;
+                padding: 12px !important;
+                margin-bottom: 10px !important;
             }
             
-            .igreja-item h3 {
-                font-size: 1em !important;
+            .igreja-item h3,
+            .igreja-item h4 {
+                font-size: 0.95em !important;
+                margin-bottom: 8px !important;
             }
             
             .igreja-item p {
                 font-size: 0.8em !important;
+                margin-bottom: 5px !important;
             }
             
-            /* Material */
-            .material-item {
+            .igreja-item strong {
+                font-size: 0.85em !important;
+            }
+            
+            /* Botões de ação dentro dos cards */
+            .igreja-item button,
+            .igreja-item .btn-danger {
+                width: 100% !important;
+                margin-top: 8px !important;
+                padding: 8px 12px !important;
+                font-size: 0.85em !important;
+            }
+            
+            /* Aba Resultados - download buttons */
+            .download-buttons {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            
+            .download-buttons button {
+                width: 100% !important;
+                padding: 12px !important;
+                font-size: 0.85em !important;
+            }
+            
+            /* Logos - grid de upload */
+            .logo-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            
+            /* Checklist Form Section */
+            .checklist-form-section {
+                padding: 12px 8px !important;
+                margin-bottom: 15px !important;
+            }
+            
+            .checklist-form-section h4 {
+                font-size: 0.95em !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .checklist-question {
                 padding: 10px !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .checklist-question-text {
+                font-size: 0.8em !important;
+                margin-bottom: 8px !important;
+                line-height: 1.4 !important;
+            }
+            
+            .checklist-options {
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                gap: 5px !important;
+            }
+            
+            .checklist-option {
+                flex: 1 !important;
+            }
+            
+            .checklist-option label {
+                font-size: 0.8em !important;
+                padding: 6px !important;
+            }
+            
+            /* Material - LAYOUT VERTICAL */
+            .material-container {
+                padding: 0 !important;
+            }
+            
+            .material-tabs {
+                overflow-x: auto !important;
+                flex-wrap: nowrap !important;
+                padding: 5px !important;
+                gap: 8px !important;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            
+            .material-tabs::-webkit-scrollbar {
+                display: none;
+            }
+            
+            .material-tab-button {
+                padding: 8px 16px !important;
+                font-size: 0.85em !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }
+            
+            .material-item {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 12px !important;
+                gap: 10px !important;
+            }
+            
+            .material-item-info {
+                width: 100% !important;
             }
             
             .material-item h4 {
-                font-size: 0.9em !important;
+                font-size: 0.95em !important;
+                margin-bottom: 5px !important;
             }
             
-            /* Checklist */
+            .material-item-acoes {
+                width: 100% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            
+            .material-item-acoes button {
+                width: 100% !important;
+            }
+            
+            /* Checklist - LAYOUT VERTICAL */
             .checklist-header,
             .checklist-row {
                 grid-template-columns: 1fr !important;
-                gap: 10px !important;
-                padding: 10px !important;
+                gap: 8px !important;
+                padding: 12px !important;
+            }
+            
+            .checklist-header {
+                text-align: left !important;
+            }
+            
+            .checklist-header div {
+                text-align: left !important;
             }
             
             .checklist-col-igreja {
-                margin-bottom: 5px;
+                margin-bottom: 8px !important;
+            }
+            
+            .checklist-col-igreja strong {
+                font-size: 0.95em !important;
+            }
+            
+            .checklist-status {
+                display: inline-block !important;
+                margin-bottom: 8px !important;
             }
             
             .checklist-col-acoes {
                 display: flex;
                 flex-direction: column;
                 gap: 8px !important;
+                width: 100% !important;
             }
             
             .checklist-col-acoes button {
                 width: 100% !important;
+                margin: 0 !important;
+            }
+            
+            .checklist-col-acoes .btn-icon {
+                display: none !important; /* Remove ícones isolados no mobile */
             }
             
             .checklist-question {
@@ -1471,17 +1608,75 @@
                 font-size: 0.9em !important;
             }
             
-            /* Notas Fiscais */
+            /* Notas Fiscais - LAYOUT VERTICAL PARA MOBILE */
             .nf-empresa {
                 padding: 12px !important;
+                margin-bottom: 15px !important;
             }
             
             .nf-empresa h3 {
                 font-size: 1em !important;
+                margin-bottom: 12px !important;
+                padding-bottom: 10px !important;
             }
             
-            .nf-igreja-item {
-                padding: 10px !important;
+            /* Igreja item - MUDA DE FLEX HORIZONTAL PARA VERTICAL */
+            .nf-igreja {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                padding: 12px !important;
+                gap: 10px !important;
+            }
+            
+            .nf-igreja-nome {
+                font-size: 0.95em !important;
+                width: 100% !important;
+                text-align: left !important;
+            }
+            
+            .nf-valor {
+                font-size: 1.1em !important;
+                width: 100% !important;
+                text-align: left !important;
+                padding: 8px 12px !important;
+                background: rgba(99, 102, 241, 0.1) !important;
+                color: var(--primary-color) !important;
+                border-radius: 8px !important;
+                -webkit-background-clip: unset !important;
+                -webkit-text-fill-color: unset !important;
+            }
+            
+            .nf-data {
+                margin-left: 0 !important;
+                font-size: 0.8em !important;
+                display: block !important;
+                margin-top: 5px !important;
+            }
+            
+            .nf-empresa-total {
+                text-align: left !important;
+                font-size: 1.1em !important;
+                padding: 15px 12px !important;
+                margin-top: 10px !important;
+            }
+            
+            /* Tabela NF - força scroll horizontal se necessário */
+            .nf-table-wrapper {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                margin: 0 -10px !important;
+                padding: 0 10px !important;
+            }
+            
+            .nf-table {
+                min-width: 500px !important;
+                font-size: 0.75em !important;
+            }
+            
+            .nf-table th,
+            .nf-table td {
+                padding: 10px 8px !important;
+                font-size: 0.9em !important;
             }
             
             /* Relatório Técnico */
