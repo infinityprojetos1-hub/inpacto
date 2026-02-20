@@ -649,61 +649,65 @@ function compartilharWhatsApp() {
     var ano = pagamentoState.anoSelecionado;
     var total = calcularTotal();
     var nomeArq = obterNomeArquivoPagamento();
+    var textoMensagem = 'Relatório de Pagamentos - ' + mes + '/' + ano + '\nTotal: ' + formatarMoeda(total);
 
-    // Converte canvas em blob uma única vez e decide o caminho
     canvas.toBlob(function(blob) {
-        var isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 
-        // ── MOBILE: Web Share API (abre painel nativo de compartilhamento)
-        if (isMobile && navigator.share && navigator.canShare) {
+        // ── TENTATIVA 1: Web Share API com arquivo
+        // Funciona em: celular (todos), Chrome/Edge no Windows (abre painel nativo do SO
+        // onde o usuário seleciona WhatsApp e a imagem vai direto)
+        if (navigator.share && navigator.canShare) {
             try {
                 var file = new File([blob], nomeArq, { type: 'image/png' });
                 if (navigator.canShare({ files: [file] })) {
                     navigator.share({
                         title: 'Pagamento ' + mes + '/' + ano,
-                        text: 'Relatório de Pagamentos - ' + mes + '/' + ano + '\nTotal: ' + formatarMoeda(total),
+                        text: textoMensagem,
                         files: [file]
+                    }).then(function() {
+                        // Compartilhado com sucesso via painel do SO
                     }).catch(function(err) {
                         if (err.name !== 'AbortError') {
-                            // Abre WhatsApp direto com texto (último recurso mobile)
-                            var texto = encodeURIComponent('Relatório de Pagamentos - ' + mes + '/' + ano + '\nTotal: ' + formatarMoeda(total));
-                            window.open('whatsapp://send?text=' + texto, '_blank');
+                            // Usuário não cancelou mas falhou — tenta clipboard
+                            compartilharViaClipboard(blob, mes, ano, total);
                         }
                     });
-                    return;
+                    return; // Saiu pelo Web Share API
                 }
             } catch (e) {
-                console.warn('[Pagamento] Web Share falhou:', e);
+                console.warn('[Pagamento] Web Share API indisponível:', e);
             }
         }
 
-        // ── DESKTOP: copia imagem para o clipboard e abre WhatsApp Web
-        if (navigator.clipboard && window.ClipboardItem) {
-            var item = new ClipboardItem({ 'image/png': blob });
-            navigator.clipboard.write([item]).then(function() {
-                // Abre WhatsApp Web no mesmo instante
-                window.open('https://web.whatsapp.com/', '_blank');
-                // Avisa o usuário para colar
-                mostrarToastPagamento(
-                    '<i class="fab fa-whatsapp"></i> WhatsApp Web aberto!<br>' +
-                    'Abra um chat e cole a imagem com <strong>Ctrl+V</strong>'
-                );
-            }).catch(function(err) {
-                console.warn('[Pagamento] Clipboard falhou:', err);
-                // Último recurso: só abre o WhatsApp Web com instrução
-                window.open('https://web.whatsapp.com/', '_blank');
-                mostrarToastPagamento(
-                    '<i class="fas fa-info-circle"></i> Abra um chat no WhatsApp Web e anexe a imagem manualmente.'
-                );
-            });
-        } else {
-            // Clipboard API indisponível — só abre WhatsApp Web
+        // ── TENTATIVA 2: Copia para clipboard + abre WhatsApp Web
+        // (Firefox, Safari desktop, browsers sem Web Share API)
+        compartilharViaClipboard(blob, mes, ano, total);
+
+    }, 'image/png');
+}
+
+function compartilharViaClipboard(blob, mes, ano, total) {
+    if (navigator.clipboard && window.ClipboardItem) {
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
             window.open('https://web.whatsapp.com/', '_blank');
             mostrarToastPagamento(
-                '<i class="fas fa-info-circle"></i> WhatsApp Web aberto. Anexe a imagem (botão de clipe) e envie.'
+                '<i class="fab fa-whatsapp"></i> WhatsApp Web aberto!<br>' +
+                'Abra um chat e cole com <strong>Ctrl+V</strong> — a imagem já está na área de transferência.'
             );
-        }
-    }, 'image/png');
+        }).catch(function() {
+            window.open('https://web.whatsapp.com/', '_blank');
+            mostrarToastPagamento(
+                '<i class="fas fa-info-circle"></i> WhatsApp Web aberto.<br>' +
+                'Use o botão de clipe para anexar a imagem manualmente.'
+            );
+        });
+    } else {
+        window.open('https://web.whatsapp.com/', '_blank');
+        mostrarToastPagamento(
+            '<i class="fas fa-info-circle"></i> WhatsApp Web aberto.<br>' +
+            'Use o botão de clipe para anexar a imagem.'
+        );
+    }
 }
 
 // Toast de instrução (aparece na tela por alguns segundos)
