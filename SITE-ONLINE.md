@@ -6,6 +6,39 @@ Seu site PWA está **ONLINE** e funcionando!
 
 ---
 
+## 📱 ÚLTIMAS ATUALIZAÇÕES (14/02/2026)
+
+### ✨ Novas Funcionalidades:
+
+1. **⚙️ Botão de Configurações**
+   - Botão discreto (engrenagem 🔧) no canto superior direito
+   - **NÃO** aparecem mais modais automáticos ao abrir o site
+   - Acesso manual a:
+     - Migração para Firebase
+     - Vinculação de arquivos JSON
+     - Status do sistema
+
+2. **💾 Otimização de Armazenamento**
+   - ✅ **Checklists PDFs** → Salvos **localmente** em `IGREJA_ID/IMPRIMIR/`
+   - ✅ **Imagens de relatórios** → **NÃO** salvas no Firebase
+   - ✅ **Assinaturas** → **NÃO** salvas no Firebase
+   - ✅ **Logos** → Mantidas apenas localmente
+   - ✅ Firebase → Apenas dados textuais (economia de espaço)
+
+3. **📱 Responsividade Mobile Completa**
+   - ✅ Layout adaptado para celular (768px e 480px)
+   - ✅ Tabs com scroll horizontal touch-friendly
+   - ✅ Botões, modais e formulários otimizados
+   - ✅ Canvas de assinatura responsivo
+   - ✅ Tabelas com scroll horizontal
+
+4. **🔄 Migração Firebase Melhorada**
+   - ✅ Migra **TODOS** os campos das igrejas
+   - ✅ Preserva estrutura completa dos dados JSON
+   - ✅ Migração **manual** via botão de configurações
+
+---
+
 ## 🌐 ACESSOS:
 
 ### 🌍 **Site Online:**
