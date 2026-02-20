@@ -650,9 +650,12 @@ function compartilharWhatsApp() {
     var total = calcularTotal();
     var nomeArq = obterNomeArquivoPagamento();
 
-    // Tenta Web Share API (mobile moderno)
-    if (navigator.share && navigator.canShare) {
-        canvas.toBlob(function(blob) {
+    // Converte canvas em blob uma única vez e decide o caminho
+    canvas.toBlob(function(blob) {
+        var isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+
+        // ── MOBILE: Web Share API (abre painel nativo de compartilhamento)
+        if (isMobile && navigator.share && navigator.canShare) {
             try {
                 var file = new File([blob], nomeArq, { type: 'image/png' });
                 if (navigator.canShare({ files: [file] })) {
@@ -661,36 +664,69 @@ function compartilharWhatsApp() {
                         text: 'Relatório de Pagamentos - ' + mes + '/' + ano + '\nTotal: ' + formatarMoeda(total),
                         files: [file]
                     }).catch(function(err) {
-                        if (err.name !== 'AbortError') fallbackCompartilhar(mes, ano, total, nomeArq);
+                        if (err.name !== 'AbortError') {
+                            // Abre WhatsApp direto com texto (último recurso mobile)
+                            var texto = encodeURIComponent('Relatório de Pagamentos - ' + mes + '/' + ano + '\nTotal: ' + formatarMoeda(total));
+                            window.open('whatsapp://send?text=' + texto, '_blank');
+                        }
                     });
                     return;
                 }
             } catch (e) {
                 console.warn('[Pagamento] Web Share falhou:', e);
             }
-            fallbackCompartilhar(mes, ano, total, nomeArq);
-        }, 'image/png');
-    } else {
-        fallbackCompartilhar(mes, ano, total, nomeArq);
-    }
+        }
+
+        // ── DESKTOP: copia imagem para o clipboard e abre WhatsApp Web
+        if (navigator.clipboard && window.ClipboardItem) {
+            var item = new ClipboardItem({ 'image/png': blob });
+            navigator.clipboard.write([item]).then(function() {
+                // Abre WhatsApp Web no mesmo instante
+                window.open('https://web.whatsapp.com/', '_blank');
+                // Avisa o usuário para colar
+                mostrarToastPagamento(
+                    '<i class="fab fa-whatsapp"></i> WhatsApp Web aberto!<br>' +
+                    'Abra um chat e cole a imagem com <strong>Ctrl+V</strong>'
+                );
+            }).catch(function(err) {
+                console.warn('[Pagamento] Clipboard falhou:', err);
+                // Último recurso: só abre o WhatsApp Web com instrução
+                window.open('https://web.whatsapp.com/', '_blank');
+                mostrarToastPagamento(
+                    '<i class="fas fa-info-circle"></i> Abra um chat no WhatsApp Web e anexe a imagem manualmente.'
+                );
+            });
+        } else {
+            // Clipboard API indisponível — só abre WhatsApp Web
+            window.open('https://web.whatsapp.com/', '_blank');
+            mostrarToastPagamento(
+                '<i class="fas fa-info-circle"></i> WhatsApp Web aberto. Anexe a imagem (botão de clipe) e envie.'
+            );
+        }
+    }, 'image/png');
 }
 
-function fallbackCompartilhar(mes, ano, total, nomeArq) {
-    // Baixa a imagem
-    var canvas = document.getElementById('pagCanvas');
-    if (canvas) {
-        var link = document.createElement('a');
-        link.download = nomeArq;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-    }
-    // Abre WhatsApp após delay para o download iniciar
+// Toast de instrução (aparece na tela por alguns segundos)
+function mostrarToastPagamento(htmlMsg) {
+    var existente = document.getElementById('pagToast');
+    if (existente) existente.remove();
+
+    var toast = document.createElement('div');
+    toast.id = 'pagToast';
+    toast.className = 'pag-toast';
+    toast.innerHTML = htmlMsg;
+    document.body.appendChild(toast);
+
+    // Anima entrada
+    requestAnimationFrame(function() {
+        toast.classList.add('pag-toast-visivel');
+    });
+
+    // Remove após 5 segundos
     setTimeout(function() {
-        var texto = encodeURIComponent('Relatório de Pagamentos - ' + mes + '/' + ano + '\nTotal: ' + formatarMoeda(total) + '\n\n(Imagem baixada - anexe no WhatsApp)');
-        var isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-        var url = isMobile ? 'whatsapp://send?text=' + texto : 'https://web.whatsapp.com/';
-        window.open(url, '_blank');
-    }, 600);
+        toast.classList.remove('pag-toast-visivel');
+        setTimeout(function() { if (toast.parentNode) toast.remove(); }, 400);
+    }, 5000);
 }
 
 // =============================================

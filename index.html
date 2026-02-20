@@ -3306,6 +3306,53 @@
             top: 10px;
         }
 
+        /* Toast de compartilhamento */
+        .pag-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1a1a2e;
+            color: #e2e8f0;
+            border: 2px solid #6366f1;
+            border-radius: 14px;
+            padding: 16px 24px;
+            font-size: 0.95em;
+            line-height: 1.5;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            max-width: 90vw;
+            white-space: nowrap;
+        }
+
+        .pag-toast i.fab.fa-whatsapp {
+            color: #25D366;
+            margin-right: 6px;
+        }
+
+        .pag-toast i.fas {
+            color: #a78bfa;
+            margin-right: 6px;
+        }
+
+        .pag-toast-visivel {
+            opacity: 1 !important;
+            transform: translateX(-50%) translateY(0) !important;
+        }
+
+        @media (max-width: 768px) {
+            .pag-toast {
+                bottom: 16px;
+                font-size: 0.88em;
+                padding: 14px 18px;
+                white-space: normal;
+                max-width: 88vw;
+            }
+        }
+
         /* Mobile responsivo */
         @media (max-width: 768px) {
             .pag-layout {
