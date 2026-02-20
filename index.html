@@ -2814,6 +2814,535 @@
             color: white;
         }
 
+        /* ============================================
+           PAGAMENTO - ESTILOS
+        ============================================ */
+        .pag-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .pag-card {
+            background: var(--bg-light);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .pag-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .pag-card-titulo {
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--text-color);
+            margin: 0 0 14px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pag-card-titulo i {
+            color: var(--primary-color);
+        }
+
+        .pag-card-header .pag-card-titulo {
+            margin: 0;
+        }
+
+        .pag-badge {
+            background: rgba(99,102,241,0.12);
+            color: var(--primary-color);
+            border: 1px solid rgba(99,102,241,0.3);
+            border-radius: 20px;
+            padding: 3px 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        /* Seletor de mês */
+        .pag-mes-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .pag-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .pag-field label {
+            font-size: 0.82em;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pag-field select {
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: white;
+            font-size: 0.95em;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .pag-field select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Busca */
+        .pag-busca-wrapper {
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .pag-busca-wrapper i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.85em;
+        }
+
+        .pag-busca-input {
+            width: 100%;
+            padding: 10px 12px 10px 34px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: var(--text-color);
+            background: white;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .pag-busca-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Lista de igrejas */
+        .pag-igreja-lista {
+            max-height: 340px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-right: 4px;
+        }
+
+        .pag-igreja-lista::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .pag-igreja-lista::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .pag-igreja-lista::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .pag-igreja-item {
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: white;
+            transition: border-color 0.2s, background 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pag-igreja-item:hover {
+            border-color: rgba(99,102,241,0.4);
+        }
+
+        .pag-selecionada {
+            border-color: var(--primary-color) !important;
+            background: rgba(99,102,241,0.05) !important;
+        }
+
+        .pag-check-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .pag-checkbox {
+            display: none;
+        }
+
+        .pag-check-box {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .pag-checkbox:checked + .pag-check-box {
+            background: var(--primary-gradient);
+            border-color: transparent;
+        }
+
+        .pag-checkbox:checked + .pag-check-box::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .pag-igreja-info strong {
+            display: block;
+            font-size: 0.9em;
+            color: var(--text-color);
+        }
+
+        .pag-ig-id {
+            font-size: 0.75em;
+            color: var(--text-muted);
+        }
+
+        .pag-valor-input {
+            width: 100%;
+            padding: 9px 12px;
+            border: 2px solid rgba(99,102,241,0.4);
+            border-radius: 8px;
+            font-size: 0.95em;
+            color: var(--primary-color);
+            font-weight: 600;
+            background: rgba(99,102,241,0.04);
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .pag-valor-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Itens extras */
+        .pag-extras-lista {
+            margin-bottom: 12px;
+            min-height: 40px;
+        }
+
+        .pag-extras-vazio, .pag-resumo-vazio {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            font-style: italic;
+            padding: 8px 0;
+        }
+
+        .pag-empty-busca {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            padding: 12px 0;
+            text-align: center;
+        }
+
+        .pag-extra-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 6px;
+        }
+
+        .pag-extra-info {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pag-extra-nome {
+            font-size: 0.9em;
+            color: var(--text-color);
+        }
+
+        .pag-extra-val {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: var(--primary-color);
+            white-space: nowrap;
+        }
+
+        .pag-btn-remover {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            transition: background 0.2s;
+        }
+
+        .pag-btn-remover:hover {
+            background: rgba(239,68,68,0.1);
+        }
+
+        .pag-extra-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .pag-input {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: var(--text-color);
+            background: white;
+            transition: border-color 0.2s;
+        }
+
+        .pag-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .pag-input-valor {
+            max-width: 140px;
+            flex: none;
+        }
+
+        /* Botões */
+        .pag-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        .pag-btn:active {
+            transform: scale(0.97);
+        }
+
+        .pag-btn-add {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 10px 16px;
+        }
+
+        .pag-btn-gerar {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .pag-btn-baixar {
+            background: var(--success-gradient);
+            color: white;
+        }
+
+        .pag-btn-whatsapp {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+        }
+
+        /* Resumo */
+        .pag-resumo-lista {
+            max-height: 280px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+            padding-right: 4px;
+        }
+
+        .pag-resumo-lista::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .pag-resumo-lista::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .pag-resumo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            background: white;
+            border: 1px solid var(--border-color);
+        }
+
+        .pag-resumo-extra {
+            border-left: 3px solid #f472b6;
+        }
+
+        .pag-resumo-nome {
+            font-size: 0.88em;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pag-resumo-nome i {
+            color: var(--primary-color);
+            font-size: 0.85em;
+        }
+
+        .pag-resumo-val {
+            font-size: 0.9em;
+            font-weight: 700;
+            color: var(--primary-color);
+            white-space: nowrap;
+        }
+
+        .pag-sem-valor {
+            color: var(--text-muted) !important;
+            font-weight: 400 !important;
+        }
+
+        .pag-total-box {
+            background: var(--primary-gradient);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pag-total-label {
+            font-size: 0.85em;
+            font-weight: 700;
+            color: rgba(255,255,255,0.8);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .pag-total-valor {
+            font-size: 1.4em;
+            font-weight: 800;
+            color: white;
+        }
+
+        /* Canvas */
+        .pag-canvas-preview {
+            width: 100%;
+            border-radius: 12px;
+            display: none;
+            margin-bottom: 14px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        .pag-acoes {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .pag-hint {
+            font-size: 0.82em;
+            color: var(--text-muted);
+            font-style: italic;
+            margin: 0;
+        }
+
+        .pag-empty {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-muted);
+        }
+
+        .pag-empty i {
+            font-size: 2em;
+            margin-bottom: 8px;
+            opacity: 0.4;
+            display: block;
+        }
+
+        .pag-empty p {
+            font-size: 0.85em;
+            margin: 0;
+        }
+
+        .pag-card-resumo {
+            position: sticky;
+            top: 10px;
+        }
+
+        /* Mobile responsivo */
+        @media (max-width: 768px) {
+            .pag-layout {
+                grid-template-columns: 1fr !important;
+            }
+
+            .pag-card-resumo {
+                position: static !important;
+            }
+
+            .pag-coluna-dir {
+                order: -1;
+            }
+
+            .pag-extra-form {
+                flex-direction: column;
+            }
+
+            .pag-input, .pag-input-valor {
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+
+            .pag-acoes {
+                flex-direction: column;
+            }
+
+            .pag-btn {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+
+            .pag-total-valor {
+                font-size: 1.2em !important;
+            }
+        }
+
         /* ===== OTIMIZAÇÕES DE PERFORMANCE MOBILE ===== */
         @media (max-width: 768px) {
             /* Desabilita animações custosas no mobile */
@@ -2948,6 +3477,9 @@
             </button>
             <button class="tab-button" data-tab="checklist">
                 <i class="fas fa-clipboard-check"></i> Checklist
+            </button>
+            <button class="tab-button" data-tab="pagamento">
+                <i class="fas fa-money-bill-wave"></i> Pagamento
             </button>
         </div>
 
@@ -3320,6 +3852,14 @@
         </div>
 
         <div id="relatorio" class="tab-content" style="display: none;"></div>
+
+        <div id="pagamento" class="tab-content" style="display: none;">
+            <div class="section">
+                <h2><i class="fas fa-money-bill-wave"></i> Pagamentos</h2>
+                <p>Selecione as igrejas, informe os valores e gere uma imagem bonita para compartilhar.</p>
+                <div id="pagamentoContainer"></div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal de Configurações -->
@@ -3622,6 +4162,7 @@
     <script src="js/checklist-manager.js"></script>
     <script src="js/main.js"></script>
     <script src="js/relatorio.js"></script>
+    <script src="js/pagamento-manager.js"></script>
 
     <script>
         // Função para pedir permissão dos arquivos JSON vinculados - SEMPRE PEDE

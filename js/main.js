@@ -2107,6 +2107,11 @@ function inicializarAbas() {
         if (tabId === 'notasFiscais' && window.atualizarListaNF) {
             window.atualizarListaNF();
         }
+
+        // Se for a aba de Pagamento, renderiza
+        if (tabId === 'pagamento' && window.renderizarAbaPagamento) {
+            setTimeout(window.renderizarAbaPagamento, 50);
+        }
     }
 
     // Adiciona os event listeners
@@ -2145,6 +2150,11 @@ document.addEventListener('DOMContentLoaded', () => {
     inicializarRelatorioTecnico();
 
     inicializarAbas();
+
+    // Inicializa o gerenciador de pagamentos
+    if (typeof inicializarPagamento === 'function') {
+        inicializarPagamento();
+    }
 
     // Inicializa o sistema de pasta de trabalho
     inicializarPastaTrabalho();
