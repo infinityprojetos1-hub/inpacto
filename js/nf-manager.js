@@ -1302,10 +1302,10 @@ function atualizarListaNF() {
 
                     tr.innerHTML = `
                         <td class="${index === 0 ? (empresa.includes('Impacto') ? 'nf-empresa-impacto' : 'nf-empresa-spg') : ''}">${index === 0 ? empresa : ''}</td>
-                        <td>${igrejaHTML}</td>
-                        <td>${pendenciaOptions}</td>
-                        <td>${igreja.valor}</td>
-                        <td class="nf-acoes">${acaoBotao}</td>
+                        <td data-label="Igreja">${igrejaHTML}</td>
+                        <td data-label="Pendência">${pendenciaOptions}</td>
+                        <td data-label="Valor">${igreja.valor}</td>
+                        <td data-label="Ações" class="nf-acoes">${acaoBotao}</td>
                     `;
 
                     tbody.appendChild(tr);

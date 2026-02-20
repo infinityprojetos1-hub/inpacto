@@ -2,57 +2,63 @@
 
 // Controle de tabs com animação do fundo roxo
 function inicializarTabs() {
-    const tabs = document.querySelectorAll('.tab-button');
     const tabsContainer = document.querySelector('.tabs');
-    
+    const isMobile = window.innerWidth <= 768;
+    let rafPending = false;
+
     // Função para atualizar a posição do fundo roxo animado
     function updateTabIndicator(activeTab) {
-        const tabRect = activeTab.getBoundingClientRect();
-        const containerRect = tabsContainer.getBoundingClientRect();
-        const left = tabRect.left - containerRect.left + tabsContainer.scrollLeft;
-        const width = tabRect.width;
-        const height = tabRect.height;
-        
-        // Atualiza a posição, largura e altura do fundo roxo
-        tabsContainer.style.setProperty('--tab-indicator-left', `${left}px`);
-        tabsContainer.style.setProperty('--tab-indicator-width', `${width}px`);
-        tabsContainer.style.setProperty('--tab-indicator-height', `${height}px`);
+        if (isMobile) return; // Não usar indicador animado no mobile (performance)
+        if (rafPending) return;
+        rafPending = true;
+        requestAnimationFrame(() => {
+            rafPending = false;
+            const tabRect = activeTab.getBoundingClientRect();
+            const containerRect = tabsContainer.getBoundingClientRect();
+            const left = tabRect.left - containerRect.left + tabsContainer.scrollLeft;
+            const width = tabRect.width;
+            const height = tabRect.height;
+            tabsContainer.style.setProperty('--tab-indicator-left', `${left}px`);
+            tabsContainer.style.setProperty('--tab-indicator-width', `${width}px`);
+            tabsContainer.style.setProperty('--tab-indicator-height', `${height}px`);
+        });
     }
-    
-    // Adiciona variáveis CSS customizadas
-    if (!tabsContainer.style.getPropertyValue('--tab-indicator-left')) {
-        const activeTab = document.querySelector('.tab-button.active');
-        if (activeTab) {
-            updateTabIndicator(activeTab);
-        }
+
+    // Inicializa indicador
+    const activeTabInit = document.querySelector('.tab-button.active');
+    if (activeTabInit) {
+        updateTabIndicator(activeTabInit);
     }
-    
+
     document.querySelectorAll('.tab-button').forEach(tab => {
         tab.addEventListener('click', () => {
-            // Ativa a tab clicada
             document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
 
-            // Atualiza o fundo roxo animado
             updateTabIndicator(tab);
 
-            // Mostra o conteúdo correspondente
             const tabId = tab.getAttribute('data-tab');
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
+            const allContents = document.querySelectorAll('.tab-content');
+            allContents.forEach(content => content.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
+
+            // Scroll suave para o topo no mobile
+            if (window.innerWidth <= 768) {
+                requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            }
         });
     });
-    
-    // Atualiza a posição do fundo ao redimensionar a janela
+
+    // Atualiza ao redimensionar (debounced)
+    let resizeTimer;
     window.addEventListener('resize', () => {
-        const activeTab = document.querySelector('.tab-button.active');
-        if (activeTab) {
-            updateTabIndicator(activeTab);
-        }
-    });
-    
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            const active = document.querySelector('.tab-button.active');
+            if (active) updateTabIndicator(active);
+        }, 150);
+    }, { passive: true });
+
     // Inicializa a posição do fundo
     const activeTab = document.querySelector('.tab-button.active');
     if (activeTab) {

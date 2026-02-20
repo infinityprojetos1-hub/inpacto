@@ -1708,6 +1708,216 @@
             .empty-state p {
                 font-size: 0.85em !important;
             }
+
+            /* ===== MATERIAL - LAYOUT DE CARD (igual ao checklist) ===== */
+            .material-header {
+                display: none !important;
+            }
+
+            .material-table {
+                overflow: visible !important;
+                box-shadow: none !important;
+                background: transparent !important;
+            }
+
+            .material-row {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 10px !important;
+                padding: 14px !important;
+                border-radius: 12px !important;
+                border: 2px solid var(--border-color) !important;
+                border-top: 2px solid var(--border-color) !important;
+                margin-bottom: 10px !important;
+                background: white !important;
+            }
+
+            .material-row:hover {
+                transform: none !important;
+            }
+
+            .material-row > div:nth-child(2) {
+                text-align: left !important;
+            }
+
+            .material-col-acoes {
+                flex-direction: column !important;
+                gap: 8px !important;
+                width: 100% !important;
+                justify-content: flex-start !important;
+            }
+
+            .material-col-acoes button {
+                width: 100% !important;
+                margin: 0 !important;
+            }
+
+            .material-col-acoes .btn-icon {
+                display: none !important;
+            }
+
+            /* ===== RELATÓRIO TÉCNICO - LAYOUT DE CARD (igual ao checklist) ===== */
+            .relatorio-header {
+                display: none !important;
+            }
+
+            .relatorio-tabela {
+                overflow: visible !important;
+                background: transparent !important;
+            }
+
+            .relatorio-row {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 10px !important;
+                padding: 14px !important;
+                border-radius: 12px !important;
+                border: 2px solid var(--border-color) !important;
+                border-top: 2px solid var(--border-color) !important;
+                margin-bottom: 10px !important;
+                background: white !important;
+            }
+
+            .relatorio-row:hover {
+                transform: none !important;
+            }
+
+            .relatorio-row > div:nth-child(2) {
+                text-align: left !important;
+            }
+
+            .relatorio-col-acoes {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+                width: 100% !important;
+                justify-content: flex-start !important;
+            }
+
+            .relatorio-col-acoes button {
+                width: 100% !important;
+                margin: 0 !important;
+            }
+
+            .relatorio-col-acoes .btn-relatorio-icon {
+                display: none !important;
+            }
+
+            .btn-relatorio {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+
+            .relatorio-tabs {
+                flex-wrap: nowrap !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                scrollbar-width: none !important;
+                padding-bottom: 5px !important;
+            }
+
+            .relatorio-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .relatorio-tab-button {
+                padding: 8px 16px !important;
+                font-size: 0.85em !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }
+
+            /* ===== NOTAS FISCAIS - TABELA COMO CARDS ===== */
+            .nf-table {
+                display: block !important;
+                min-width: unset !important;
+                font-size: 0.9em !important;
+            }
+
+            .nf-table thead {
+                display: none !important;
+            }
+
+            .nf-table tbody {
+                display: block !important;
+            }
+
+            .nf-table tr {
+                display: flex !important;
+                flex-direction: column !important;
+                border: 2px solid var(--border-color) !important;
+                border-radius: 12px !important;
+                margin-bottom: 10px !important;
+                padding: 12px !important;
+                background: white !important;
+                gap: 6px !important;
+            }
+
+            .nf-table td {
+                display: flex !important;
+                align-items: flex-start !important;
+                gap: 8px !important;
+                padding: 4px 0 !important;
+                border: none !important;
+                font-size: 0.9em !important;
+                width: 100% !important;
+            }
+
+            .nf-table td:first-child {
+                font-weight: 700 !important;
+                color: var(--primary-color) !important;
+                font-size: 1em !important;
+                border-bottom: 1px solid var(--border-color) !important;
+                padding-bottom: 8px !important;
+                margin-bottom: 4px !important;
+            }
+
+            .nf-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--text-muted);
+                font-size: 0.8em;
+                min-width: 80px;
+                flex-shrink: 0;
+                text-transform: uppercase;
+            }
+
+            .nf-table td:first-child::before {
+                display: none;
+            }
+
+            .nf-table td .btn-archive,
+            .nf-table td .btn-edit,
+            .nf-table td .btn-delete,
+            .nf-table td .btn-restore {
+                padding: 8px 12px !important;
+                font-size: 0.85em !important;
+            }
+
+            .nf-row-impacto,
+            .nf-row-spg {
+                border-left: 4px solid var(--primary-color) !important;
+            }
+
+            .nf-pendencia-select {
+                font-size: 0.85em !important;
+                padding: 6px 8px !important;
+                width: 100% !important;
+            }
+
+            .nf-search-container {
+                padding: 0 0 12px 0 !important;
+            }
+
+            .nf-tabs {
+                flex-wrap: nowrap !important;
+                gap: 8px !important;
+            }
+
+            .nf-tab-button {
+                padding: 10px 16px !important;
+                font-size: 0.85em !important;
+            }
         }
         
         /* Mobile muito pequeno (telas menores que 480px) */
@@ -2602,6 +2812,72 @@
         .btn-material-download {
             background: var(--success-gradient);
             color: white;
+        }
+
+        /* ===== OTIMIZAÇÕES DE PERFORMANCE MOBILE ===== */
+        @media (max-width: 768px) {
+            /* Desabilita animações custosas no mobile */
+            .checklist-row,
+            .material-row,
+            .relatorio-row,
+            .nf-table tr,
+            .igreja-item,
+            .hover-lift {
+                transition: none !important;
+                transform: none !important;
+                will-change: auto !important;
+            }
+
+            /* Desabilita hover transforms no touch */
+            .checklist-row:hover,
+            .material-row:hover,
+            .relatorio-row:hover,
+            .btn-primary:hover,
+            .btn-secondary:hover,
+            .btn-success:hover,
+            .btn-warning:hover,
+            .btn-danger:hover,
+            .btn-relatorio:hover,
+            .btn-material:hover,
+            .hover-lift:hover {
+                transform: none !important;
+                box-shadow: var(--shadow-sm) !important;
+            }
+
+            /* Scroll mais suave */
+            * {
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Reduz sombras no mobile para melhor performance */
+            .section,
+            .card,
+            .checklist-table,
+            .material-table,
+            .nf-empresa {
+                box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important;
+            }
+
+            /* Otimiza animações de entrada */
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            .checklist-table,
+            .material-content-container,
+            .relatorio-tabela {
+                animation: fadeInUp 0.2s ease !important;
+            }
+        }
+
+        /* Previne flash de layout em telas pequenas */
+        @media (max-width: 480px) {
+            .checklist-row,
+            .material-row,
+            .relatorio-row {
+                animation: none !important;
+            }
         }
     </style>
 
