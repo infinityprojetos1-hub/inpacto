@@ -392,29 +392,23 @@ async function salvarChecklist(event, igrejaIndex) {
 
     salvarDadosChecklist();
     
-    // Salva no Firebase Realtime Database se disponível
+    // NÃO salva assinaturas no Firebase para economizar espaço
+    // Apenas salva os dados do checklist (sem imagens)
     if (typeof window.firebaseDB !== 'undefined' && window.firebaseDB.disponivel()) {
         try {
             const checklistId = igreja.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             
-            // Salva assinatura como base64
-            let assinaturaPath = null;
-            if (assinatura) {
-                assinaturaPath = `arquivos/assinaturas/${checklistId}_${Date.now()}`;
-                await window.firebaseDB.salvarArquivo(assinaturaPath, assinatura);
-            }
-            
-            // Salva checklist no Realtime Database
+            // Salva checklist no Realtime Database (SEM assinatura)
             await window.firebaseDB.salvar(`checklists/${checklistId}`, {
                 igreja: igreja.nome,
                 igrejaId: igreja.id,
                 responsavel: responsavel,
                 respostas: respostas,
-                assinaturaPath: assinaturaPath,
+                // assinatura não é salva no Firebase
                 dataPreenchimento: new Date().toISOString()
             });
             
-            console.log('✅ Checklist salvo no Firebase Realtime Database!');
+            console.log('✅ Checklist salvo no Firebase Realtime Database (sem imagens)!');
         } catch (error) {
             console.error('❌ Erro ao salvar no Firebase:', error);
         }
@@ -533,34 +527,46 @@ async function downloadChecklistPDF(igrejaIndex) {
     // Nome do arquivo
     const nomeArquivo = `Checklist_${igreja.nome.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
     
-    // Salva no Firebase Realtime Database se disponível
-    if (typeof window.firebaseDB !== 'undefined' && window.firebaseDB.disponivel()) {
-        try {
-            // Converte PDF para base64
-            const pdfBase64 = pdf.output('dataurlstring');
-            const checklistId = igreja.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            const caminhoPDF = `arquivos/checklists_pdf/${checklistId}_${Date.now()}`;
+    // ===== SALVA LOCALMENTE NA PASTA IMPRIMIR =====
+    try {
+        // Verifica se tem pasta de trabalho configurada
+        if (window.pastaTrabalhoHandle) {
+            const igrejaId = igreja.id || igreja.nome.replace(/[^a-z0-9]/gi, '_');
             
-            // Salva PDF como base64 no Realtime Database
-            await window.firebaseDB.salvarArquivo(caminhoPDF, pdfBase64);
+            // Acessa a pasta da igreja
+            const pastaIgreja = await window.pastaTrabalhoHandle.getDirectoryHandle(igrejaId, { create: true });
             
-            // Atualiza o checklist com o caminho do PDF
-            await window.firebaseDB.atualizar(`checklists/${checklistId}`, {
-                pdfPath: caminhoPDF,
-                nomeArquivoPDF: nomeArquivo,
-                dataGeracaoPDF: new Date().toISOString()
-            });
+            // Acessa/Cria a pasta IMPRIMIR
+            const pastaImprimir = await pastaIgreja.getDirectoryHandle('IMPRIMIR', { create: true });
             
-            console.log('✅ PDF salvo no Firebase Realtime Database!');
-            alert('✅ PDF salvo na nuvem e baixado com sucesso!');
-        } catch (error) {
-            console.error('❌ Erro ao salvar PDF no Firebase:', error);
-            alert('⚠️ PDF baixado localmente. Erro ao salvar na nuvem.');
+            // Cria o arquivo PDF na pasta IMPRIMIR
+            const fileHandle = await pastaImprimir.getFileHandle(nomeArquivo, { create: true });
+            const writable = await fileHandle.createWritable();
+            
+            // Converte o PDF para Blob
+            const pdfBlob = pdf.output('blob');
+            
+            // Escreve o arquivo
+            await writable.write(pdfBlob);
+            await writable.close();
+            
+            console.log(`✅ Checklist salvo localmente em: ${igrejaId}/IMPRIMIR/${nomeArquivo}`);
+            alert(`✅ Checklist salvo com sucesso na pasta:\n${igrejaId}/IMPRIMIR/${nomeArquivo}`);
+        } else {
+            // Se não tiver pasta configurada, faz download normal
+            console.warn('⚠️ Pasta de trabalho não configurada. Fazendo download normal...');
+            pdf.save(nomeArquivo);
+            alert('⚠️ Pasta de trabalho não configurada.\nArquivo baixado no diretório de Downloads.\n\n💡 Configure a pasta de trabalho na aba "Gerar Orçamentos".');
         }
+    } catch (error) {
+        console.error('❌ Erro ao salvar checklist localmente:', error);
+        // Em caso de erro, faz download normal
+        pdf.save(nomeArquivo);
+        alert(`⚠️ Erro ao salvar na pasta: ${error.message}\nArquivo baixado no diretório de Downloads.`);
     }
     
-    // Download local
-    pdf.save(nomeArquivo);
+    // NÃO salva mais no Firebase (para economizar espaço)
+    console.log('ℹ️ Checklists não são salvos no Firebase para economizar espaço.');
 }
 
 // Expõe funções globalmente

@@ -1216,40 +1216,60 @@
         /* Responsividade */
         @media (max-width: 768px) {
             .container {
-                margin: 20px;
+                margin: 10px;
+                padding: 15px;
                 border-radius: 16px;
             }
 
             h1 {
-                font-size: 2em;
-                padding: 24px 16px 16px;
+                font-size: 1.6em;
+                padding: 20px 12px 12px;
+            }
+            
+            header p {
+                font-size: 0.9em !important;
             }
 
             .tabs {
-                padding: 0 12px;
+                padding: 0 8px;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                gap: 8px;
+                -webkit-overflow-scrolling: touch;
             }
 
             .tab-button {
-                padding: 12px 16px;
-                font-size: 0.85em;
+                padding: 10px 14px;
+                font-size: 0.8em;
+                white-space: nowrap;
+                min-width: auto;
+            }
+            
+            .tab-button i {
+                font-size: 0.9em;
             }
 
             .tab-content {
-                padding: 24px 16px;
+                padding: 20px 12px;
             }
 
             .section {
-                padding: 20px 16px;
+                padding: 16px 12px;
+            }
+            
+            .section h2 {
+                font-size: 1.3em;
             }
 
             .grid-2,
             .grid-3 {
                 grid-template-columns: 1fr;
+                gap: 12px;
             }
 
             .nf-botoes-container {
                 flex-direction: column;
-                gap: 12px;
+                gap: 10px;
             }
 
             .nf-botoes-container button {
@@ -1258,11 +1278,97 @@
 
             .download-buttons {
                 grid-template-columns: 1fr;
+                gap: 10px;
             }
 
-            .modal-content {
-                padding: 24px;
+            .modal-content,
+            .material-modal-content {
+                padding: 20px;
                 width: 95%;
+                max-width: 95%;
+                margin: 10px;
+            }
+            
+            .material-modal-header h3 {
+                font-size: 1.2em;
+            }
+            
+            /* Botão de configurações menor no mobile */
+            #btnConfiguracoes {
+                width: 40px;
+                height: 40px;
+                top: 15px;
+                right: 15px;
+                font-size: 16px;
+            }
+            
+            /* Tabelas responsivas */
+            .nf-table-wrapper,
+            .checklist-table,
+            table {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            table {
+                font-size: 0.85em;
+            }
+            
+            /* Formulários */
+            .form-group label {
+                font-size: 0.9em;
+            }
+            
+            input, select, textarea {
+                font-size: 14px;
+            }
+            
+            /* Botões */
+            .btn-primary, .btn-secondary, .btn-success, .btn-warning, .btn-danger {
+                padding: 10px 16px;
+                font-size: 0.9em;
+            }
+            
+            /* Lista de igrejas/materiais */
+            .igreja-item, .material-item {
+                padding: 12px;
+            }
+            
+            /* Checklist canvas */
+            .signature-canvas {
+                max-width: 100%;
+                height: 150px;
+            }
+            
+            /* Logo items */
+            .logo-item {
+                padding: 15px;
+            }
+        }
+        
+        /* Mobile muito pequeno */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.4em;
+            }
+            
+            .tabs {
+                padding: 0 5px;
+            }
+            
+            .tab-button {
+                font-size: 0.75em;
+                padding: 8px 10px;
+            }
+            
+            .section {
+                padding: 12px 8px;
+            }
+            
+            .modal-content,
+            .material-modal-content {
+                width: 98%;
+                padding: 15px;
             }
         }
 
@@ -2102,6 +2208,29 @@
 </head>
 
 <body>
+    <!-- Botão de Configurações (discreto, canto superior direito) -->
+    <button id="btnConfiguracoes" style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: var(--primary-gradient);
+        border: none;
+        color: white;
+        cursor: pointer;
+        box-shadow: var(--shadow-md);
+        transition: var(--transition);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    " title="Configurações">
+        <i class="fas fa-cog"></i>
+    </button>
+
     <div class="container">
         <header style="text-align: center; padding-bottom: 20px;">
             <h1>
@@ -2508,6 +2637,67 @@
         <div id="relatorio" class="tab-content" style="display: none;"></div>
     </div>
 
+    <!-- Modal de Configurações -->
+    <div id="modalConfiguracoes" class="material-modal" style="display: none;">
+        <div class="material-modal-content" style="animation: modalSlideIn 0.3s ease; max-width: 700px;">
+            <div class="material-modal-header">
+                <h3><i class="fas fa-cog" style="margin-right: 10px;"></i>Configurações</h3>
+                <button onclick="fecharModalConfiguracoes()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 24px; padding: 0; line-height: 1;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="material-modal-body">
+                <!-- Seção Firebase -->
+                <div style="margin-bottom: 30px; padding: 20px; background: var(--bg-light); border-radius: 12px;">
+                    <h4 style="color: var(--primary-color); margin-bottom: 16px;">
+                        <i class="fas fa-cloud"></i> Sincronização com Firebase
+                    </h4>
+                    <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 0.95em;">
+                        Migre seus dados locais para a nuvem e ative a sincronização em tempo real
+                    </p>
+                    <button class="btn-primary" onclick="abrirModalMigracao()">
+                        <i class="fas fa-cloud-upload-alt"></i> Migrar para Firebase
+                    </button>
+                </div>
+                
+                <!-- Seção Vinculação de Arquivos JSON -->
+                <div style="margin-bottom: 30px; padding: 20px; background: var(--bg-light); border-radius: 12px;">
+                    <h4 style="color: var(--primary-color); margin-bottom: 16px;">
+                        <i class="fas fa-folder-open"></i> Arquivos JSON
+                    </h4>
+                    <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 0.95em;">
+                        Vincule os arquivos JSON para sincronização bidirecional
+                    </p>
+                    <button class="btn-secondary" onclick="pedirPermissaoArquivos()">
+                        <i class="fas fa-link"></i> Vincular Arquivos JSON
+                    </button>
+                </div>
+                
+                <!-- Status da Sincronização -->
+                <div style="padding: 20px; background: var(--bg-light); border-radius: 12px;">
+                    <h4 style="color: var(--primary-color); margin-bottom: 16px;">
+                        <i class="fas fa-info-circle"></i> Status do Sistema
+                    </h4>
+                    <div style="display: grid; gap: 12px;">
+                        <div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 8px;">
+                            <span style="color: var(--text-color); font-weight: 500;">Firebase:</span>
+                            <span id="statusFirebase" style="color: var(--text-muted);">Verificando...</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 8px;">
+                            <span style="color: var(--text-color); font-weight: 500;">Arquivos JSON:</span>
+                            <span id="statusJSON" style="color: var(--text-muted);">Verificando...</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 8px;">
+                            <span style="color: var(--text-color); font-weight: 500;">Dados Locais:</span>
+                            <span id="statusLocal" style="color: var(--text-muted);">Verificando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Migração Firebase -->
     <div id="modalMigracaoFirebase" class="material-modal" style="display: none;">
         <div class="material-modal-content" style="animation: modalSlideIn 0.3s ease; max-width: 600px;">
@@ -2572,41 +2762,70 @@
     </div>
 
     <script>
-        // Verifica se precisa mostrar modal de migração
-        window.addEventListener('DOMContentLoaded', () => {
+        // ===== MODAL DE CONFIGURAÇÕES =====
+        
+        document.getElementById('btnConfiguracoes').addEventListener('click', function() {
+            document.getElementById('modalConfiguracoes').style.display = 'flex';
+            verificarStatusSistema();
+            
+            // Anima o botão
+            this.style.transform = 'rotate(180deg)';
             setTimeout(() => {
-                const jaFezMigracao = localStorage.getItem('firebaseMigrado');
-                
-                // Verifica se tem dados REAIS no localStorage (não só chaves vazias)
-                function temDadosReais() {
-                    try {
-                        const igrejas = JSON.parse(localStorage.getItem('igrejas') || '[]');
-                        const notasFiscais = JSON.parse(localStorage.getItem('notasFiscais') || '[]');
-                        const materiais = JSON.parse(localStorage.getItem('materiaisIgrejas') || '{}');
-                        const checklists = JSON.parse(localStorage.getItem('checklistsIgrejas') || '{}');
-                        
-                        // Tem dados se:
-                        // - Tem igrejas cadastradas
-                        // - OU tem notas fiscais
-                        // - OU tem materiais (objeto com chaves)
-                        // - OU tem checklists (objeto com chaves)
-                        return (
-                            (Array.isArray(igrejas) && igrejas.length > 0) ||
-                            (Array.isArray(notasFiscais) && notasFiscais.length > 0) ||
-                            (typeof materiais === 'object' && Object.keys(materiais).length > 0) ||
-                            (typeof checklists === 'object' && Object.keys(checklists).length > 0)
-                        );
-                    } catch (e) {
-                        console.error('Erro ao verificar dados locais:', e);
-                        return false;
-                    }
-                }
-                
-                if (!jaFezMigracao && temDadosReais() && typeof firebase !== 'undefined') {
-                    document.getElementById('modalMigracaoFirebase').style.display = 'flex';
-                }
-            }, 2000); // Espera 2 segundos para mostrar o modal
+                this.style.transform = 'rotate(0deg)';
+            }, 300);
         });
+        
+        function fecharModalConfiguracoes() {
+            document.getElementById('modalConfiguracoes').style.display = 'none';
+        }
+        
+        function abrirModalMigracao() {
+            fecharModalConfiguracoes();
+            document.getElementById('modalMigracaoFirebase').style.display = 'flex';
+        }
+        
+        function verificarStatusSistema() {
+            // Verifica Firebase
+            const statusFirebase = document.getElementById('statusFirebase');
+            if (typeof firebase !== 'undefined' && window.firebaseDB && window.firebaseDB.disponivel) {
+                statusFirebase.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> Conectado';
+                const migrado = localStorage.getItem('firebaseMigrado');
+                if (migrado) {
+                    statusFirebase.innerHTML += ' (Migrado)';
+                }
+            } else {
+                statusFirebase.innerHTML = '<i class="fas fa-times-circle" style="color: var(--danger-color);"></i> Desconectado';
+            }
+            
+            // Verifica JSON
+            const statusJSON = document.getElementById('statusJSON');
+            let arquivosVinculados = false;
+            try {
+                if (localStorage.getItem('notasFiscaisHandle') || localStorage.getItem('materiaisHandle')) {
+                    arquivosVinculados = true;
+                }
+            } catch (e) {}
+            
+            if (arquivosVinculados) {
+                statusJSON.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> Vinculados';
+            } else {
+                statusJSON.innerHTML = '<i class="fas fa-times-circle" style="color: var(--warning-color);"></i> Não vinculados';
+            }
+            
+            // Verifica dados locais
+            const statusLocal = document.getElementById('statusLocal');
+            try {
+                const igrejas = JSON.parse(localStorage.getItem('igrejas') || '[]');
+                const notasFiscais = JSON.parse(localStorage.getItem('notasFiscais') || '[]');
+                const total = igrejas.length + notasFiscais.length;
+                statusLocal.innerHTML = `<i class="fas fa-database" style="color: var(--primary-color);"></i> ${total} registros`;
+            } catch (e) {
+                statusLocal.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--danger-color);"></i> Erro ao ler';
+            }
+        }
+        
+        // REMOVIDO: Modal automático de migração
+        // Agora só aparece quando o usuário clicar no botão de configurações
         
         function fecharModalMigracao() {
             document.getElementById('modalMigracaoFirebase').style.display = 'none';

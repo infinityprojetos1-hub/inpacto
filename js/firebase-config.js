@@ -156,24 +156,22 @@ async function migrarLocalStorageParaFirebase() {
   const migracoes = [];
   
   try {
-    // 1. Migrar Igrejas (Orçamentos)
+    // 1. Migrar Igrejas (Orçamentos) - MIGRAÇÃO COMPLETA DE TODOS OS DADOS
     const igrejasLS = localStorage.getItem('igrejas');
     if (igrejasLS) {
       const igrejas = JSON.parse(igrejasLS);
-      console.log(`📊 Migrando ${igrejas.length} igrejas...`);
+      console.log(`📊 Migrando ${igrejas.length} igrejas com TODOS os dados...`);
       
       for (const igreja of igrejas) {
-        const igrejaId = igreja.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const igrejaId = (igreja.id || igreja.nome.replace(/[^a-z0-9]/gi, '_')).toLowerCase();
         await salvarNoDatabase(`igrejas/${igrejaId}`, {
-          nome: igreja.nome,
-          endereco: igreja.endereco || '',
-          telefone: igreja.telefone || '',
-          email: igreja.email || '',
-          dataCadastro: new Date().toISOString(),
+          // Migra TODOS os campos da igreja
+          ...igreja,
+          dataMigracao: new Date().toISOString(),
           origem: 'migracao_localstorage'
         });
       }
-      migracoes.push('✅ Igrejas migradas');
+      migracoes.push(`✅ ${igrejas.length} igrejas migradas (dados completos)`);
     }
     
     // 2. Migrar Notas Fiscais
@@ -204,30 +202,23 @@ async function migrarLocalStorageParaFirebase() {
       migracoes.push('✅ Material migrado');
     }
     
-    // 4. Migrar Checklists
+    // 4. Migrar Checklists (SEM imagens/assinaturas para economizar espaço)
     const checklistLS = localStorage.getItem('checklistsIgrejas');
     if (checklistLS) {
       const checklistData = JSON.parse(checklistLS);
-      console.log('📊 Migrando Checklists...');
+      console.log('📊 Migrando Checklists (sem imagens)...');
       
       if (checklistData.igrejas && checklistData.igrejas.length > 0) {
         for (const igreja of checklistData.igrejas) {
           if (igreja.checklist) {
-            const checklistId = igreja.nome.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            
-            // Salva assinatura como base64
-            let assinaturaPath = null;
-            if (igreja.checklist.assinatura) {
-              assinaturaPath = `arquivos/assinaturas/${checklistId}_${Date.now()}`;
-              await salvarArquivoBase64(assinaturaPath, igreja.checklist.assinatura);
-            }
+            const checklistId = (igreja.id || igreja.nome.replace(/[^a-z0-9]/gi, '_')).toLowerCase();
             
             await salvarNoDatabase(`checklists/${checklistId}`, {
               igreja: igreja.nome,
               igrejaId: igreja.id,
               responsavel: igreja.checklist.responsavel,
               respostas: igreja.checklist.respostas,
-              assinaturaPath: assinaturaPath,
+              // NÃO migra assinatura (economiza espaço)
               dataPreenchimento: igreja.checklist.dataPreenchimento,
               dataMigracao: new Date().toISOString()
             });
@@ -235,37 +226,38 @@ async function migrarLocalStorageParaFirebase() {
         }
       }
       
-      migracoes.push('✅ Checklists migrados');
+      migracoes.push('✅ Checklists migrados (sem imagens)');
     }
     
-    // 5. Migrar Logos
+    // 5. Migrar Logos (SEM salvar no Firebase para economizar espaço)
     const logosLS = localStorage.getItem('logosBase64');
     if (logosLS) {
-      const logos = JSON.parse(logosLS);
-      console.log('📊 Migrando Logos...');
-      
-      for (const [empresa, base64] of Object.entries(logos)) {
-        if (base64 && base64.startsWith('data:image')) {
-          const logoPath = `arquivos/logos/${empresa}`;
-          await salvarArquivoBase64(logoPath, base64);
-        }
-      }
-      
-      migracoes.push('✅ Logos migradas');
+      console.log('📊 Logos detectadas (mantidas apenas localmente para economizar espaço)');
+      migracoes.push('ℹ️ Logos mantidas apenas localmente');
     }
     
-    // 6. Migrar Relatórios Técnicos
+    // 6. Migrar Relatórios Técnicos (SEM imagens)
     const relatoriosLS = localStorage.getItem('relatoriosTecnicos');
     if (relatoriosLS) {
       const relatorios = JSON.parse(relatoriosLS);
-      console.log('📊 Migrando Relatórios Técnicos...');
+      console.log('📊 Migrando Relatórios Técnicos (sem imagens)...');
+      
+      // Migra apenas os dados textuais, não as imagens
+      const relatoriosSemImagens = {};
+      for (const [key, relatorio] of Object.entries(relatorios)) {
+        relatoriosSemImagens[key] = {
+          ...relatorio,
+          fotos: relatorio.fotos ? relatorio.fotos.length : 0 // Apenas conta as fotos
+          // Não migra as imagens em si
+        };
+      }
       
       await salvarNoDatabase('configuracoes/relatoriosTecnicos', {
-        dados: relatorios,
+        dados: relatoriosSemImagens,
         dataAtualizacao: new Date().toISOString()
       });
       
-      migracoes.push('✅ Relatórios Técnicos migrados');
+      migracoes.push('✅ Relatórios Técnicos migrados (sem imagens)');
     }
     
     console.log('✅ Migração concluída com sucesso!');
