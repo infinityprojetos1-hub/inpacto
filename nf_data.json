@@ -307,7 +307,7 @@
       "id": "94311",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/94311/edit",
       "codigo": "061276",
-      "pendencia": "NFE"
+      "pendencia": "PAGAMENTO"
     },
     {
       "nome": "NORMILIA II",
@@ -351,7 +351,7 @@
       "id": "94313",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/94313/edit",
       "codigo": "061127",
-      "pendencia": "NFE"
+      "pendencia": "PAGAMENTO"
     },
     {
       "nome": "BARCELONA I",
@@ -524,7 +524,7 @@
       "id": "92527",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido-geral/92527",
       "codigo": "060294",
-      "pendencia": "NFE"
+      "pendencia": "PAGAMENTO"
     },
     {
       "nome": "ANFITEATRO TERRA VERMELHA",
@@ -537,16 +537,16 @@
         "assinatura_rodrigo": false,
         "assinatura_andre": false,
         "assinatura_fernando": false,
-        "doc_pedido": false,
-        "doc_assinatura": false,
-        "doc_relatorio": false,
-        "doc_nf": false,
+        "doc_pedido": true,
+        "doc_assinatura": true,
+        "doc_relatorio": true,
+        "doc_nf": true,
         "execucao_feito": false
       },
       "id": "94314",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/94314/edit",
       "codigo": "060847",
-      "pendencia": "NFE"
+      "pendencia": "PAGAMENTO"
     },
     {
       "nome": "TROPICAL III",
@@ -568,7 +568,7 @@
       "id": "94525",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/94525/edit",
       "codigo": "061090",
-      "pendencia": "NFE"
+      "pendencia": "PAGAMENTO"
     },
     {
       "nome": "HÉLIO FERRAZ II",
@@ -611,7 +611,7 @@
       "id": "93288",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/93288/edit",
       "codigo": "060211",
-      "pendencia": "LOGIX"
+      "pendencia": "NFE"
     },
     {
       "nome": "BARCELONA I",
@@ -633,7 +633,7 @@
       "id": "94476",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/94476/edit",
       "codigo": "060211",
-      "pendencia": "LOGIX"
+      "pendencia": "NFE"
     },
     {
       "nome": "BARCELONA I",
@@ -655,7 +655,7 @@
       "id": "94137",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/94137/edit",
       "codigo": "060211",
-      "pendencia": "LOGIX"
+      "pendencia": "NFE"
     },
     {
       "nome": "CASCATA",
@@ -677,7 +677,7 @@
       "id": "94637",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/94637/edit",
       "codigo": "060892",
-      "pendencia": "LOGIX"
+      "pendencia": "NFE"
     },
     {
       "nome": "MATA DA PRAIA",
@@ -699,7 +699,29 @@
       "id": "93853",
       "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/93853/edit",
       "codigo": "060173",
-      "pendencia": "LOGIX"
+      "pendencia": "NFE"
+    },
+    {
+      "nome": "MÃE-BÁ",
+      "empresa": "Impacto Soluções",
+      "valor": "R$ 4.187,62",
+      "data": "2026-02-10T17:29:16.650Z",
+      "checklist": {
+        "assinatura_sandro": false,
+        "assinatura_filippi": false,
+        "assinatura_rodrigo": false,
+        "assinatura_andre": false,
+        "assinatura_fernando": false,
+        "doc_pedido": false,
+        "doc_assinatura": false,
+        "doc_relatorio": false,
+        "doc_nf": false,
+        "execucao_feito": false
+      },
+      "id": "94456",
+      "link": "https://portal.presbiterio.org.br/engenharia/pedido/6/94456/edit",
+      "codigo": "060456",
+      "pendencia": "ASSINATURA"
     }
   ],
   "arquivadas": [

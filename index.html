@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gerador de Orçamentos - Inpacto</title>
     
     <!-- PWA Meta Tags -->
@@ -1215,91 +1215,150 @@
 
         /* Responsividade */
         @media (max-width: 768px) {
+            body {
+                padding: 0;
+                margin: 0;
+            }
+            
             .container {
-                margin: 10px;
-                padding: 15px;
-                border-radius: 16px;
+                margin: 0;
+                padding: 0;
+                border-radius: 0;
+                min-height: 100vh;
             }
 
             h1 {
-                font-size: 1.6em;
-                padding: 20px 12px 12px;
+                font-size: 1.3em !important;
+                padding: 15px 50px 10px 15px !important;
+                margin: 0 !important;
+            }
+            
+            header {
+                padding-bottom: 10px !important;
             }
             
             header p {
-                font-size: 0.9em !important;
+                font-size: 0.75em !important;
+                padding: 0 15px !important;
+                margin: 5px 0 0 0 !important;
             }
 
             .tabs {
-                padding: 0 8px;
+                padding: 0 5px !important;
                 overflow-x: auto;
+                overflow-y: hidden;
                 flex-wrap: nowrap;
-                gap: 8px;
+                gap: 4px !important;
                 -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                margin: 0 !important;
+            }
+            
+            .tabs::-webkit-scrollbar {
+                display: none;
             }
 
             .tab-button {
-                padding: 10px 14px;
-                font-size: 0.8em;
+                padding: 8px 12px !important;
+                font-size: 0.7em !important;
                 white-space: nowrap;
                 min-width: auto;
+                flex-shrink: 0;
             }
             
             .tab-button i {
                 font-size: 0.9em;
+                margin-right: 4px !important;
             }
 
             .tab-content {
-                padding: 20px 12px;
+                padding: 15px 10px !important;
             }
 
             .section {
-                padding: 16px 12px;
+                padding: 15px 10px !important;
+                margin-bottom: 15px !important;
             }
             
             .section h2 {
-                font-size: 1.3em;
+                font-size: 1.1em !important;
+                margin-bottom: 8px !important;
+            }
+            
+            .section p {
+                font-size: 0.85em !important;
             }
 
             .grid-2,
             .grid-3 {
-                grid-template-columns: 1fr;
-                gap: 12px;
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            
+            .form-group {
+                margin-bottom: 12px !important;
+            }
+            
+            .form-group label {
+                font-size: 0.85em !important;
+                margin-bottom: 5px !important;
+            }
+            
+            input, select, textarea {
+                font-size: 14px !important;
+                padding: 10px !important;
             }
 
             .nf-botoes-container {
                 flex-direction: column;
-                gap: 10px;
+                gap: 8px !important;
             }
 
             .nf-botoes-container button {
-                width: 100%;
+                width: 100% !important;
+                padding: 10px !important;
+                font-size: 0.85em !important;
             }
 
             .download-buttons {
-                grid-template-columns: 1fr;
-                gap: 10px;
+                grid-template-columns: 1fr !important;
+                gap: 8px !important;
             }
 
             .modal-content,
             .material-modal-content {
-                padding: 20px;
-                width: 95%;
-                max-width: 95%;
-                margin: 10px;
+                padding: 15px !important;
+                width: 95% !important;
+                max-width: 95% !important;
+                margin: 10px !important;
+                max-height: 90vh !important;
+                overflow-y: auto;
             }
             
             .material-modal-header h3 {
-                font-size: 1.2em;
+                font-size: 1em !important;
+            }
+            
+            .material-modal-body {
+                padding: 15px 10px !important;
+            }
+            
+            .material-modal-buttons {
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            
+            .material-modal-buttons button {
+                width: 100% !important;
             }
             
             /* Botão de configurações menor no mobile */
             #btnConfiguracoes {
-                width: 40px;
-                height: 40px;
-                top: 15px;
-                right: 15px;
-                font-size: 16px;
+                width: 38px !important;
+                height: 38px !important;
+                top: 12px !important;
+                right: 12px !important;
+                font-size: 14px !important;
             }
             
             /* Tabelas responsivas */
@@ -1308,67 +1367,222 @@
             table {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
+                display: block;
             }
             
             table {
-                font-size: 0.85em;
+                font-size: 0.75em !important;
+                min-width: 600px;
             }
             
-            /* Formulários */
-            .form-group label {
-                font-size: 0.9em;
-            }
-            
-            input, select, textarea {
-                font-size: 14px;
+            table th,
+            table td {
+                padding: 8px 6px !important;
             }
             
             /* Botões */
             .btn-primary, .btn-secondary, .btn-success, .btn-warning, .btn-danger {
-                padding: 10px 16px;
-                font-size: 0.9em;
+                padding: 10px 12px !important;
+                font-size: 0.85em !important;
             }
             
-            /* Lista de igrejas/materiais */
-            .igreja-item, .material-item {
-                padding: 12px;
+            .btn-icon {
+                padding: 8px !important;
+                font-size: 0.85em !important;
+            }
+            
+            /* Lista de igrejas */
+            .igreja-item {
+                padding: 10px !important;
+                margin-bottom: 8px !important;
+            }
+            
+            .igreja-item h3 {
+                font-size: 1em !important;
+            }
+            
+            .igreja-item p {
+                font-size: 0.8em !important;
+            }
+            
+            /* Material */
+            .material-item {
+                padding: 10px !important;
+            }
+            
+            .material-item h4 {
+                font-size: 0.9em !important;
+            }
+            
+            /* Checklist */
+            .checklist-header,
+            .checklist-row {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+                padding: 10px !important;
+            }
+            
+            .checklist-col-igreja {
+                margin-bottom: 5px;
+            }
+            
+            .checklist-col-acoes {
+                display: flex;
+                flex-direction: column;
+                gap: 8px !important;
+            }
+            
+            .checklist-col-acoes button {
+                width: 100% !important;
+            }
+            
+            .checklist-question {
+                padding: 10px !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .checklist-question-text {
+                font-size: 0.85em !important;
+                margin-bottom: 8px !important;
+            }
+            
+            .checklist-options {
+                flex-direction: row !important;
+                justify-content: space-between !important;
             }
             
             /* Checklist canvas */
+            .signature-canvas-wrapper {
+                padding: 10px !important;
+            }
+            
             .signature-canvas {
-                max-width: 100%;
-                height: 150px;
+                max-width: 100% !important;
+                width: 100% !important;
+                height: 150px !important;
             }
             
             /* Logo items */
             .logo-item {
-                padding: 15px;
+                padding: 12px !important;
+            }
+            
+            .logo-item h3 {
+                font-size: 0.9em !important;
+            }
+            
+            /* Notas Fiscais */
+            .nf-empresa {
+                padding: 12px !important;
+            }
+            
+            .nf-empresa h3 {
+                font-size: 1em !important;
+            }
+            
+            .nf-igreja-item {
+                padding: 10px !important;
+            }
+            
+            /* Relatório Técnico */
+            .relatorio-container {
+                padding: 10px !important;
+            }
+            
+            .relatorio-section {
+                padding: 12px !important;
+            }
+            
+            .relatorio-section h3 {
+                font-size: 1em !important;
+            }
+            
+            /* Empty state */
+            .empty-state {
+                padding: 30px 15px !important;
+            }
+            
+            .empty-state i {
+                font-size: 2.5em !important;
+            }
+            
+            .empty-state h3 {
+                font-size: 1em !important;
+            }
+            
+            .empty-state p {
+                font-size: 0.85em !important;
             }
         }
         
-        /* Mobile muito pequeno */
+        /* Mobile muito pequeno (telas menores que 480px) */
         @media (max-width: 480px) {
             h1 {
-                font-size: 1.4em;
+                font-size: 1.1em !important;
             }
             
             .tabs {
-                padding: 0 5px;
+                padding: 0 3px !important;
+                gap: 3px !important;
             }
             
             .tab-button {
-                font-size: 0.75em;
-                padding: 8px 10px;
+                font-size: 0.65em !important;
+                padding: 6px 8px !important;
+            }
+            
+            .tab-button i {
+                display: none; /* Remove ícones em telas muito pequenas */
             }
             
             .section {
-                padding: 12px 8px;
+                padding: 12px 8px !important;
             }
             
             .modal-content,
             .material-modal-content {
-                width: 98%;
-                padding: 15px;
+                width: 98% !important;
+                padding: 12px !important;
+                margin: 5px !important;
+            }
+            
+            .material-modal-header h3 {
+                font-size: 0.9em !important;
+            }
+            
+            #btnConfiguracoes {
+                width: 35px !important;
+                height: 35px !important;
+                font-size: 13px !important;
+            }
+        }
+        
+        /* Landscape mobile */
+        @media (max-width: 900px) and (orientation: landscape) {
+            h1 {
+                font-size: 1em !important;
+                padding: 10px 50px 8px 10px !important;
+            }
+            
+            header p {
+                display: none; /* Remove subtítulo em landscape */
+            }
+            
+            .tabs {
+                padding: 5px !important;
+            }
+            
+            .tab-button {
+                padding: 6px 10px !important;
+                font-size: 0.75em !important;
+            }
+            
+            .tab-content {
+                padding: 10px !important;
+            }
+            
+            .section {
+                padding: 10px !important;
             }
         }
 
