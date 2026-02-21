@@ -444,25 +444,6 @@ function abrirModalMaterial(tipo, index) {
             </div>
 
             <div class="material-modal-body">
-                <!-- Campo de número do pedido -->
-                <div style="margin-bottom: 16px;">
-                    <label style="font-size:0.85em; font-weight:600; color:var(--text-muted); display:block; margin-bottom:6px;">
-                        <i class="fas fa-hashtag" style="margin-right:5px;"></i>Número do Pedido
-                    </label>
-                    <input
-                        type="text"
-                        id="numeroPedido_${tipo}_${index}"
-                        placeholder="Ex: 4521"
-                        value="${igreja.numeroPedido || ''}"
-                        oninput="salvarNumeroPedido('${tipo}', ${index}, this.value)"
-                        style="width:100%; padding:9px 12px; border:2px solid var(--border-color);
-                               border-radius:8px; font-size:0.95em; font-family:inherit;
-                               box-sizing:border-box; transition:border-color 0.2s;"
-                        onfocus="this.style.borderColor='var(--primary-color)'"
-                        onblur="this.style.borderColor='var(--border-color)'"
-                    >
-                </div>
-
                 <div class="material-actions">
                     <button class="btn-success" onclick="abrirModalAdicionarItem('${tipo}', ${index})">
                         <i class="fas fa-plus"></i> Adicionar Item
@@ -668,14 +649,6 @@ function removerMaterial(tipo, igrejaIndex, materialIndex) {
 }
 
 // Compartilha a lista de materiais via WhatsApp
-// Salva o número do pedido no objeto da igreja em tempo real
-function salvarNumeroPedido(tipo, igrejaIndex, valor) {
-    const igreja = materialData[tipo][igrejaIndex];
-    if (!igreja) return;
-    igreja.numeroPedido = valor.trim();
-    salvarDadosMaterial();
-}
-
 function compartilharWhatsApp(tipo, igrejaIndex) {
     const igreja = materialData[tipo][igrejaIndex];
 
@@ -684,8 +657,8 @@ function compartilharWhatsApp(tipo, igrejaIndex) {
         return;
     }
 
-    // Cabeçalho: nome da igreja - numero do pedido
-    const numeroPedido = (igreja.numeroPedido || '').trim();
+    // Cabeçalho: nome da igreja - id (número do pedido automático)
+    const numeroPedido = (igreja.id || '').toString().trim();
     let mensagem = igreja.nome;
     if (numeroPedido) mensagem += ` - ${numeroPedido}`;
     mensagem += '\n\n';

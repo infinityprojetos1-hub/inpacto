@@ -4742,7 +4742,7 @@
             return;
         }
 
-        const numeroPedido = (igreja.numeroPedido || '').trim();
+        const numeroPedido = (igreja.id || '').toString().trim();
         let msg = igreja.nome;
         if (numeroPedido) msg += ' - ' + numeroPedido;
         msg += '\n\n';
