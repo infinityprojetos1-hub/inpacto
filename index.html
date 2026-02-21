@@ -4602,47 +4602,127 @@
         });
     </script>
 
+    <!-- Banner de instalação PWA -->
+    <div id="pwaInstallBanner" style="
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 14px 20px;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(102,126,234,0.45);
+        z-index: 9999;
+        max-width: 360px;
+        width: calc(100% - 40px);
+        display: none;
+        align-items: center;
+        gap: 14px;
+        font-family: inherit;">
+        <div style="flex:1">
+            <div style="font-weight:700; font-size:0.95em;">Instalar Inpacto</div>
+            <div style="font-size:0.8em; opacity:0.88; margin-top:2px;">Adicione à tela inicial para acesso rápido</div>
+        </div>
+        <button id="pwaInstallBtn" style="
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-weight: 700;
+            font-size: 0.85em;
+            cursor: pointer;
+            white-space: nowrap;">
+            Instalar
+        </button>
+        <button id="pwaInstallClose" style="
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 4px;
+            opacity: 0.7;
+            line-height: 1;">×</button>
+    </div>
+
     <!-- Service Worker Registration -->
     <script>
+        // ── Service Worker ────────────────────────────────────────────────────
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/inpacto/sw.js')
                     .then(registration => {
-                        console.log('✅ Service Worker registrado com sucesso!', registration.scope);
-                        
-                        // Verifica atualizações
+                        console.log('✅ SW registrado:', registration.scope);
+
+                        // Quando uma nova versão é encontrada, aplica automaticamente
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // Nova versão disponível
-                                    if (confirm('Nova versão disponível! Recarregar para atualizar?')) {
-                                        window.location.reload();
+                                if (newWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        // Força ativação imediata sem precisar fechar abas
+                                        newWorker.postMessage('SKIP_WAITING');
+                                        console.log('🔄 Nova versão do SW aplicada automaticamente');
                                     }
                                 }
                             });
                         });
                     })
-                    .catch(error => {
-                        console.warn('⚠️ Erro ao registrar Service Worker:', error);
-                    });
+                    .catch(err => console.warn('⚠️ Erro ao registrar SW:', err));
+
+                // Quando o SW muda (nova versão ativa), recarrega a página
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        console.log('🔄 SW atualizado, recarregando página...');
+                        window.location.reload();
+                    }
+                });
             });
         }
 
-        // Detecta quando o app está instalado
-        let deferredPrompt;
-        
+        // ── Prompt de instalação PWA ──────────────────────────────────────────
+        let _deferredInstallPrompt = null;
+        const _pwaJaFechou = localStorage.getItem('pwaInstallDismissed');
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            deferredPrompt = e;
-            
-            // Mostra banner de instalação customizado (opcional)
-            console.log('📱 PWA pode ser instalado!');
+            _deferredInstallPrompt = e;
+            console.log('📱 PWA pode ser instalado');
+
+            // Mostra banner apenas se nunca foi fechado
+            if (!_pwaJaFechou) {
+                setTimeout(() => {
+                    const banner = document.getElementById('pwaInstallBanner');
+                    if (banner) banner.style.display = 'flex';
+                }, 3000);
+            }
         });
-        
+
+        document.getElementById('pwaInstallBtn').addEventListener('click', () => {
+            if (!_deferredInstallPrompt) return;
+            _deferredInstallPrompt.prompt();
+            _deferredInstallPrompt.userChoice.then(choice => {
+                console.log('Escolha PWA:', choice.outcome);
+                _deferredInstallPrompt = null;
+                document.getElementById('pwaInstallBanner').style.display = 'none';
+            });
+        });
+
+        document.getElementById('pwaInstallClose').addEventListener('click', () => {
+            document.getElementById('pwaInstallBanner').style.display = 'none';
+            localStorage.setItem('pwaInstallDismissed', '1');
+        });
+
         window.addEventListener('appinstalled', () => {
-            console.log('🎉 PWA foi instalado!');
-            deferredPrompt = null;
+            console.log('PWA instalado com sucesso!');
+            _deferredInstallPrompt = null;
+            const banner = document.getElementById('pwaInstallBanner');
+            if (banner) banner.style.display = 'none';
         });
     </script>
 </body>
