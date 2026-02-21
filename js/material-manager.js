@@ -697,18 +697,97 @@ function compartilharWhatsApp(tipo, igrejaIndex) {
 
     mensagem = mensagem.trim();
     const encoded = encodeURIComponent(mensagem);
-
-    const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry/i.test(navigator.userAgent);
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
-        // No celular: tenta abrir o app nativo via deep link
-        const link = document.createElement('a');
-        link.href = `whatsapp://send?text=${encoded}`;
-        link.click();
-    } else {
-        // No PC: abre o WhatsApp Web diretamente
-        window.open(`https://web.whatsapp.com/send?text=${encoded}`, '_blank');
+        // Celular: navigator.share() nativo (melhor UX) ou deep link
+        if (navigator.share) {
+            navigator.share({ text: mensagem }).catch(() => {
+                window.location.href = `whatsapp://send?text=${encoded}`;
+            });
+        } else {
+            window.location.href = `whatsapp://send?text=${encoded}`;
+        }
+        return;
     }
+
+    // PC: mostra modal com mensagem + link clicável (não pode ser bloqueado por popup)
+    _mostrarModalCompartilhamentoMaterial(mensagem, encoded);
+}
+
+function _mostrarModalCompartilhamentoMaterial(mensagem, encoded) {
+    const old = document.getElementById('matShareOverlay');
+    if (old) old.remove();
+
+    const waUrl = `https://web.whatsapp.com/send?text=${encoded}`;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'matShareOverlay';
+    overlay.style.cssText = [
+        'position:fixed', 'inset:0', 'z-index:99999',
+        'background:rgba(0,0,0,0.55)',
+        'display:flex', 'align-items:center', 'justify-content:center', 'padding:16px'
+    ].join(';');
+
+    overlay.innerHTML = `
+        <div style="background:#fff;border-radius:18px;padding:28px;max-width:430px;
+                    width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.3);animation:modalSlideIn 0.25s ease;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <h3 style="margin:0;font-size:1.05em;display:flex;align-items:center;gap:9px;">
+                    <i class="fab fa-whatsapp" style="color:#25D366;font-size:1.4em;"></i>
+                    Compartilhar no WhatsApp
+                </h3>
+                <button onclick="document.getElementById('matShareOverlay').remove()"
+                        style="background:none;border:none;font-size:1.5em;cursor:pointer;
+                               color:#999;line-height:1;padding:4px;">×</button>
+            </div>
+
+            <p style="font-size:0.82em;color:#666;margin:0 0 10px;">Mensagem que será enviada:</p>
+            <textarea id="matShareTexto" readonly
+                style="width:100%;height:130px;border:2px solid #e0e0e0;border-radius:10px;
+                       padding:10px 12px;font-size:0.9em;font-family:inherit;resize:none;
+                       box-sizing:border-box;color:#333;background:#fafafa;">${mensagem}</textarea>
+
+            <div style="display:flex;gap:10px;margin-top:16px;">
+                <button id="matShareCopiar"
+                        style="flex:1;padding:12px;border:2px solid #e0e0e0;border-radius:10px;
+                               background:#fff;cursor:pointer;font-weight:600;font-size:0.88em;
+                               transition:all 0.2s;">
+                    <i class="fas fa-copy"></i> Copiar
+                </button>
+                <a href="${waUrl}" target="_blank" rel="noopener noreferrer"
+                   id="matShareLink"
+                   style="flex:2;padding:12px;background:#25D366;color:#fff;border-radius:10px;
+                          text-decoration:none;text-align:center;font-weight:700;font-size:0.92em;
+                          display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <i class="fab fa-whatsapp"></i> Abrir WhatsApp Web
+                </a>
+            </div>
+        </div>
+    `;
+
+    // Botão copiar
+    overlay.querySelector('#matShareCopiar').addEventListener('click', function() {
+        const txt = document.getElementById('matShareTexto').value;
+        navigator.clipboard.writeText(txt).then(() => {
+            this.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+            this.style.borderColor = '#4caf50';
+            this.style.color = '#4caf50';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-copy"></i> Copiar';
+                this.style.borderColor = '#e0e0e0';
+                this.style.color = '';
+            }, 2000);
+        }).catch(() => {
+            document.getElementById('matShareTexto').select();
+            document.execCommand('copy');
+        });
+    });
+
+    // Fecha ao clicar fora
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+    document.body.appendChild(overlay);
 }
 
 // ===== GERENCIAMENTO DE ARQUIVO JSON =====
