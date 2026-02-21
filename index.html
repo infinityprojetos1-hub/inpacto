@@ -4652,36 +4652,37 @@
     <script>
         // ── Service Worker ────────────────────────────────────────────────────
         if ('serviceWorker' in navigator) {
+            // controllerchange DEVE ser registrado ANTES do load event
+            // para não perder o evento caso o SW ative muito rápido
+            let _swRefreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!_swRefreshing) {
+                    _swRefreshing = true;
+                    console.log('🔄 SW atualizado, recarregando...');
+                    window.location.reload();
+                }
+            });
+
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/inpacto/sw.js')
                     .then(registration => {
                         console.log('✅ SW registrado:', registration.scope);
 
-                        // Quando uma nova versão é encontrada, aplica automaticamente
+                        // Se já há um SW aguardando, força ativação imediata
+                        if (registration.waiting) {
+                            registration.waiting.postMessage('SKIP_WAITING');
+                        }
+
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed') {
-                                    if (navigator.serviceWorker.controller) {
-                                        // Força ativação imediata sem precisar fechar abas
-                                        newWorker.postMessage('SKIP_WAITING');
-                                        console.log('🔄 Nova versão do SW aplicada automaticamente');
-                                    }
+                                    newWorker.postMessage('SKIP_WAITING');
                                 }
                             });
                         });
                     })
                     .catch(err => console.warn('⚠️ Erro ao registrar SW:', err));
-
-                // Quando o SW muda (nova versão ativa), recarrega a página
-                let refreshing = false;
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (!refreshing) {
-                        refreshing = true;
-                        console.log('🔄 SW atualizado, recarregando página...');
-                        window.location.reload();
-                    }
-                });
             });
         }
 
@@ -4724,6 +4725,81 @@
             const banner = document.getElementById('pwaInstallBanner');
             if (banner) banner.style.display = 'none';
         });
+    </script>
+
+    <!-- ═══ OVERRIDE COMPARTILHAR WHATSAPP (MATERIAL) ═══════════════════════
+         Este bloco sobrescreve a função do material-manager.js (mesmo que
+         esteja em cache antigo) porque scripts inline rodam por último.
+         Garante que o compartilhar funcione sem popup blocker.
+    ════════════════════════════════════════════════════════════════════════ -->
+    <script>
+    window.compartilharWhatsAppMaterial = function(tipo, igrejaIndex) {
+        if (typeof materialData === 'undefined') return;
+        const igreja = materialData[tipo] && materialData[tipo][igrejaIndex];
+        if (!igreja) return;
+        if (!igreja.materiais || igreja.materiais.length === 0) {
+            alert('Adicione pelo menos um material antes de compartilhar.');
+            return;
+        }
+
+        const numeroPedido = (igreja.numeroPedido || '').trim();
+        let msg = igreja.nome;
+        if (numeroPedido) msg += ' - ' + numeroPedido;
+        msg += '\n\n';
+        igreja.materiais.forEach(function(m) { msg += m.item + ' - ' + m.quantidade + '.\n'; });
+        msg = msg.trim();
+
+        const enc = encodeURIComponent(msg);
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            if (navigator.share) {
+                navigator.share({ text: msg }).catch(function() {
+                    window.location.href = 'whatsapp://send?text=' + enc;
+                });
+            } else {
+                window.location.href = 'whatsapp://send?text=' + enc;
+            }
+            return;
+        }
+
+        // PC: modal com link clicável (imune a popup blocker)
+        var old = document.getElementById('_matShareOv');
+        if (old) old.remove();
+        var waUrl = 'https://web.whatsapp.com/send?text=' + enc;
+        var ov = document.createElement('div');
+        ov.id = '_matShareOv';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+        ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:28px;max-width:430px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.3)">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+            + '<h3 style="margin:0;font-size:1.05em;display:flex;align-items:center;gap:9px"><span style="color:#25D366;font-size:1.3em">●</span> Compartilhar no WhatsApp</h3>'
+            + '<button id="_matShareClose" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:#999">×</button>'
+            + '</div>'
+            + '<p style="font-size:.82em;color:#666;margin:0 0 8px">Mensagem:</p>'
+            + '<textarea id="_matShareTxt" readonly style="width:100%;height:120px;border:2px solid #e0e0e0;border-radius:10px;padding:10px;font-size:.9em;font-family:inherit;resize:none;box-sizing:border-box;color:#333;background:#fafafa">' + msg.replace(/</g,'&lt;') + '</textarea>'
+            + '<div style="display:flex;gap:10px;margin-top:14px">'
+            + '<button id="_matShareCopy" style="flex:1;padding:11px;border:2px solid #ddd;border-radius:10px;background:#fff;cursor:pointer;font-weight:600;font-size:.88em">Copiar</button>'
+            + '<a href="' + waUrl + '" target="_blank" rel="noopener noreferrer" style="flex:2;padding:11px;background:#25D366;color:#fff;border-radius:10px;text-decoration:none;text-align:center;font-weight:700;font-size:.92em;display:flex;align-items:center;justify-content:center;gap:8px">Abrir WhatsApp Web</a>'
+            + '</div></div>';
+        ov.querySelector('#_matShareClose').onclick = function(){ ov.remove(); };
+        ov.querySelector('#_matShareCopy').onclick = function() {
+            var txt = document.getElementById('_matShareTxt').value;
+            navigator.clipboard.writeText(txt).then(function(){
+                ov.querySelector('#_matShareCopy').textContent = 'Copiado!';
+                setTimeout(function(){ ov.querySelector('#_matShareCopy').textContent = 'Copiar'; }, 2000);
+            }).catch(function(){ document.getElementById('_matShareTxt').select(); document.execCommand('copy'); });
+        };
+        ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
+        document.body.appendChild(ov);
+    };
+
+    // Sobrescreve a função antiga quando scripts terminarem de carregar
+    window.addEventListener('load', function() {
+        if (typeof compartilharWhatsApp !== 'undefined') {
+            compartilharWhatsApp = window.compartilharWhatsAppMaterial;
+        }
+        window.compartilharWhatsApp = window.compartilharWhatsAppMaterial;
+    });
     </script>
 </body>
 
