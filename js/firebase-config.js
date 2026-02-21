@@ -23,12 +23,28 @@ try {
   
   console.log('🔥 Firebase Realtime Database inicializado com sucesso!');
   
-  // Testa a conexão
+  // Monitora conexão e atualiza badge visual
   database.ref('.info/connected').on('value', (snapshot) => {
-    if (snapshot.val() === true) {
-      console.log('✅ Conectado ao Realtime Database!');
+    const conectado = snapshot.val() === true;
+    console.log(conectado ? '✅ Conectado ao Realtime Database!' : '⚠️ Desconectado do Realtime Database');
+
+    const badge = document.getElementById('syncStatusBadge');
+    const dot   = document.getElementById('syncDot');
+    const label = document.getElementById('syncLabel');
+    if (!badge) return;
+
+    if (conectado) {
+      badge.style.background = '#e8f5e9';
+      badge.style.color      = '#2e7d32';
+      badge.style.border     = '1px solid #a5d6a7';
+      dot.style.background   = '#4caf50';
+      label.textContent      = 'Sincronizado com a nuvem';
     } else {
-      console.log('⚠️ Desconectado do Realtime Database');
+      badge.style.background = '#fff3e0';
+      badge.style.color      = '#e65100';
+      badge.style.border     = '1px solid #ffcc80';
+      dot.style.background   = '#ff9800';
+      label.textContent      = 'Sem conexão – dados salvos localmente';
     }
   });
     
@@ -280,61 +296,141 @@ async function migrarLocalStorageParaFirebase() {
 
 // ===== SINCRONIZAÇÃO BIDIRECIONAL =====
 
+// Flag global para evitar loop: quando recebendo do Firebase, não salva de volta
+window._fbReceivendo = false;
+
 // Listener para sincronizar dados em tempo real
 function iniciarSincronizacaoTempoReal() {
   if (!firebaseDisponivel || !database) {
     console.warn('⚠️ Firebase não disponível para sincronização');
     return;
   }
-  
+
   console.log('🔄 Iniciando sincronização em tempo real...');
-  
-  // Escuta mudanças nas Notas Fiscais
-  database.ref('configuracoes/notasFiscais/dados').on('value', (snapshot) => {
+
+  // ── Notas Fiscais ──────────────────────────────────────────────
+  database.ref('dados/notasFiscais').on('value', (snapshot) => {
     const dados = snapshot.val();
-    if (dados) {
-      localStorage.setItem('notasFiscais', JSON.stringify(dados));
-      console.log('🔄 Notas Fiscais sincronizadas');
-      window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'notasFiscais' } }));
+    if (!dados) return;
+
+    window._fbReceivendo = true;
+    try {
+      // Se os dados do Firebase forem mais recentes que o local, usa o Firebase
+      const localStr = localStorage.getItem('notasFiscais');
+      const local = localStr ? JSON.parse(localStr) : null;
+      const fbTs = dados._ts || 0;
+      const localTs = local ? (local._ts || 0) : 0;
+
+      if (fbTs >= localTs) {
+        localStorage.setItem('notasFiscais', JSON.stringify(dados));
+        // Atualiza variável global e UI
+        if (typeof nfData !== 'undefined') {
+          nfData.igrejas   = Array.isArray(dados.igrejas)    ? dados.igrejas    : [];
+          nfData.arquivadas = Array.isArray(dados.arquivadas) ? dados.arquivadas : [];
+        }
+        if (typeof atualizarListaNF === 'function') atualizarListaNF();
+        console.log('🔄 Notas Fiscais atualizadas do Firebase');
+      }
+    } finally {
+      window._fbReceivendo = false;
     }
+    window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'notasFiscais' } }));
   });
-  
-  // Escuta mudanças nos Materiais
-  database.ref('configuracoes/materiais/dados').on('value', (snapshot) => {
+
+  // ── Materiais ──────────────────────────────────────────────────
+  database.ref('dados/materiais').on('value', (snapshot) => {
     const dados = snapshot.val();
-    if (dados) {
-      localStorage.setItem('materiaisIgrejas', JSON.stringify(dados));
-      console.log('🔄 Materiais sincronizados');
-      window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'materiais' } }));
+    if (!dados) return;
+
+    window._fbReceivendo = true;
+    try {
+      const localStr = localStorage.getItem('materiaisIgrejas');
+      const local = localStr ? JSON.parse(localStr) : null;
+      const fbTs = dados._ts || 0;
+      const localTs = local ? (local._ts || 0) : 0;
+
+      if (fbTs >= localTs) {
+        localStorage.setItem('materiaisIgrejas', JSON.stringify(dados));
+        if (typeof materialData !== 'undefined') {
+          materialData.pendentes     = Array.isArray(dados.pendentes)     ? dados.pendentes     : [];
+          materialData.enviadas      = Array.isArray(dados.enviadas)      ? dados.enviadas      : [];
+          materialData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
+        }
+        if (typeof atualizarListaMaterial === 'function') atualizarListaMaterial();
+        console.log('🔄 Materiais atualizados do Firebase');
+      }
+    } finally {
+      window._fbReceivendo = false;
     }
+    window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'materiais' } }));
   });
-  
-  // Escuta mudanças nos Checklists
-  database.ref('checklists').on('value', (snapshot) => {
+
+  // ── Checklists ─────────────────────────────────────────────────
+  database.ref('dados/checklists').on('value', (snapshot) => {
     const dados = snapshot.val();
-    if (dados) {
-      const checklistsAtualizados = { igrejas: [] };
-      
-      Object.values(dados).forEach(checklist => {
-        checklistsAtualizados.igrejas.push({
-          nome: checklist.igreja,
-          id: checklist.igrejaId,
-          checklist: {
-            responsavel: checklist.responsavel,
-            respostas: checklist.respostas,
-            assinatura: null, // Será carregado quando necessário
-            assinaturaPath: checklist.assinaturaPath,
-            dataPreenchimento: checklist.dataPreenchimento
+    if (!dados) return;
+
+    window._fbReceivendo = true;
+    try {
+      const localStr = localStorage.getItem('checklistsIgrejas');
+      const local = localStr ? JSON.parse(localStr) : { igrejas: [] };
+      const fbTs = dados._ts || 0;
+      const localTs = local._ts || 0;
+
+      if (fbTs >= localTs) {
+        // Restaura assinaturas locais (não sobem para o Firebase para economizar espaço)
+        const localMap = {};
+        (local.igrejas || []).forEach(ig => {
+          localMap[ig.nome + '_' + (ig.id || '')] = ig;
+        });
+        (dados.igrejas || []).forEach(ig => {
+          const key = ig.nome + '_' + (ig.id || '');
+          const localIg = localMap[key];
+          if (localIg && localIg.checklist && localIg.checklist.assinatura) {
+            if (!ig.checklist) ig.checklist = {};
+            ig.checklist.assinatura = localIg.checklist.assinatura;
           }
         });
-      });
-      
-      localStorage.setItem('checklistsIgrejas', JSON.stringify(checklistsAtualizados));
-      console.log('🔄 Checklists sincronizados');
-      window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'checklists' } }));
+
+        localStorage.setItem('checklistsIgrejas', JSON.stringify(dados));
+        if (typeof checklistData !== 'undefined') {
+          checklistData.igrejas = Array.isArray(dados.igrejas) ? dados.igrejas : [];
+        }
+        if (typeof atualizarListaChecklist === 'function') atualizarListaChecklist();
+        console.log('🔄 Checklists atualizados do Firebase');
+      }
+    } finally {
+      window._fbReceivendo = false;
     }
+    window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'checklists' } }));
   });
 }
+
+// Auto-inicia a sincronização assim que o Firebase conecta
+database && database.ref('.info/connected').on('value', (snapshot) => {
+  if (snapshot.val() === true && !window._syncIniciado) {
+    window._syncIniciado = true;
+    iniciarSincronizacaoTempoReal();
+  }
+});
+
+// Utilitário: pisca o badge indicando "salvando"
+function _piscarBadgeSync() {
+  const label = document.getElementById('syncLabel');
+  const dot   = document.getElementById('syncDot');
+  const badge = document.getElementById('syncStatusBadge');
+  if (!badge || !firebaseDisponivel) return;
+  const orig = label ? label.textContent : '';
+  if (label) label.textContent = 'Salvando na nuvem…';
+  if (dot)   dot.style.background = '#1565c0';
+  if (badge) { badge.style.background = '#e3f2fd'; badge.style.color = '#1565c0'; badge.style.border = '1px solid #90caf9'; }
+  setTimeout(() => {
+    if (label) label.textContent    = orig || 'Sincronizado com a nuvem';
+    if (dot)   dot.style.background = '#4caf50';
+    if (badge) { badge.style.background = '#e8f5e9'; badge.style.color = '#2e7d32'; badge.style.border = '1px solid #a5d6a7'; }
+  }, 1800);
+}
+window._piscarBadgeSync = _piscarBadgeSync;
 
 // Expõe funções globalmente
 window.firebaseDB = {

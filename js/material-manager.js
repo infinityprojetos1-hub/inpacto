@@ -93,8 +93,19 @@ function migrarDadosParaNF() {
 // Salva os dados no localStorage E integra com Notas Fiscais
 function salvarDadosMaterial() {
     try {
+        // Marca timestamp para resolver conflitos
+        materialData._ts = Date.now();
+
         // Salva no localStorage próprio
         localStorage.setItem('materiaisIgrejas', JSON.stringify(materialData));
+
+        // Salva no Firebase (se não estamos recebendo sync)
+        if (!window._fbReceivendo && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
+            if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
+            salvarNoDatabase('dados/materiais', materialData)
+                .then(() => console.log('✅ Material salvo no Firebase'))
+                .catch(err => console.warn('⚠️ Material não salvo no Firebase:', err));
+        }
 
         // Integra com o JSON das Notas Fiscais
         const nfDataStr = localStorage.getItem('notasFiscais');

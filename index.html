@@ -3613,7 +3613,7 @@
     </button>
 
     <div class="container">
-        <header style="text-align: center; padding-bottom: 20px;">
+        <header style="text-align: center; padding-bottom: 20px; position: relative;">
             <h1>
                 <i class="fas fa-church" style="margin-right: 12px;"></i>
                 Gerador de Orçamentos
@@ -3621,6 +3621,16 @@
             <p style="color: var(--text-muted); font-size: 1.1em; margin-top: 8px; font-weight: 500;">
                 Sistema automatizado para geração de orçamentos personalizados
             </p>
+            <!-- Badge de status de sincronização -->
+            <div id="syncStatusBadge" style="
+                display: inline-flex; align-items: center; gap: 6px;
+                margin-top: 10px; padding: 4px 12px; border-radius: 20px;
+                font-size: 0.78em; font-weight: 600; letter-spacing: 0.3px;
+                background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7;
+                transition: all 0.4s ease;">
+                <span id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;"></span>
+                <span id="syncLabel">Sincronizado com a nuvem</span>
+            </div>
         </header>
 
         <div class="tabs">

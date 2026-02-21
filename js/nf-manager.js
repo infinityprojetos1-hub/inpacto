@@ -112,7 +112,6 @@ function salvarDadosNF() {
         if (!nfData.igrejas) nfData.igrejas = [];
         if (!nfData.arquivadas) nfData.arquivadas = [];
 
-        // Validação adicional dos dados antes de salvar
         nfData.igrejas = nfData.igrejas.filter(igreja =>
             igreja && igreja.nome && igreja.empresa && igreja.valor
         );
@@ -120,9 +119,20 @@ function salvarDadosNF() {
             igreja && igreja.nome && igreja.empresa && igreja.valor
         );
 
+        // Marca timestamp para resolver conflitos de concorrência
+        nfData._ts = Date.now();
+
         const dadosParaSalvar = JSON.stringify(nfData);
         localStorage.setItem('notasFiscais', dadosParaSalvar);
-        console.log('Dados salvos no localStorage:', JSON.parse(dadosParaSalvar));
+        console.log('Dados NF salvos localmente');
+
+        // Salva no Firebase (somente se não estamos recebendo sync do Firebase)
+        if (!window._fbReceivendo && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
+            if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
+            salvarNoDatabase('dados/notasFiscais', nfData)
+                .then(() => console.log('✅ NF salva no Firebase'))
+                .catch(err => console.warn('⚠️ NF não salva no Firebase:', err));
+        }
     } catch (error) {
         console.error('Erro ao salvar dados das NFs:', error);
     }

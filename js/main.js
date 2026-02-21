@@ -2165,5 +2165,17 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEscolherPasta.addEventListener('click', escolherPastaTrabalho);
     }
 
+    // Garante que o listener de sync do Firebase seja iniciado
+    // (firebase-config.js já tenta auto-iniciar na conexão, mas chamamos aqui como fallback)
+    if (typeof firebaseDB !== 'undefined' && typeof firebaseDB.disponivel === 'function' && firebaseDB.disponivel()) {
+        if (!window._syncIniciado) {
+            window._syncIniciado = true;
+            if (typeof firebaseDB.iniciarSync === 'function') {
+                firebaseDB.iniciarSync();
+                console.log('🔄 Sincronização Firebase iniciada no DOMContentLoaded');
+            }
+        }
+    }
+
     console.log("Sistema inicializado com sucesso!");
 }); 
