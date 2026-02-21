@@ -1709,9 +1709,31 @@
                 font-size: 0.85em !important;
             }
 
-            /* ===== MATERIAL - LAYOUT DE CARD (igual ao checklist) ===== */
+            /* ===== MATERIAL - LAYOUT DE CARD (mobile vertical) ===== */
             .material-header {
                 display: none !important;
+            }
+
+            /* Cabeçalho com tabs + botão Atualizar: empilha verticalmente */
+            #materialList > div:first-child {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+            }
+
+            #materialList > div:first-child > button {
+                width: 100% !important;
+            }
+
+            .material-tabs {
+                width: 100% !important;
+            }
+
+            .material-tab-button {
+                flex: 1 1 auto !important;
+                text-align: center !important;
+                font-size: 0.8em !important;
+                padding: 8px 6px !important;
             }
 
             .material-table {
@@ -1741,19 +1763,46 @@
             }
 
             .material-col-acoes {
+                display: flex !important;
                 flex-direction: column !important;
                 gap: 8px !important;
                 width: 100% !important;
                 justify-content: flex-start !important;
             }
 
-            .material-col-acoes button {
+            /* Botões de mover status: mostra com label no mobile */
+            .material-col-acoes .btn-icon {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 8px !important;
                 width: 100% !important;
+                padding: 10px 14px !important;
+                font-size: 0.85em !important;
+                border-radius: 8px !important;
+            }
+
+            .material-col-acoes .btn-icon::after {
+                content: attr(title);
+                font-weight: 600;
+            }
+
+            /* Botão "Gerenciar Material" full width */
+            .material-col-acoes .btn-primary {
+                width: 100% !important;
+                padding: 12px !important;
+                font-size: 0.9em !important;
                 margin: 0 !important;
             }
 
-            .material-col-acoes .btn-icon {
-                display: none !important;
+            /* Botões de exportar/vincular JSON: empilha em coluna */
+            .material-botoes-container {
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+
+            .material-botoes-container button {
+                width: 100% !important;
             }
 
             /* ===== RELATÓRIO TÉCNICO - LAYOUT DE CARD (igual ao checklist) ===== */

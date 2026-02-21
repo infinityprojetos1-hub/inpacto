@@ -35,8 +35,12 @@ const perguntasChecklist = {
     ]
 };
 
+// Flag: impede salvar no Firebase durante o carregamento inicial
+let _checklistCarregando = false;
+
 // Carrega os dados do localStorage
 function carregarDadosChecklist() {
+    _checklistCarregando = true;
     try {
         const dadosSalvos = localStorage.getItem('checklistsIgrejas');
         if (dadosSalvos) {
@@ -49,6 +53,8 @@ function carregarDadosChecklist() {
     } catch (error) {
         console.error('Erro ao carregar dados de checklist:', error);
         checklistData = { igrejas: [] };
+    } finally {
+        _checklistCarregando = false;
     }
 }
 
@@ -61,8 +67,8 @@ function salvarDadosChecklist() {
         localStorage.setItem('checklistsIgrejas', JSON.stringify(checklistData));
         console.log('✅ Dados de checklist salvos localmente');
 
-        // Salva no Firebase sem assinaturas (economiza espaço)
-        if (!window._fbReceivendo && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
+        // Salva no Firebase sem assinaturas (economiza espaço), fora do carregamento inicial
+        if (!window._fbReceivendo && !_checklistCarregando && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
             if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
             const dadosSemAssinatura = {
                 _ts: checklistData._ts,

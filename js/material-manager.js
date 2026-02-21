@@ -7,8 +7,12 @@ let materialData = {
     pedidosSandro: [] // Pedidos do Sandro
 };
 
+// Flag: impede salvar no Firebase durante o carregamento inicial
+let _materialCarregando = false;
+
 // Carrega os dados do localStorage
 function carregarDadosMaterial() {
+    _materialCarregando = true;
     try {
         const dadosSalvos = localStorage.getItem('materiaisIgrejas');
         if (dadosSalvos) {
@@ -33,6 +37,8 @@ function carregarDadosMaterial() {
     } catch (error) {
         console.error('Erro ao carregar dados de material:', error);
         materialData = { pendentes: [], enviadas: [], pedidosSandro: [] };
+    } finally {
+        _materialCarregando = false;
     }
 }
 
@@ -99,8 +105,8 @@ function salvarDadosMaterial() {
         // Salva no localStorage próprio
         localStorage.setItem('materiaisIgrejas', JSON.stringify(materialData));
 
-        // Salva no Firebase (se não estamos recebendo sync)
-        if (!window._fbReceivendo && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
+        // Salva no Firebase (se não estamos recebendo sync e não estamos no carregamento inicial)
+        if (!window._fbReceivendo && !_materialCarregando && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
             if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
             salvarNoDatabase('dados/materiais', materialData)
                 .then(() => console.log('✅ Material salvo no Firebase'))
@@ -147,8 +153,8 @@ function salvarDadosMaterial() {
             localStorage.setItem('notasFiscais', JSON.stringify(nfData));
             console.log('✅ Dados de material salvos e integrados com NF');
 
-            // Dispara evento para atualizar arquivo vinculado se existir
-            if (typeof window.salvarDadosNF === 'function') {
+            // Atualiza o arquivo de NF (só fora do carregamento inicial, para não sobrescrever Firebase)
+            if (!_materialCarregando && typeof window.salvarDadosNF === 'function') {
                 window.salvarDadosNF();
             }
         }

@@ -311,26 +311,35 @@ function iniciarSincronizacaoTempoReal() {
   // ── Notas Fiscais ──────────────────────────────────────────────
   database.ref('dados/notasFiscais').on('value', (snapshot) => {
     const dados = snapshot.val();
-    if (!dados) return;
+
+    if (!dados) {
+      // Firebase vazio → sobe dados locais se existirem
+      const localStr = localStorage.getItem('notasFiscais');
+      if (localStr) {
+        try {
+          const local = JSON.parse(localStr);
+          const temDados = (local.igrejas && local.igrejas.length > 0) || (local.arquivadas && local.arquivadas.length > 0);
+          if (temDados) {
+            if (!local._ts) local._ts = Date.now();
+            salvarNoDatabase('dados/notasFiscais', local);
+            console.log('📤 NF local enviada para Firebase (primeiro upload)');
+          }
+        } catch (e) { /* ignora erro de parse */ }
+      }
+      return;
+    }
 
     window._fbReceivendo = true;
     try {
-      // Se os dados do Firebase forem mais recentes que o local, usa o Firebase
-      const localStr = localStorage.getItem('notasFiscais');
-      const local = localStr ? JSON.parse(localStr) : null;
-      const fbTs = dados._ts || 0;
-      const localTs = local ? (local._ts || 0) : 0;
-
-      if (fbTs >= localTs) {
-        localStorage.setItem('notasFiscais', JSON.stringify(dados));
-        // Atualiza variável global e UI
-        if (typeof nfData !== 'undefined') {
-          nfData.igrejas   = Array.isArray(dados.igrejas)    ? dados.igrejas    : [];
-          nfData.arquivadas = Array.isArray(dados.arquivadas) ? dados.arquivadas : [];
-        }
-        if (typeof atualizarListaNF === 'function') atualizarListaNF();
-        console.log('🔄 Notas Fiscais atualizadas do Firebase');
+      // Firebase é sempre a fonte da verdade ao sincronizar
+      localStorage.setItem('notasFiscais', JSON.stringify(dados));
+      if (typeof nfData !== 'undefined') {
+        nfData.igrejas    = Array.isArray(dados.igrejas)    ? dados.igrejas    : [];
+        nfData.arquivadas = Array.isArray(dados.arquivadas) ? dados.arquivadas : [];
+        nfData._ts        = dados._ts || 0;
       }
+      if (typeof atualizarListaNF === 'function') atualizarListaNF();
+      console.log('🔄 Notas Fiscais atualizadas do Firebase');
     } finally {
       window._fbReceivendo = false;
     }
@@ -340,25 +349,37 @@ function iniciarSincronizacaoTempoReal() {
   // ── Materiais ──────────────────────────────────────────────────
   database.ref('dados/materiais').on('value', (snapshot) => {
     const dados = snapshot.val();
-    if (!dados) return;
+
+    if (!dados) {
+      // Firebase vazio → sobe dados locais se existirem
+      const localStr = localStorage.getItem('materiaisIgrejas');
+      if (localStr) {
+        try {
+          const local = JSON.parse(localStr);
+          const temDados = (local.pendentes && local.pendentes.length > 0) ||
+                           (local.enviadas && local.enviadas.length > 0) ||
+                           (local.pedidosSandro && local.pedidosSandro.length > 0);
+          if (temDados) {
+            if (!local._ts) local._ts = Date.now();
+            salvarNoDatabase('dados/materiais', local);
+            console.log('📤 Material local enviado para Firebase (primeiro upload)');
+          }
+        } catch (e) { /* ignora */ }
+      }
+      return;
+    }
 
     window._fbReceivendo = true;
     try {
-      const localStr = localStorage.getItem('materiaisIgrejas');
-      const local = localStr ? JSON.parse(localStr) : null;
-      const fbTs = dados._ts || 0;
-      const localTs = local ? (local._ts || 0) : 0;
-
-      if (fbTs >= localTs) {
-        localStorage.setItem('materiaisIgrejas', JSON.stringify(dados));
-        if (typeof materialData !== 'undefined') {
-          materialData.pendentes     = Array.isArray(dados.pendentes)     ? dados.pendentes     : [];
-          materialData.enviadas      = Array.isArray(dados.enviadas)      ? dados.enviadas      : [];
-          materialData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
-        }
-        if (typeof atualizarListaMaterial === 'function') atualizarListaMaterial();
-        console.log('🔄 Materiais atualizados do Firebase');
+      localStorage.setItem('materiaisIgrejas', JSON.stringify(dados));
+      if (typeof materialData !== 'undefined') {
+        materialData.pendentes     = Array.isArray(dados.pendentes)     ? dados.pendentes     : [];
+        materialData.enviadas      = Array.isArray(dados.enviadas)      ? dados.enviadas      : [];
+        materialData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
+        materialData._ts           = dados._ts || 0;
       }
+      if (typeof atualizarListaMaterial === 'function') atualizarListaMaterial();
+      console.log('🔄 Materiais atualizados do Firebase');
     } finally {
       window._fbReceivendo = false;
     }
@@ -368,37 +389,54 @@ function iniciarSincronizacaoTempoReal() {
   // ── Checklists ─────────────────────────────────────────────────
   database.ref('dados/checklists').on('value', (snapshot) => {
     const dados = snapshot.val();
-    if (!dados) return;
+
+    if (!dados) {
+      // Firebase vazio → sobe dados locais se existirem
+      const localStr = localStorage.getItem('checklistsIgrejas');
+      if (localStr) {
+        try {
+          const local = JSON.parse(localStr);
+          if (local.igrejas && local.igrejas.length > 0) {
+            // Remove assinaturas antes de subir
+            const semAssinatura = {
+              _ts: Date.now(),
+              igrejas: local.igrejas.map(ig => {
+                const copy = Object.assign({}, ig);
+                if (copy.checklist) { copy.checklist = Object.assign({}, copy.checklist); delete copy.checklist.assinatura; }
+                return copy;
+              })
+            };
+            salvarNoDatabase('dados/checklists', semAssinatura);
+            console.log('📤 Checklist local enviado para Firebase (primeiro upload)');
+          }
+        } catch (e) { /* ignora */ }
+      }
+      return;
+    }
 
     window._fbReceivendo = true;
     try {
+      // Restaura assinaturas locais (imagens não sobem para o Firebase)
       const localStr = localStorage.getItem('checklistsIgrejas');
       const local = localStr ? JSON.parse(localStr) : { igrejas: [] };
-      const fbTs = dados._ts || 0;
-      const localTs = local._ts || 0;
-
-      if (fbTs >= localTs) {
-        // Restaura assinaturas locais (não sobem para o Firebase para economizar espaço)
-        const localMap = {};
-        (local.igrejas || []).forEach(ig => {
-          localMap[ig.nome + '_' + (ig.id || '')] = ig;
-        });
-        (dados.igrejas || []).forEach(ig => {
-          const key = ig.nome + '_' + (ig.id || '');
-          const localIg = localMap[key];
-          if (localIg && localIg.checklist && localIg.checklist.assinatura) {
-            if (!ig.checklist) ig.checklist = {};
-            ig.checklist.assinatura = localIg.checklist.assinatura;
-          }
-        });
-
-        localStorage.setItem('checklistsIgrejas', JSON.stringify(dados));
-        if (typeof checklistData !== 'undefined') {
-          checklistData.igrejas = Array.isArray(dados.igrejas) ? dados.igrejas : [];
+      const localMap = {};
+      (local.igrejas || []).forEach(ig => { localMap[ig.nome + '_' + (ig.id || '')] = ig; });
+      (dados.igrejas || []).forEach(ig => {
+        const key = ig.nome + '_' + (ig.id || '');
+        const localIg = localMap[key];
+        if (localIg && localIg.checklist && localIg.checklist.assinatura) {
+          if (!ig.checklist) ig.checklist = {};
+          ig.checklist.assinatura = localIg.checklist.assinatura;
         }
-        if (typeof atualizarListaChecklist === 'function') atualizarListaChecklist();
-        console.log('🔄 Checklists atualizados do Firebase');
+      });
+
+      localStorage.setItem('checklistsIgrejas', JSON.stringify(dados));
+      if (typeof checklistData !== 'undefined') {
+        checklistData.igrejas = Array.isArray(dados.igrejas) ? dados.igrejas : [];
+        checklistData._ts     = dados._ts || 0;
       }
+      if (typeof atualizarListaChecklist === 'function') atualizarListaChecklist();
+      console.log('🔄 Checklists atualizados do Firebase');
     } finally {
       window._fbReceivendo = false;
     }
