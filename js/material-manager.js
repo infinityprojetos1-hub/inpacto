@@ -684,6 +684,17 @@ function compartilharWhatsApp(tipo, igrejaIndex) {
         // PC: abre WhatsApp Web direto (chamado de click = não é bloqueado)
         window.open('https://web.whatsapp.com/send?text=' + encoded, '_blank');
     }
+
+    // Move para "Enviadas" automaticamente e fecha o modal
+    if (tipo !== 'enviadas') {
+        const igrejaCopy = Object.assign({}, igreja);
+        materialData[tipo].splice(igrejaIndex, 1);
+        materialData.enviadas.push(igrejaCopy);
+        salvarDadosMaterial();
+        atualizarListaMaterial();
+    }
+    const modal = document.querySelector('.material-modal');
+    if (modal) modal.remove();
 }
 
 // ===== GERENCIAMENTO DE ARQUIVO JSON =====

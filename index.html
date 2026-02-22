@@ -4762,6 +4762,17 @@
         } else {
             window.open('https://web.whatsapp.com/send?text=' + enc, '_blank');
         }
+
+        // Move para Enviadas automaticamente e fecha o modal
+        if (tipo !== 'enviadas') {
+            var copia = Object.assign({}, igreja);
+            materialData[tipo].splice(igrejaIndex, 1);
+            materialData.enviadas.push(copia);
+            if (typeof salvarDadosMaterial === 'function') salvarDadosMaterial();
+            if (typeof atualizarListaMaterial === 'function') atualizarListaMaterial();
+        }
+        var modal = document.querySelector('.material-modal');
+        if (modal) modal.remove();
     };
 
     // Sobrescreve a função antiga quando scripts terminarem de carregar
