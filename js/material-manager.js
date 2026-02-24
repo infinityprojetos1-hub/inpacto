@@ -983,14 +983,7 @@ async function tentarCarregarMaterialAutomatico() {
             console.log('✅ Arquivo material_data.json carregado automaticamente!');
             atualizarListaMaterial();
 
-            // Oferece vincular o arquivo para salvamento automático
-            if (window.showOpenFilePicker && !materialFileHandle) {
-                setTimeout(async () => {
-                    if (confirm('Arquivo material_data.json encontrado!\n\nDeseja vinculá-lo para salvamento automático?')) {
-                        await selecionarArquivoMaterial();
-                    }
-                }, 500);
-            }
+            // Vinculação automática desativada (Firebase é a fonte da verdade)
         }
     } catch (error) {
         // Arquivo não encontrado (normal na primeira vez)

@@ -590,14 +590,7 @@ async function tentarCarregarNFAutomatico() {
             console.log('✅ Arquivo nf_data.json carregado automaticamente!');
             atualizarListaNF();
 
-            // Oferece vincular o arquivo para salvamento automático
-            if (window.showOpenFilePicker && !nfFileHandle) {
-                setTimeout(async () => {
-                    if (confirm('Arquivo nf_data.json encontrado!\n\nDeseja vinculá-lo para salvamento automático?')) {
-                        await selecionarArquivoNFs();
-                    }
-                }, 500);
-            }
+            // Vinculação automática desativada (Firebase é a fonte da verdade)
         }
     } catch (error) {
         // Arquivo não encontrado (normal na primeira vez)

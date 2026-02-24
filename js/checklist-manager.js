@@ -561,8 +561,28 @@ async function _gerarPDFChecklist(igrejaIndex) {
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(12);
         pdf.text('Assinatura Digital:', 20, y);
-        y += 10;
-        try { pdf.addImage(assinatura, 'PNG', 20, y, 80, 30); } catch (e) {}
+        y += 8;
+
+        // Pré-carrega a imagem num elemento para garantir compatibilidade com jsPDF
+        try {
+            await new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        pdf.addImage(img, 'PNG', 20, y, 120, 45);
+                    } catch (e) {
+                        console.error('Erro ao adicionar assinatura (Image):', e);
+                        // fallback: tenta direto com data URL
+                        try { pdf.addImage(assinatura, 20, y, 120, 45); } catch (_) {}
+                    }
+                    resolve();
+                };
+                img.onerror = () => { console.error('Erro ao carregar imagem da assinatura'); resolve(); };
+                img.src = assinatura;
+            });
+        } catch (e) {
+            console.error('Erro ao processar assinatura para PDF:', e);
+        }
     }
 
     return pdf;
