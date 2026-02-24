@@ -398,7 +398,8 @@ async function gerarPDFs(dadosOrcamento, index, pdfsGerados) {
                 dadosOrcamento.suaEmpresa.totalFormatado,
                 dadosOrcamento.igreja.id || null,
                 dadosOrcamento.igreja.link,
-                dadosOrcamento.igreja.codigo || null
+                dadosOrcamento.igreja.codigo || null,
+                dadosOrcamento.tipoTexto || 'padrao'
             );
         } catch (error) {
             console.error('Erro ao adicionar igreja à lista de NFs:', error);

@@ -336,6 +336,7 @@ function iniciarSincronizacaoTempoReal() {
       if (typeof nfData !== 'undefined') {
         nfData.igrejas    = Array.isArray(dados.igrejas)    ? dados.igrejas    : [];
         nfData.arquivadas = Array.isArray(dados.arquivadas) ? dados.arquivadas : [];
+        nfData.especiais  = Array.isArray(dados.especiais)  ? dados.especiais  : [];
         nfData._ts        = dados._ts || 0;
       }
       if (typeof atualizarListaNF === 'function') atualizarListaNF();

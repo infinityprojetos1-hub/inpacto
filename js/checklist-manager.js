@@ -455,7 +455,66 @@ function visualizarChecklist(igrejaIndex) {
     const igreja = checklistData.igrejas[igrejaIndex];
     if (!igreja || !igreja.checklist) return;
 
-    alert('Funcionalidade de visualização será implementada em breve!');
+    const ch = igreja.checklist;
+    const resp = ch.responsavel || {};
+    const respostas = ch.respostas || {};
+    const assinatura = ch.assinatura || null;
+
+    // Monta os itens com respostas
+    const itensHTML = perguntasChecklist.itens.map((pergunta, i) => {
+        const resposta = respostas[`item_${i}`] || '—';
+        const cor = resposta === 'SIM' ? '#22c55e' : resposta === 'NÃO' ? '#ef4444' : '#94a3b8';
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid #f1f5f9;">
+                <span style="font-size:0.85em; color:#334155; flex:1;">${i + 1}. ${pergunta}</span>
+                <span style="font-size:0.85em; font-weight:700; color:${cor}; white-space:nowrap;">${resposta}</span>
+            </div>`;
+    }).join('');
+
+    const assinaturaHTML = assinatura
+        ? `<div style="margin-top:16px; text-align:center;">
+               <p style="font-size:0.8em; color:#64748b; margin-bottom:6px;">Assinatura:</p>
+               <img src="${assinatura}" style="max-width:200px; border:1px solid #e2e8f0; border-radius:8px; padding:4px; background:#fff;">
+           </div>`
+        : '<p style="font-size:0.8em; color:#94a3b8; margin-top:12px;">Sem assinatura registrada.</p>';
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+    modal.innerHTML = `
+        <div style="background:#fff;border-radius:16px;max-width:600px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <div>
+                    <h2 style="margin:0;font-size:1.2em;color:#1e293b;">${igreja.nome}</h2>
+                    ${igreja.id ? `<span style="font-size:0.8em;color:#64748b;">ID: ${igreja.id}</span>` : ''}
+                </div>
+                <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:#64748b;padding:4px;">✕</button>
+            </div>
+
+            <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:16px;font-size:0.85em;color:#475569;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div><strong>Data:</strong> ${resp.data || '—'}</div>
+                    <div><strong>Aprovado por:</strong> ${resp.aprovadoPor || '—'}</div>
+                    <div><strong>CPF:</strong> ${resp.cpf || '—'}</div>
+                    <div><strong>Telefone:</strong> ${resp.telefone || '—'}</div>
+                </div>
+            </div>
+
+            <div style="max-height:55vh;overflow-y:auto;padding-right:4px;">
+                ${itensHTML}
+            </div>
+
+            ${assinaturaHTML}
+
+            <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+                <button onclick="downloadChecklistPDF(${igrejaIndex})" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:0.9em;font-weight:600;">
+                    <i class="fas fa-download"></i> Baixar PDF
+                </button>
+                <button onclick="this.closest('[style*=fixed]').remove()" style="background:#f1f5f9;color:#475569;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:0.9em;font-weight:600;">Fechar</button>
+            </div>
+        </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
 // Gera e baixa o PDF do checklist

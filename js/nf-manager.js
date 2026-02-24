@@ -1,5 +1,5 @@
 // Gerenciador de Notas Fiscais
-let nfData = { igrejas: [], arquivadas: [] };
+let nfData = { igrejas: [], arquivadas: [], especiais: [] };
 
 // Checklist padrão de cada igreja
 function getDefaultChecklist() {
@@ -80,20 +80,19 @@ function carregarDadosNF() {
             // Garante que as estruturas básicas existem
             nfData = {
                 igrejas: Array.isArray(dados.igrejas) ? dados.igrejas : [],
-                arquivadas: Array.isArray(dados.arquivadas) ? dados.arquivadas : []
+                arquivadas: Array.isArray(dados.arquivadas) ? dados.arquivadas : [],
+                especiais: Array.isArray(dados.especiais) ? dados.especiais : []
             };
 
             // Filtra dados inválidos
-            nfData.igrejas = nfData.igrejas.filter(igreja =>
-                igreja && igreja.nome && igreja.empresa && igreja.valor
-            );
-            nfData.arquivadas = nfData.arquivadas.filter(igreja =>
-                igreja && igreja.nome && igreja.empresa && igreja.valor
-            );
+            const validar = ig => ig && ig.nome && ig.empresa && ig.valor;
+            nfData.igrejas   = nfData.igrejas.filter(validar);
+            nfData.arquivadas = nfData.arquivadas.filter(validar);
+            nfData.especiais  = nfData.especiais.filter(validar);
 
             // Preenche checklist se ausente
-            nfData.igrejas.forEach(ig => { if (!ig.checklist) ig.checklist = getDefaultChecklist(); });
-            nfData.arquivadas.forEach(ig => { if (!ig.checklist) ig.checklist = getDefaultChecklist(); });
+            [...nfData.igrejas, ...nfData.arquivadas, ...nfData.especiais]
+                .forEach(ig => { if (!ig.checklist) ig.checklist = getDefaultChecklist(); });
 
             console.log('Dados carregados e validados:', nfData);
         } else {
@@ -111,13 +110,12 @@ function salvarDadosNF() {
     try {
         if (!nfData.igrejas) nfData.igrejas = [];
         if (!nfData.arquivadas) nfData.arquivadas = [];
+        if (!nfData.especiais) nfData.especiais = [];
 
-        nfData.igrejas = nfData.igrejas.filter(igreja =>
-            igreja && igreja.nome && igreja.empresa && igreja.valor
-        );
-        nfData.arquivadas = nfData.arquivadas.filter(igreja =>
-            igreja && igreja.nome && igreja.empresa && igreja.valor
-        );
+        const validar = ig => ig && ig.nome && ig.empresa && ig.valor;
+        nfData.igrejas    = nfData.igrejas.filter(validar);
+        nfData.arquivadas = nfData.arquivadas.filter(validar);
+        nfData.especiais  = nfData.especiais.filter(validar);
 
         // Marca timestamp para resolver conflitos de concorrência
         nfData._ts = Date.now();
@@ -182,8 +180,8 @@ function obterValorFormatado(valor) {
 }
 
 // Adiciona uma nova igreja à lista
-function adicionarIgrejaNF(nomeIgreja, empresa, valor, id, link, codigo) {
-    console.log('Função adicionarIgrejaNF chamada com:', { nomeIgreja, empresa, valor, id, link, codigo });
+function adicionarIgrejaNF(nomeIgreja, empresa, valor, id, link, codigo, tipoTexto) {
+    console.log('Função adicionarIgrejaNF chamada com:', { nomeIgreja, empresa, valor, id, link, codigo, tipoTexto });
 
     if (!nomeIgreja || !empresa || !valor) {
         console.error('Dados inválidos ao adicionar igreja:', { nomeIgreja, empresa, valor });
@@ -191,6 +189,7 @@ function adicionarIgrejaNF(nomeIgreja, empresa, valor, id, link, codigo) {
     }
 
     const valorFormatado = obterValorFormatado(valor);
+    const ehEspecial = tipoTexto && tipoTexto !== 'padrao';
 
     const novaIgreja = {
         nome: nomeIgreja.trim(),
@@ -198,18 +197,22 @@ function adicionarIgrejaNF(nomeIgreja, empresa, valor, id, link, codigo) {
         valor: valorFormatado,
         data: new Date().toISOString(),
         checklist: getDefaultChecklist(),
-        id: id || null, // Adiciona o ID (número do pedido)
-        link: link || null, // Adiciona o Link
-        codigo: codigo || null // Adiciona o Código da Igreja
+        id: id || null,
+        link: link || null,
+        codigo: codigo || null,
+        tipoTexto: tipoTexto || 'padrao'
     };
 
-    if (!nfData.igrejas) {
-        nfData.igrejas = [];
-    }
+    if (!nfData.igrejas) nfData.igrejas = [];
+    if (!nfData.especiais) nfData.especiais = [];
 
-    nfData.igrejas.push(novaIgreja);
-    console.log('Igreja adicionada aos dados:', novaIgreja);
-    console.log('Estado atual dos dados:', nfData);
+    if (ehEspecial) {
+        nfData.especiais.push(novaIgreja);
+        console.log('Igreja especial adicionada:', novaIgreja);
+    } else {
+        nfData.igrejas.push(novaIgreja);
+        console.log('Igreja adicionada aos dados:', novaIgreja);
+    }
 
     salvarDadosNF();
     atualizarListaNF();
@@ -1187,12 +1190,13 @@ function atualizarListaNF() {
 
     container.innerHTML = '';
 
-    // Cria as abas Ativas/Arquivadas
+    // Cria as abas Ativas/Arquivadas/Especiais
     const tabsContainer = document.createElement('div');
     tabsContainer.className = 'nf-tabs';
     tabsContainer.innerHTML = `
         <button class="nf-tab-button active" data-tab="ativas">Igrejas Ativas</button>
         <button class="nf-tab-button" data-tab="arquivadas">Igrejas Arquivadas</button>
+        <button class="nf-tab-button" data-tab="especiais">Igrejas Especiais</button>
     `;
     container.appendChild(tabsContainer);
 
@@ -1230,7 +1234,9 @@ function atualizarListaNF() {
 
         // Função que atualiza a tabela com base na pesquisa
         function atualizarTabela(termoBusca = '') {
-            const dados = tipo === 'ativas' ? nfData.igrejas : nfData.arquivadas;
+            const dados = tipo === 'ativas' ? nfData.igrejas
+                        : tipo === 'arquivadas' ? nfData.arquivadas
+                        : (nfData.especiais || []);
             const igrejasFiltradas = filtrarIgrejas(dados, termoBusca);
 
             // Remove tabela anterior se existir
@@ -1284,13 +1290,18 @@ function atualizarListaNF() {
                     const tr = document.createElement('tr');
                     tr.className = empresa.includes('Impacto') ? 'nf-row-impacto' : 'nf-row-spg';
 
+                    const idx = dados.indexOf(igreja);
                     const acaoBotao = tipo === 'ativas'
-                        ? `<button onclick="arquivarIgreja(${dados.indexOf(igreja)})" class="btn-archive" title="Arquivar igreja"><i class="fas fa-archive"></i></button>
-                           <button onclick="editarIgreja(${dados.indexOf(igreja)}, '${tipo}')" class="btn-edit" title="Editar igreja"><i class="fas fa-edit"></i></button>
-                           <button onclick="excluirIgreja(${dados.indexOf(igreja)}, '${tipo}')" class="btn-delete" title="Excluir igreja"><i class="fas fa-trash"></i></button>`
-                        : `<button onclick="restaurarIgreja(${dados.indexOf(igreja)})" class="btn-restore" title="Restaurar igreja"><i class="fas fa-undo"></i></button>
-                           <button onclick="editarIgreja(${dados.indexOf(igreja)}, '${tipo}')" class="btn-edit" title="Editar igreja"><i class="fas fa-edit"></i></button>
-                           <button onclick="excluirIgreja(${dados.indexOf(igreja)}, '${tipo}')" class="btn-delete" title="Excluir igreja"><i class="fas fa-trash"></i></button>`;
+                        ? `<button onclick="arquivarIgreja(${idx})" class="btn-archive" title="Arquivar igreja"><i class="fas fa-archive"></i></button>
+                           <button onclick="editarIgreja(${idx}, '${tipo}')" class="btn-edit" title="Editar igreja"><i class="fas fa-edit"></i></button>
+                           <button onclick="excluirIgreja(${idx}, '${tipo}')" class="btn-delete" title="Excluir igreja"><i class="fas fa-trash"></i></button>`
+                        : tipo === 'especiais'
+                        ? `<button onclick="moverEspecialParaAtiva(${idx})" class="btn-restore" title="Mover para Ativas"><i class="fas fa-undo"></i></button>
+                           <button onclick="editarIgreja(${idx}, '${tipo}')" class="btn-edit" title="Editar igreja"><i class="fas fa-edit"></i></button>
+                           <button onclick="excluirIgreja(${idx}, '${tipo}')" class="btn-delete" title="Excluir igreja"><i class="fas fa-trash"></i></button>`
+                        : `<button onclick="restaurarIgreja(${idx})" class="btn-restore" title="Restaurar igreja"><i class="fas fa-undo"></i></button>
+                           <button onclick="editarIgreja(${idx}, '${tipo}')" class="btn-edit" title="Editar igreja"><i class="fas fa-edit"></i></button>
+                           <button onclick="excluirIgreja(${idx}, '${tipo}')" class="btn-delete" title="Excluir igreja"><i class="fas fa-trash"></i></button>`;
 
                     const pendAtual = (igreja.pendencia || '').toString().trim().toUpperCase();
                     const pendenciaOptions = `
@@ -1307,8 +1318,8 @@ function atualizarListaNF() {
                     `;
 
                     const igrejaHTML = igreja.id
-                        ? `<span class="nf-igreja-link" data-index="${dados.indexOf(igreja)}" data-tipo="${tipo}">${igreja.nome}</span> - <span class="nf-id-link" data-id="${igreja.id}" data-link="${igreja.link || ''}" title="Clique para copiar o número e abrir o link">${igreja.id}</span>`
-                        : `<span class="nf-igreja-link" data-index="${dados.indexOf(igreja)}" data-tipo="${tipo}">${igreja.nome}</span>`;
+                        ? `<span class="nf-igreja-link" data-index="${idx}" data-tipo="${tipo}">${igreja.nome}</span> - <span class="nf-id-link" data-id="${igreja.id}" data-link="${igreja.link || ''}" title="Clique para copiar o número e abrir o link">${igreja.id}</span>`
+                        : `<span class="nf-igreja-link" data-index="${idx}" data-tipo="${tipo}">${igreja.nome}</span>`;
 
                     tr.innerHTML = `
                         <td class="${index === 0 ? (empresa.includes('Impacto') ? 'nf-empresa-impacto' : 'nf-empresa-spg') : ''}">${index === 0 ? empresa : ''}</td>
@@ -1644,8 +1655,20 @@ function excluirIgreja(index, tipo) {
         return;
     }
 
-    const lista = tipo === 'ativas' ? nfData.igrejas : nfData.arquivadas;
+    const lista = tipo === 'ativas' ? nfData.igrejas
+                : tipo === 'especiais' ? (nfData.especiais || [])
+                : nfData.arquivadas;
     lista.splice(index, 1);
+    salvarDadosNF();
+    atualizarListaNF();
+}
+
+function moverEspecialParaAtiva(index) {
+    if (!nfData.especiais || !nfData.especiais[index]) return;
+    const igreja = nfData.especiais.splice(index, 1)[0];
+    delete igreja.dataArquivamento;
+    if (!nfData.igrejas) nfData.igrejas = [];
+    nfData.igrejas.push(igreja);
     salvarDadosNF();
     atualizarListaNF();
 }
@@ -1657,7 +1680,9 @@ function editarIgreja(index, tipo) {
         return;
     }
 
-    const lista = tipo === 'ativas' ? nfData.igrejas : nfData.arquivadas;
+    const lista = tipo === 'ativas' ? nfData.igrejas
+                : tipo === 'especiais' ? (nfData.especiais || [])
+                : nfData.arquivadas;
     if (!lista || !Array.isArray(lista)) {
         console.error('Lista inválida:', lista);
         return;
@@ -1850,7 +1875,9 @@ function editarIgreja(index, tipo) {
 
 // Atualiza e salva a pendência de uma igreja
 function atualizarPendencia(index, tipo, pendencia) {
-    const lista = tipo === 'ativas' ? nfData.igrejas : nfData.arquivadas;
+    const lista = tipo === 'ativas' ? nfData.igrejas
+                : tipo === 'especiais' ? (nfData.especiais || [])
+                : nfData.arquivadas;
     if (!lista || !lista[index]) return;
     lista[index].pendencia = (pendencia || '').toString().trim().toUpperCase();
     salvarDadosNF();
@@ -1864,6 +1891,7 @@ window.gerarPDFRelatorioPendencias = gerarPDFRelatorioPendencias;
 window.abrirModalRelatorioPendenciasImagem = abrirModalRelatorioPendenciasImagem;
 window.arquivarIgreja = arquivarIgreja;
 window.restaurarIgreja = restaurarIgreja;
+window.moverEspecialParaAtiva = moverEspecialParaAtiva;
 window.atualizarPendencia = atualizarPendencia;
 window.abrirChecklistModal = abrirChecklistModal;
 window.salvarNFJsonEmArquivo = salvarNFJsonEmArquivo;

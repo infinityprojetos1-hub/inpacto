@@ -176,24 +176,31 @@ function sincronizarIgrejasNF() {
 
         const nfData = JSON.parse(nfDataStr);
         const igrejasNF = nfData.igrejas || [];
+        // Inclui arquivadas e especiais para não remover do Material ao arquivar
+        const todasIgrejasNF = [
+            ...igrejasNF,
+            ...(nfData.arquivadas || []),
+            ...(nfData.especiais || [])
+        ];
 
-        // PASSO 1: Remover igrejas do Material que não existem mais nas Notas Fiscais
+        // PASSO 1: Remover igrejas do Material apenas quando forem excluídas de todas as listas NF
         ['pendentes', 'enviadas', 'pedidosSandro'].forEach(categoria => {
             materialData[categoria] = materialData[categoria].filter(igrejaMat => {
-                const aindaExiste = igrejasNF.some(igrejaNF =>
+                const aindaExiste = todasIgrejasNF.some(igrejaNF =>
                     igrejaNF.nome === igrejaMat.nome && igrejaNF.id === igrejaMat.id
                 );
 
                 if (!aindaExiste) {
-                    console.log(`🗑️ Removendo igreja "${igrejaMat.nome}" (ID: ${igrejaMat.id}) do Material - não existe mais nas NFs`);
+                    console.log(`🗑️ Removendo igreja "${igrejaMat.nome}" (ID: ${igrejaMat.id}) do Material - excluída das NFs`);
                 }
 
                 return aindaExiste;
             });
         });
 
-        // PASSO 2: Adiciona igrejas que estão em NF mas não em Material
-        igrejasNF.forEach(igrejaNF => {
+        // PASSO 2: Adiciona igrejas ativas e especiais que estão em NF mas não em Material
+        const igrejasParaMaterial = [...igrejasNF, ...(nfData.especiais || [])];
+        igrejasParaMaterial.forEach(igrejaNF => {
             const jaExistePendente = materialData.pendentes.find(
                 ig => ig.nome === igrejaNF.nome && ig.id === igrejaNF.id
             );
