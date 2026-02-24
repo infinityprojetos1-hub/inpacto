@@ -392,23 +392,21 @@ function iniciarSincronizacaoTempoReal() {
     const dados = snapshot.val();
 
     if (!dados) {
-      // Firebase vazio → sobe dados locais se existirem
+      // Firebase vazio → sobe dados locais completos (com assinaturas)
       const localStr = localStorage.getItem('checklistsIgrejas');
       if (localStr) {
         try {
           const local = JSON.parse(localStr);
           if (local.igrejas && local.igrejas.length > 0) {
-            // Remove assinaturas antes de subir
-            const semAssinatura = {
-              _ts: Date.now(),
-              igrejas: local.igrejas.map(ig => {
-                const copy = Object.assign({}, ig);
-                if (copy.checklist) { copy.checklist = Object.assign({}, copy.checklist); delete copy.checklist.assinatura; }
-                return copy;
-              })
-            };
-            salvarNoDatabase('dados/checklists', semAssinatura);
-            console.log('📤 Checklist local enviado para Firebase (primeiro upload)');
+            // Restaura assinaturas do storage separado antes de subir
+            const mapaAss = JSON.parse(localStorage.getItem('checklistAssinaturas') || '{}');
+            local.igrejas.forEach(ig => {
+              const key = (ig.nome || '') + '_' + (ig.id || '');
+              if (mapaAss[key]) { if (!ig.checklist) ig.checklist = {}; ig.checklist.assinatura = mapaAss[key]; }
+            });
+            if (!local._ts) local._ts = Date.now();
+            salvarNoDatabase('dados/checklists', local);
+            console.log('📤 Checklist local enviado para Firebase (com assinaturas)');
           }
         } catch (e) { /* ignora */ }
       }
@@ -417,23 +415,26 @@ function iniciarSincronizacaoTempoReal() {
 
     window._fbReceivendo = true;
     try {
-      // Restaura assinaturas do storage separado (nunca sobrescrito pelo Firebase)
+      // Firebase agora traz assinaturas completas.
+      // Garante que assinaturas locais (storage separado) não sejam perdidas caso o Firebase
+      // ainda tenha dados antigos (sem assinatura).
       if (typeof window._restaurarAssinaturas === 'function') {
         window._restaurarAssinaturas(dados.igrejas || []);
-      } else {
-        // Fallback: tenta restaurar do próprio localStorage
-        const localStr = localStorage.getItem('checklistsIgrejas');
-        const local = localStr ? JSON.parse(localStr) : { igrejas: [] };
-        const localMap = {};
-        (local.igrejas || []).forEach(ig => { localMap[(ig.nome || '') + '_' + (ig.id || '')] = ig; });
+      }
+
+      // Atualiza também o storage separado com assinaturas vindas do Firebase
+      try {
+        const mapaAtual = JSON.parse(localStorage.getItem('checklistAssinaturas') || '{}');
+        let atualizou = false;
         (dados.igrejas || []).forEach(ig => {
-          const localIg = localMap[(ig.nome || '') + '_' + (ig.id || '')];
-          if (localIg && localIg.checklist && localIg.checklist.assinatura) {
-            if (!ig.checklist) ig.checklist = {};
-            ig.checklist.assinatura = localIg.checklist.assinatura;
+          if (ig.checklist && ig.checklist.assinatura) {
+            const key = (ig.nome || '') + '_' + (ig.id || '');
+            mapaAtual[key] = ig.checklist.assinatura;
+            atualizou = true;
           }
         });
-      }
+        if (atualizou) localStorage.setItem('checklistAssinaturas', JSON.stringify(mapaAtual));
+      } catch (_) {}
 
       localStorage.setItem('checklistsIgrejas', JSON.stringify(dados));
       if (typeof checklistData !== 'undefined') {

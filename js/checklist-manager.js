@@ -66,6 +66,28 @@ const perguntasChecklist = {
 // Flag: impede salvar no Firebase durante o carregamento inicial
 let _checklistCarregando = false;
 
+// Migra assinaturas que existiam no localStorage antigo para o storage separado
+function _migrarAssinaturasAntigas(igrejas) {
+    try {
+        const mapaAtual = JSON.parse(localStorage.getItem(_ASSINATURAS_KEY) || '{}');
+        let houveMigracao = false;
+        (igrejas || []).forEach(ig => {
+            if (ig.checklist && ig.checklist.assinatura) {
+                const key = (ig.nome || '') + '_' + (ig.id || '');
+                if (!mapaAtual[key]) {
+                    mapaAtual[key] = ig.checklist.assinatura;
+                    houveMigracao = true;
+                    console.log(`📦 Assinatura migrada para storage seguro: ${ig.nome}`);
+                }
+            }
+        });
+        if (houveMigracao) {
+            localStorage.setItem(_ASSINATURAS_KEY, JSON.stringify(mapaAtual));
+            console.log('✅ Migração de assinaturas concluída');
+        }
+    } catch (e) { console.error('Erro ao migrar assinaturas:', e); }
+}
+
 // Carrega os dados do localStorage
 function carregarDadosChecklist() {
     _checklistCarregando = true;
@@ -74,6 +96,8 @@ function carregarDadosChecklist() {
         if (dadosSalvos) {
             checklistData = JSON.parse(dadosSalvos);
             if (!checklistData.igrejas) checklistData.igrejas = [];
+            // Migra assinaturas antigas para o storage separado (executa uma vez)
+            _migrarAssinaturasAntigas(checklistData.igrejas);
             // Restaura assinaturas do storage separado (proteção contra sync do Firebase)
             _restaurarAssinaturas(checklistData.igrejas);
             console.log('Dados de checklist carregados:', checklistData);
@@ -88,7 +112,7 @@ function carregarDadosChecklist() {
     }
 }
 
-// Salva os dados no localStorage e no Firebase
+// Salva os dados no localStorage e no Firebase (incluindo assinaturas)
 function salvarDadosChecklist() {
     try {
         // Marca timestamp
@@ -97,22 +121,11 @@ function salvarDadosChecklist() {
         localStorage.setItem('checklistsIgrejas', JSON.stringify(checklistData));
         console.log('✅ Dados de checklist salvos localmente');
 
-        // Salva no Firebase sem assinaturas (economiza espaço), fora do carregamento inicial
+        // Salva no Firebase completo (com assinaturas), fora do carregamento inicial
         if (!window._fbReceivendo && !_checklistCarregando && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
             if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
-            const dadosSemAssinatura = {
-                _ts: checklistData._ts,
-                igrejas: (checklistData.igrejas || []).map(ig => {
-                    const igCopy = Object.assign({}, ig);
-                    if (igCopy.checklist) {
-                        igCopy.checklist = Object.assign({}, igCopy.checklist);
-                        delete igCopy.checklist.assinatura; // Não sobe imagem para Firebase
-                    }
-                    return igCopy;
-                })
-            };
-            salvarNoDatabase('dados/checklists', dadosSemAssinatura)
-                .then(() => console.log('✅ Checklist salvo no Firebase'))
+            salvarNoDatabase('dados/checklists', checklistData)
+                .then(() => console.log('✅ Checklist salvo no Firebase (com assinaturas)'))
                 .catch(err => console.warn('⚠️ Checklist não salvo no Firebase:', err));
         }
     } catch (error) {
