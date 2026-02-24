@@ -451,70 +451,121 @@ async function salvarChecklist(event, igrejaIndex) {
 }
 
 // Visualiza um checklist existente
-function visualizarChecklist(igrejaIndex) {
+async function visualizarChecklist(igrejaIndex) {
     const igreja = checklistData.igrejas[igrejaIndex];
     if (!igreja || !igreja.checklist) return;
 
-    const ch = igreja.checklist;
-    const resp = ch.responsavel || {};
-    const respostas = ch.respostas || {};
-    const assinatura = ch.assinatura || null;
-
-    // Monta os itens com respostas
-    const itensHTML = perguntasChecklist.itens.map((pergunta, i) => {
-        const resposta = respostas[`item_${i}`] || '—';
-        const cor = resposta === 'SIM' ? '#22c55e' : resposta === 'NÃO' ? '#ef4444' : '#94a3b8';
-        return `
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid #f1f5f9;">
-                <span style="font-size:0.85em; color:#334155; flex:1;">${i + 1}. ${pergunta}</span>
-                <span style="font-size:0.85em; font-weight:700; color:${cor}; white-space:nowrap;">${resposta}</span>
-            </div>`;
-    }).join('');
-
-    const assinaturaHTML = assinatura
-        ? `<div style="margin-top:16px; text-align:center;">
-               <p style="font-size:0.8em; color:#64748b; margin-bottom:6px;">Assinatura:</p>
-               <img src="${assinatura}" style="max-width:200px; border:1px solid #e2e8f0; border-radius:8px; padding:4px; background:#fff;">
-           </div>`
-        : '<p style="font-size:0.8em; color:#94a3b8; margin-top:12px;">Sem assinatura registrada.</p>';
-
+    // Cria modal de loading imediatamente
     const modal = document.createElement('div');
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
     modal.innerHTML = `
-        <div style="background:#fff;border-radius:16px;max-width:600px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:auto;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="background:#fff;border-radius:16px;width:min(95vw,860px);height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.4);overflow:hidden;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0;flex-shrink:0;">
                 <div>
-                    <h2 style="margin:0;font-size:1.2em;color:#1e293b;">${igreja.nome}</h2>
-                    ${igreja.id ? `<span style="font-size:0.8em;color:#64748b;">ID: ${igreja.id}</span>` : ''}
+                    <span style="font-weight:700;color:#1e293b;font-size:1em;">${igreja.nome}</span>
+                    ${igreja.id ? `<span style="font-size:0.8em;color:#64748b;margin-left:8px;">ID: ${igreja.id}</span>` : ''}
                 </div>
-                <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;font-size:1.5em;cursor:pointer;color:#64748b;padding:4px;">✕</button>
-            </div>
-
-            <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:16px;font-size:0.85em;color:#475569;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                    <div><strong>Data:</strong> ${resp.data || '—'}</div>
-                    <div><strong>Aprovado por:</strong> ${resp.aprovadoPor || '—'}</div>
-                    <div><strong>CPF:</strong> ${resp.cpf || '—'}</div>
-                    <div><strong>Telefone:</strong> ${resp.telefone || '—'}</div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button id="_btnDownloadChecklist" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:0.85em;font-weight:600;">
+                        <i class="fas fa-download"></i> Baixar PDF
+                    </button>
+                    <button onclick="this.closest('[style*=fixed]').remove()" style="background:#f1f5f9;color:#475569;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:1.1em;font-weight:700;">✕</button>
                 </div>
             </div>
-
-            <div style="max-height:55vh;overflow-y:auto;padding-right:4px;">
-                ${itensHTML}
-            </div>
-
-            ${assinaturaHTML}
-
-            <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
-                <button onclick="downloadChecklistPDF(${igrejaIndex})" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:0.9em;font-weight:600;">
-                    <i class="fas fa-download"></i> Baixar PDF
-                </button>
-                <button onclick="this.closest('[style*=fixed]').remove()" style="background:#f1f5f9;color:#475569;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-size:0.9em;font-weight:600;">Fechar</button>
+            <div id="_checklistPreviewBody" style="flex:1;display:flex;align-items:center;justify-content:center;background:#f8fafc;">
+                <div style="color:#94a3b8;font-size:0.9em;"><i class="fas fa-spinner fa-spin"></i> Gerando preview...</div>
             </div>
         </div>`;
 
     document.body.appendChild(modal);
     modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    // Gera o PDF e exibe no iframe
+    try {
+        const pdf = await _gerarPDFChecklist(igrejaIndex);
+        if (!pdf) { modal.remove(); return; }
+
+        const dataUri = pdf.output('datauristring');
+        const body    = modal.querySelector('#_checklistPreviewBody');
+
+        body.innerHTML = `<iframe src="${dataUri}" style="width:100%;height:100%;border:none;background:#fff;"></iframe>`;
+
+        // Botão de download
+        modal.querySelector('#_btnDownloadChecklist').addEventListener('click', () => {
+            downloadChecklistPDF(igrejaIndex);
+        });
+    } catch (e) {
+        console.error('Erro ao gerar preview do checklist:', e);
+        modal.remove();
+        alert('Erro ao gerar preview. Tente baixar o PDF diretamente.');
+    }
+}
+
+// Gera o objeto jsPDF do checklist (sem baixar)
+async function _gerarPDFChecklist(igrejaIndex) {
+    const igreja = checklistData.igrejas[igrejaIndex];
+    if (!igreja || !igreja.checklist) return null;
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+
+    const responsavel = igreja.checklist.responsavel || {};
+    const respostas   = igreja.checklist.respostas   || {};
+    const assinatura  = igreja.checklist.assinatura  || null;
+
+    let y = 20;
+
+    pdf.setFontSize(18);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('CHECKLIST TÉCNICO', 105, y, { align: 'center' });
+    y += 10;
+
+    pdf.setFontSize(14);
+    pdf.text(igreja.nome, 105, y, { align: 'center' });
+    y += 15;
+
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Informações do Responsável', 20, y);
+    y += 8;
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.text(`Data: ${responsavel.data || 'N/A'}`, 20, y);          y += 6;
+    pdf.text(`Aprovado por: ${responsavel.aprovadoPor || 'N/A'}`, 20, y); y += 6;
+    pdf.text(`CPF: ${responsavel.cpf || 'N/A'}`, 20, y);             y += 6;
+    pdf.text(`Telefone: ${responsavel.telefone || 'N/A'}`, 20, y);   y += 12;
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.text('Itens do Checklist', 20, y);
+    y += 8;
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+
+    perguntasChecklist.itens.forEach((pergunta, index) => {
+        if (y > 270) { pdf.addPage(); y = 20; }
+        const resposta = respostas[`item_${index}`] || 'N/A';
+        const linhas = pdf.splitTextToSize(`${index + 1}. ${pergunta}`, 150);
+        linhas.forEach(linha => { pdf.text(linha, 20, y); y += 5; });
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`Resposta: ${resposta}`, 25, y);
+        pdf.setFont('helvetica', 'normal');
+        y += 8;
+    });
+
+    if (assinatura) {
+        if (y > 240) { pdf.addPage(); y = 20; }
+        y += 10;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(12);
+        pdf.text('Assinatura Digital:', 20, y);
+        y += 10;
+        try { pdf.addImage(assinatura, 'PNG', 20, y, 80, 30); } catch (e) {}
+    }
+
+    return pdf;
 }
 
 // Gera e baixa o PDF do checklist
@@ -525,91 +576,8 @@ async function downloadChecklistPDF(igrejaIndex) {
         return;
     }
 
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF();
-    
-    const responsavel = igreja.checklist.responsavel;
-    const respostas = igreja.checklist.respostas;
-    const assinatura = igreja.checklist.assinatura;
-
-    let y = 20;
-
-    // Título
-    pdf.setFontSize(18);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('CHECKLIST TÉCNICO', 105, y, { align: 'center' });
-    y += 10;
-
-    // Igreja
-    pdf.setFontSize(14);
-    pdf.text(igreja.nome, 105, y, { align: 'center' });
-    y += 15;
-
-    // Informações do Responsável
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Informações do Responsável', 20, y);
-    y += 8;
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.text(`Data: ${responsavel.data || 'N/A'}`, 20, y);
-    y += 6;
-    pdf.text(`Aprovado por: ${responsavel.aprovadoPor || 'N/A'}`, 20, y);
-    y += 6;
-    pdf.text(`CPF: ${responsavel.cpf || 'N/A'}`, 20, y);
-    y += 6;
-    pdf.text(`Telefone: ${responsavel.telefone || 'N/A'}`, 20, y);
-    y += 12;
-
-    // Itens do Checklist
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(12);
-    pdf.text('Itens do Checklist', 20, y);
-    y += 8;
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-
-    perguntasChecklist.itens.forEach((pergunta, index) => {
-        if (y > 270) {
-            pdf.addPage();
-            y = 20;
-        }
-
-        const resposta = respostas[`item_${index}`] || 'N/A';
-        const linhas = pdf.splitTextToSize(`${index + 1}. ${pergunta}`, 150);
-        
-        linhas.forEach(linha => {
-            pdf.text(linha, 20, y);
-            y += 5;
-        });
-        
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`Resposta: ${resposta}`, 25, y);
-        pdf.setFont('helvetica', 'normal');
-        y += 8;
-    });
-
-    // Assinatura
-    if (assinatura) {
-        if (y > 240) {
-            pdf.addPage();
-            y = 20;
-        }
-
-        y += 10;
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(12);
-        pdf.text('Assinatura Digital:', 20, y);
-        y += 10;
-
-        try {
-            pdf.addImage(assinatura, 'PNG', 20, y, 80, 30);
-        } catch (e) {
-            console.error('Erro ao adicionar assinatura ao PDF:', e);
-        }
-    }
+    const pdf = await _gerarPDFChecklist(igrejaIndex);
+    if (!pdf) { alert('Checklist não encontrado!'); return; }
 
     // Nome do arquivo
     const nomeArquivo = `Checklist_${igreja.nome.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
