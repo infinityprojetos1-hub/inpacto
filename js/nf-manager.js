@@ -1286,6 +1286,7 @@ function atualizarListaNF() {
                     const idx = dados.indexOf(igreja);
                     const acaoBotao = tipo === 'ativas'
                         ? `<button onclick="arquivarIgreja(${idx})" class="btn-archive" title="Arquivar igreja"><i class="fas fa-archive"></i></button>
+                           <button onclick="moverParaEspeciais(${idx})" class="btn-especial" title="Mover para Igrejas Especiais"><i class="fas fa-star"></i></button>
                            <button onclick="editarIgreja(${idx}, '${tipo}')" class="btn-edit" title="Editar igreja"><i class="fas fa-edit"></i></button>
                            <button onclick="excluirIgreja(${idx}, '${tipo}')" class="btn-delete" title="Excluir igreja"><i class="fas fa-trash"></i></button>`
                         : tipo === 'especiais'
@@ -1519,6 +1520,19 @@ function atualizarListaNF() {
             background: #e0e0e0;
             color: #333;
         }
+        .btn-especial {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #fff8e1;
+            color: #f59e0b;
+            transition: all 0.2s ease;
+        }
+        .btn-especial:hover {
+            background: #fde68a;
+            color: #d97706;
+        }
         .btn-restore {
             background: var(--primary-color);
             color: white;
@@ -1652,6 +1666,15 @@ function excluirIgreja(index, tipo) {
                 : tipo === 'especiais' ? (nfData.especiais || [])
                 : nfData.arquivadas;
     lista.splice(index, 1);
+    salvarDadosNF();
+    atualizarListaNF();
+}
+
+function moverParaEspeciais(index) {
+    if (!nfData.igrejas || !nfData.igrejas[index]) return;
+    const igreja = nfData.igrejas.splice(index, 1)[0];
+    if (!nfData.especiais) nfData.especiais = [];
+    nfData.especiais.push(igreja);
     salvarDadosNF();
     atualizarListaNF();
 }
@@ -1884,6 +1907,7 @@ window.gerarPDFRelatorioPendencias = gerarPDFRelatorioPendencias;
 window.abrirModalRelatorioPendenciasImagem = abrirModalRelatorioPendenciasImagem;
 window.arquivarIgreja = arquivarIgreja;
 window.restaurarIgreja = restaurarIgreja;
+window.moverParaEspeciais     = moverParaEspeciais;
 window.moverEspecialParaAtiva = moverEspecialParaAtiva;
 window.atualizarPendencia = atualizarPendencia;
 window.abrirChecklistModal = abrirChecklistModal;
