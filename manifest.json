@@ -5,11 +5,21 @@
   "start_url": "/inpacto/",
   "scope": "/inpacto/",
   "display": "standalone",
-  "background_color": "#667eea",
+  "background_color": "#ffffff",
   "theme_color": "#667eea",
   "orientation": "any",
   "lang": "pt-BR",
   "icons": [
+    {
+      "src": "/inpacto/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/inpacto/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
     {
       "src": "/inpacto/icon-192.png",
       "sizes": "192x192",

@@ -5,13 +5,15 @@
 // IMPORTANTE: incremente CACHE_VERSION a cada deploy para forçar atualização.
 // ────────────────────────────────────────────────────────────────────────────
 
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME    = `orcamentos-inpacto-${CACHE_VERSION}`;
 const BASE_PATH     = '/inpacto';
 
 // Recursos que precisam estar offline (estratégia Cache First para assets)
 const STATIC_ASSETS = [
   `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/favicon.png`,
+  `${BASE_PATH}/icon-180.png`,
   `${BASE_PATH}/icon-192.png`,
   `${BASE_PATH}/icon-512.png`
 ];
