@@ -1739,39 +1739,136 @@ function gerarVariacaoTexto(item) {
 function gerarTextoConcorrenteAuto(textoBase) {
     try {
         if (!textoBase || !textoBase.trim()) return '';
-        let t = textoBase;
 
-        // Substituições simples de pessoa/posse (pt-BR) para uma forma neutra
-        const subs = [
-            [/\bnós\b/gi, 'a empresa concorrente'],
-            [/\bnos\b/gi, 'à empresa concorrente'],
-            [/\bconosco\b/gi, 'com a empresa concorrente'],
-            [/\bnosso\b/gi, 'da empresa concorrente'],
-            [/\bnossos\b/gi, 'da empresa concorrente'],
-            [/\bnossa\b/gi, 'da empresa concorrente'],
-            [/\bnossas\b/gi, 'da empresa concorrente'],
-            [/\bminha\b/gi, 'da empresa concorrente'],
-            [/\bmeu\b/gi, 'da empresa concorrente'],
-            // Verbos comuns na 1ª pessoa do plural -> 3ª pessoa do singular
-            [/\boferecemos\b/gi, 'oferece'],
-            [/\brealizamos\b/gi, 'realiza'],
-            [/\bexecutamos\b/gi, 'executa'],
-            [/\bfornecemos\b/gi, 'fornece'],
-            [/\bgarantimos\b/gi, 'garante'],
-            [/\butilizamos\b/gi, 'utiliza'],
-            [/\baplicamos\b/gi, 'aplica'],
-            [/\bseguimos\b/gi, 'segue'],
-            [/\batuamos\b/gi, 'atua'],
-            [/\bprestamos\b/gi, 'presta']
+        // ── FASE 1: substituições de palavras ─────────────────────────────────
+
+        // Pronomes pessoais / possessivos → referência impessoal
+        const subsPessoa = [
+            [/\bnós\b/gi,        'o fornecedor'],
+            [/\bnos\b/gi,        'ao fornecedor'],
+            [/\bconosco\b/gi,    'com o fornecedor'],
+            [/\bnosso(s)?\b/gi,  'do fornecedor'],
+            [/\bnossa(s)?\b/gi,  'do fornecedor'],
+            [/\bmeu\b/gi,        'do fornecedor'],
+            [/\bminha\b/gi,      'do fornecedor'],
+            [/\beu\b/gi,         'o fornecedor'],
+            [/\bvocê\b/gi,       'o contratante'],
+            [/\bseu(s)?\b/gi,    'do contratante'],
+            [/\bsua(s)?\b/gi,    'do contratante'],
         ];
-        subs.forEach(([rgx, rep]) => { t = t.replace(rgx, rep); });
 
-        // Pequeno preâmbulo adicionando contexto
-        const cabecalho = 'De acordo com a proposta da empresa concorrente, ';
-        // Evita duplicar o cabeçalho se já existir
-        if (!/^De acordo com a proposta da empresa concorrente,/i.test(t.trim())) {
-            t = cabecalho + t.trim();
+        // Verbos 1ª pessoa → 3ª pessoa distante + incerteza nas garantias
+        const subsVerbos = [
+            [/\boferecemos\b/gi,        'oferece'],
+            [/\brealizamos\b/gi,        'realizará'],
+            [/\bexecutamos\b/gi,        'executará'],
+            [/\bfornecemos\b/gi,        'fornece'],
+            [/\bgarantimos\b/gi,        'prevê garantir'],
+            [/\butilizamos\b/gi,        'utilizará'],
+            [/\baplicamos\b/gi,         'aplicará'],
+            [/\bseguimos\b/gi,          'segue'],
+            [/\batuamos\b/gi,           'atua'],
+            [/\bprestamos\b/gi,         'presta'],
+            [/\bcuidamos\b/gi,          'cuidará'],
+            [/\btrabalhamos\b/gi,       'trabalhará'],
+            [/\bcontamos\b/gi,          'conta'],
+            [/\bdispomos\b/gi,          'dispõe'],
+            [/\bpossu[ií]mos\b/gi,      'possui'],
+            [/\bvalorizamos\b/gi,       'considera'],
+            [/\bpriorizamos\b/gi,       'prevê priorizar'],
+            [/\bentregamos\b/gi,        'entregará'],
+            [/\bcomprometemos\b/gi,     'prevê comprometer-se'],
+            [/\bcumprimos\b/gi,         'cumpre'],
+            [/\batendemos\b/gi,         'atende'],
+            [/\binstalamos\b/gi,        'instalará'],
+            [/\bmonitoramos\b/gi,       'monitora'],
+            [/\bgerenciamos\b/gi,       'gerencia'],
+            [/\bdesenvolvemos\b/gi,     'desenvolve'],
+            [/\bcriamos\b/gi,           'cria'],
+            [/\bbuscamos\b/gi,          'busca'],
+            [/\bprojektamos\b/gi,       'projeta'],
+            [/\bprojetamos\b/gi,        'projeta'],
+        ];
+
+        // Superlativos e diferenciais → termos neutros ou removidos
+        const subsQualidade = [
+            [/\bmelhor(es)?\b/gi,                    'um'],
+            [/\bexcelência\b/gi,                     'qualidade padrão'],
+            [/\bexcelente(s)?\b/gi,                  'adequado'],
+            [/\bpremium\b/gi,                        'padrão'],
+            [/\balta\s+qualidade\b/gi,               'qualidade'],
+            [/\balta\s+performance\b/gi,             'desempenho'],
+            [/\btop\s+de\s+linha\b/gi,               'disponível no mercado'],
+            [/\bde\s+ponta\b/gi,                     'disponível'],
+            [/\bde\s+alto\s+padrão\b/gi,             ''],
+            [/\bde\s+alto\s+nível\b/gi,              ''],
+            [/\bdiferenciado(s|a|as)?\b/gi,          'padrão'],
+            [/\bpersonalizado(s|a|as)?\b/gi,         'padrão'],
+            [/\bespecializado(s|a|as)?\b/gi,         ''],
+            [/\bqualificado(s|a|as)?\b/gi,           ''],
+            [/\bprofissional(is)?\b/gi,              'disponível'],
+            [/\bexperiente(s)?\b/gi,                 ''],
+            [/\batencioso(s|a|as)?\b/gi,             ''],
+            [/\bdedicado(s|a|as)?\b/gi,              ''],
+            [/\binovador(es|a|as)?\b/gi,             ''],
+            [/\bmoderno(s|a|as)?\b/gi,               'disponível'],
+            [/\bavançado(s|a|as)?\b/gi,              'disponível'],
+            [/\bcom\s+garantia\b/gi,                 'sujeito a condições'],
+            [/\bsem\s+custo\s+adicional\b/gi,        'conforme condições do contrato'],
+            [/\bàs\s+suas\s+necessidades\b/gi,       'conforme o solicitado'],
+            [/\bsuas\s+expectativas\b/gi,            'o solicitado'],
+            [/\btranquilidade\b/gi,                  ''],
+            [/\bsatisfação\b/gi,                     'entrega'],
+            [/\bconfiança\b/gi,                      ''],
+            [/\bsegurança\b/gi,                      ''],
+            [/\bcomprometimento\b/gi,                'previsão de entrega'],
+        ];
+
+        // Pontuação e expressões de chamada para ação
+        const subsFormatacao = [
+            [/!/g,                        '.'],
+            [/\bcontate-nos\b/gi,         'entre em contato com o fornecedor'],
+            [/\bfale\s+conosco\b/gi,      'contate o fornecedor'],
+            [/\bagende\s+(uma\s+)?visita\b/gi, 'solicite informações'],
+            [/\bnão\s+perca\s+tempo\b/gi, ''],
+        ];
+
+        let t = textoBase;
+        [...subsPessoa, ...subsVerbos, ...subsQualidade, ...subsFormatacao]
+            .forEach(([rgx, rep]) => { t = t.replace(rgx, rep); });
+
+        // Limpa artefatos de substituições vazias
+        t = t.replace(/\s{2,}/g, ' ')
+             .replace(/ ([,.])/g, '$1')
+             .replace(/,\s*\./g, '.')
+             .trim();
+
+        // ── FASE 2: transformação estrutural por linha ────────────────────────
+        const linhas = t.split('\n');
+        const linhasTransformadas = linhas.map((linha, idx) => {
+            const l = linha.trim();
+            if (!l) return '';
+
+            // Títulos/cabeçalhos: mantém mas adiciona prefixo de terceiro
+            if (/^[A-ZÁÉÍÓÚ\s]{5,}$/.test(l) || /^\*\*/.test(l) || /^#{1,3}\s/.test(l)) {
+                return linha; // mantém formatação de títulos
+            }
+
+            // Frases que contêm garantias absolutas → adiciona incerteza
+            if (/garanti|certeza|absolut|100%|sempre|nunca\s+falt/i.test(l)) {
+                return linha.replace(/\b(garanti\w*)\b/gi, 'prevê $1');
+            }
+
+            return linha;
+        });
+
+        t = linhasTransformadas.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+
+        // ── FASE 3: cabeçalho impessoal ───────────────────────────────────────
+        if (!/^(Conforme|Segundo|De acordo)/i.test(t)) {
+            t = 'Conforme proposta da empresa concorrente:\n\n' + t;
         }
+
         return t;
     } catch (_) {
         return textoBase || '';
