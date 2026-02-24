@@ -368,191 +368,75 @@ function inicializarUploadLogos() {
 
 // Função para exibir as logos carregadas na interface
 function exibirLogosCarregadas() {
-    // Mostra as logos salvas na interface
-    function mostrarLogoSeDisponivel(logoKey, imageId) {
-        const image = document.getElementById(imageId);
-        const statusEl = document.getElementById(`status${imageId}`);
-
-        if (logosBase64[logoKey]) {
-            image.src = logosBase64[logoKey];
-            image.style.display = 'block';
-            if (statusEl) statusEl.textContent = "Status: Carregada com sucesso!";
+    LOGOS_MAPA.forEach(entry => {
+        if (logosBase64[entry.key]) {
+            const img    = document.getElementById(entry.imgId);
+            const status = document.getElementById(entry.statusId);
+            if (img) { img.src = logosBase64[entry.key]; img.style.display = 'block'; }
+            if (status) { status.textContent = 'Status: Carregada com sucesso!'; status.style.color = '#4caf50'; }
         }
+    });
+}
+
+// Mapeamento: chave de logosBase64 → arquivo na pasta logo/ e IDs no DOM
+const LOGOS_MAPA = [
+    { key: 'impactoSolucoes', arquivo: 'logo/impacto - logo.jpg',              imgId: 'logoImpacto',       statusId: 'statusLogoImpacto'       },
+    { key: 'spgDaSilva',      arquivo: 'logo/spg - logo.jpg',                  imgId: 'logoSPG',           statusId: 'statusLogoSPG'           },
+    { key: 'virtualGuitar',   arquivo: 'logo/virtualGuitarShop - logo.jpg',    imgId: 'logoVirtualGuitar', statusId: 'statusLogoVirtualGuitar' },
+    { key: 'ggProauto',       arquivo: 'logo/gg proauto - logo.jpg',           imgId: 'logoGGProauto',     statusId: 'statusLogoGGProauto'     },
+    { key: 'stv',             arquivo: 'logo/stv - logo.jpg',                  imgId: 'logoSTV',           statusId: 'statusLogoSTV'           },
+    { key: 'upServicos',      arquivo: 'logo/up - logo.jpg',                   imgId: 'logoUPServicos',    statusId: 'statusLogoUPServicos'    },
+    { key: 'sena',            arquivo: 'logo/sena - logo.jpg',                 imgId: 'logoSena',          statusId: 'statusLogoSena'          },
+    { key: 'instalassom',     arquivo: 'logo/instalasom - logo.jpg',           imgId: 'logoInstalassom',   statusId: 'statusLogoInstalassom'   },
+    { key: 'glauber',         arquivo: 'logo/glauber - logo.png',              imgId: 'logoGlauber',       statusId: 'statusLogoGlauber'       },
+    { key: 'megaLogo',        arquivo: 'logo/Mega Eventos - logo.jpg',         imgId: 'logoMegaEventos',   statusId: 'statusLogoMegaEventos'   },
+    { key: 'megaCarimbo',     arquivo: 'logo/Mega Eventos - Carimbo.jpg',      imgId: 'carimboMegaEventos',statusId: 'statusCarimboMegaEventos'},
+    { key: 'tellaLogo',       arquivo: 'logo/Tella video - logo.jpg',          imgId: 'logoTellaVideo',    statusId: 'statusLogoTellaVideo'    },
+    { key: 'tellaCarimbo',    arquivo: 'logo/Tella video - Carimbo.jpg',       imgId: 'carimboTellaVideo', statusId: 'statusCarimboTellaVideo' },
+];
+
+function _aplicarLogoNaUI(entry) {
+    const img    = document.getElementById(entry.imgId);
+    const status = document.getElementById(entry.statusId);
+    if (img && logosBase64[entry.key]) {
+        img.src = logosBase64[entry.key];
+        img.style.display = 'block';
     }
-
-    // Para cada logo salva, exibe na interface
-    mostrarLogoSeDisponivel('impactoSolucoes', 'logoImpacto');
-    mostrarLogoSeDisponivel('spgDaSilva', 'logoSPG');
-    mostrarLogoSeDisponivel('virtualGuitar', 'logoVirtualGuitar');
-
-    // Novas logos
-    mostrarLogoSeDisponivel('ggProauto', 'logoGGProauto');
-    mostrarLogoSeDisponivel('stv', 'logoSTV');
-    mostrarLogoSeDisponivel('upServicos', 'logoUPServicos');
-    mostrarLogoSeDisponivel('sena', 'logoSena');
-    mostrarLogoSeDisponivel('instalassom', 'logoInstalassom');
-    mostrarLogoSeDisponivel('glauber', 'logoGlauber');
-    // Concorrentes Especiais
-    mostrarLogoSeDisponivel('megaLogo', 'logoMegaEventos');
-    mostrarLogoSeDisponivel('megaCarimbo', 'carimboMegaEventos');
-    mostrarLogoSeDisponivel('tellaLogo', 'logoTellaVideo');
-    mostrarLogoSeDisponivel('tellaCarimbo', 'carimboTellaVideo');
+    if (status) {
+        status.textContent = 'Status: Carregada automaticamente ✓';
+        status.style.color = '#4caf50';
+    }
 }
 
 // Função para carregar logos das empresas que já estão no DOM
 function inicializarLogos() {
-    // Primeiro, tenta carregar logos do localStorage
+    // Carrega logos do localStorage (se existirem)
     const logosSalvas = carregarLogosDoLocalStorage();
-
     if (logosSalvas) {
-        // Se existirem logos salvas, usa-as
-        console.log("Logos encontradas no localStorage!");
         Object.assign(logosBase64, logosSalvas);
         exibirLogosCarregadas();
-    } else {
-        // Caso contrário, verifica se há elementos de imagem com IDs específicos
-        const logoImpacto = document.getElementById('logoImpacto');
-        if (logoImpacto && logoImpacto.src && logoImpacto.src !== "" && !logoImpacto.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoImpacto.src, (base64) => {
-                if (base64) {
-                    logosBase64.impactoSolucoes = base64;
-                    console.log("Logo Impacto Soluções carregada!");
-                    salvarLogosNoLocalStorage(logosBase64); // Salva após carregar
-                }
-            });
-        }
-
-        const logoSPG = document.getElementById('logoSPG');
-        if (logoSPG && logoSPG.src && logoSPG.src !== "" && !logoSPG.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoSPG.src, (base64) => {
-                if (base64) {
-                    logosBase64.spgDaSilva = base64;
-                    console.log("Logo SPG da Silva carregada!");
-                    salvarLogosNoLocalStorage(logosBase64); // Salva após carregar
-                }
-            });
-        }
-
-        const logoVirtualGuitar = document.getElementById('logoVirtualGuitar');
-        if (logoVirtualGuitar && logoVirtualGuitar.src && logoVirtualGuitar.src !== "" && !logoVirtualGuitar.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoVirtualGuitar.src, (base64) => {
-                if (base64) {
-                    logosBase64.virtualGuitar = base64;
-                    console.log("Logo Virtual Guitar Shop carregada!");
-                    salvarLogosNoLocalStorage(logosBase64); // Salva após carregar
-                }
-            });
-        }
-
-        // Novas logos
-        const logoGGProauto = document.getElementById('logoGGProauto');
-        if (logoGGProauto && logoGGProauto.src && logoGGProauto.src !== "" && !logoGGProauto.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoGGProauto.src, (base64) => {
-                if (base64) {
-                    logosBase64.ggProauto = base64;
-                    console.log("Logo GG PROAUTO LTDA carregada!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
-
-        const logoSTV = document.getElementById('logoSTV');
-        if (logoSTV && logoSTV.src && logoSTV.src !== "" && !logoSTV.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoSTV.src, (base64) => {
-                if (base64) {
-                    logosBase64.stv = base64;
-                    console.log("Logo STV IMAGEM E SOM carregada!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
-
-        const logoUPServicos = document.getElementById('logoUPServicos');
-        if (logoUPServicos && logoUPServicos.src && logoUPServicos.src !== "" && !logoUPServicos.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoUPServicos.src, (base64) => {
-                if (base64) {
-                    logosBase64.upServicos = base64;
-                    console.log("Logo UP SERVIÇOS carregada!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
-
-        const logoSena = document.getElementById('logoSena');
-        if (logoSena && logoSena.src && logoSena.src !== "" && !logoSena.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoSena.src, (base64) => {
-                if (base64) {
-                    logosBase64.sena = base64;
-                    console.log("Logo SENA AUDIOVISUAL PRODUÇÕES carregada!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
-
-        const logoInstalassom = document.getElementById('logoInstalassom');
-        if (logoInstalassom && logoInstalassom.src && logoInstalassom.src !== "" && !logoInstalassom.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoInstalassom.src, (base64) => {
-                if (base64) {
-                    logosBase64.instalassom = base64;
-                    console.log("Logo INSTALASSOM carregada!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
-
-        const logoGlauber = document.getElementById('logoGlauber');
-        if (logoGlauber && logoGlauber.src && logoGlauber.src !== "" && !logoGlauber.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoGlauber.src, (base64) => {
-                if (base64) {
-                    logosBase64.glauber = base64;
-                    console.log("Logo GLAUBER SISTEMAS CONSTRUTIVOS carregada!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
-
-        // Mega Eventos e Tella Vídeo (logo e carimbo), se já estiverem no DOM
-        const logoMegaEventos = document.getElementById('logoMegaEventos');
-        if (logoMegaEventos && logoMegaEventos.src && logoMegaEventos.src !== "" && !logoMegaEventos.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoMegaEventos.src, (base64) => {
-                if (base64) {
-                    logosBase64.megaLogo = base64;
-                    console.log("Logo MEGA EVENTOS carregada!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
-        const carimboMegaEventos = document.getElementById('carimboMegaEventos');
-        if (carimboMegaEventos && carimboMegaEventos.src && carimboMegaEventos.src !== "" && !carimboMegaEventos.src.endsWith('undefined')) {
-            carregarImagemComoBase64(carimboMegaEventos.src, (base64) => {
-                if (base64) {
-                    logosBase64.megaCarimbo = base64;
-                    console.log("Carimbo MEGA EVENTOS carregado!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
-        const logoTellaVideo = document.getElementById('logoTellaVideo');
-        if (logoTellaVideo && logoTellaVideo.src && logoTellaVideo.src !== "" && !logoTellaVideo.src.endsWith('undefined')) {
-            carregarImagemComoBase64(logoTellaVideo.src, (base64) => {
-                if (base64) {
-                    logosBase64.tellaLogo = base64;
-                    console.log("Logo TELLA VIDEO carregada!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
-        const carimboTellaVideo = document.getElementById('carimboTellaVideo');
-        if (carimboTellaVideo && carimboTellaVideo.src && carimboTellaVideo.src !== "" && !carimboTellaVideo.src.endsWith('undefined')) {
-            carregarImagemComoBase64(carimboTellaVideo.src, (base64) => {
-                if (base64) {
-                    logosBase64.tellaCarimbo = base64;
-                    console.log("Carimbo TELLA VIDEO carregado!");
-                    salvarLogosNoLocalStorage(logosBase64);
-                }
-            });
-        }
     }
+
+    // Para cada entrada do mapa, se a logo ainda não foi carregada, busca da pasta logo/
+    let novasLogos = 0;
+    const pendentes = LOGOS_MAPA.filter(entry => !logosBase64[entry.key]);
+
+    if (pendentes.length === 0) return;
+
+    pendentes.forEach(entry => {
+        const urlArquivo = entry.arquivo.replace(/ /g, '%20');
+        carregarImagemComoBase64(urlArquivo, (base64) => {
+            if (base64) {
+                logosBase64[entry.key] = base64;
+                novasLogos++;
+                _aplicarLogoNaUI(entry);
+                console.log(`✅ Logo auto-carregada da pasta: ${entry.key}`);
+                salvarLogosNoLocalStorage(logosBase64);
+            } else {
+                console.warn(`⚠️ Logo não encontrada na pasta: ${entry.arquivo}`);
+            }
+        });
+    });
 }
 
 // Função para gerar orçamentos
