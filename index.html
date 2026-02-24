@@ -1600,13 +1600,48 @@
                 height: 150px !important;
             }
             
-            /* Logo items */
-            .logo-item {
-                padding: 12px !important;
+            /* Logos - LAYOUT MOBILE OTIMIZADO */
+            .logos-container {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 12px !important;
             }
-            
+
+            .logo-item {
+                padding: 10px !important;
+                border-radius: 12px !important;
+            }
+
             .logo-item h3 {
-                font-size: 0.9em !important;
+                font-size: 0.78em !important;
+                margin-bottom: 8px !important;
+                line-height: 1.2 !important;
+            }
+
+            .logo-preview {
+                max-height: 80px !important;
+                padding: 8px !important;
+                margin-bottom: 8px !important;
+            }
+
+            .logo-instruction {
+                display: none !important;
+            }
+
+            .logo-input input[type="file"] {
+                font-size: 0.7em !important;
+                padding: 6px 4px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            .logo-status {
+                font-size: 0.7em !important;
+                padding: 4px 6px !important;
+                margin-top: 6px !important;
+            }
+
+            .logos-instructions {
+                display: none !important;
             }
             
             /* Notas Fiscais - LAYOUT VERTICAL PARA MOBILE */
