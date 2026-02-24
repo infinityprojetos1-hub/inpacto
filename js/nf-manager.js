@@ -1506,6 +1506,16 @@ function atualizarListaNF() {
         }
         .nf-acoes {
             text-align: center;
+            white-space: nowrap;
+        }
+        .nf-pendencia-select {
+            min-width: 130px;
+            width: 130px;
+            font-size: 0.82em;
+            padding: 4px 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
         }
         .btn-archive, .btn-restore {
             padding: 5px 10px;
