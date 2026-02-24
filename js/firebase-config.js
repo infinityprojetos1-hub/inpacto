@@ -417,19 +417,23 @@ function iniciarSincronizacaoTempoReal() {
 
     window._fbReceivendo = true;
     try {
-      // Restaura assinaturas locais (imagens não sobem para o Firebase)
-      const localStr = localStorage.getItem('checklistsIgrejas');
-      const local = localStr ? JSON.parse(localStr) : { igrejas: [] };
-      const localMap = {};
-      (local.igrejas || []).forEach(ig => { localMap[ig.nome + '_' + (ig.id || '')] = ig; });
-      (dados.igrejas || []).forEach(ig => {
-        const key = ig.nome + '_' + (ig.id || '');
-        const localIg = localMap[key];
-        if (localIg && localIg.checklist && localIg.checklist.assinatura) {
-          if (!ig.checklist) ig.checklist = {};
-          ig.checklist.assinatura = localIg.checklist.assinatura;
-        }
-      });
+      // Restaura assinaturas do storage separado (nunca sobrescrito pelo Firebase)
+      if (typeof window._restaurarAssinaturas === 'function') {
+        window._restaurarAssinaturas(dados.igrejas || []);
+      } else {
+        // Fallback: tenta restaurar do próprio localStorage
+        const localStr = localStorage.getItem('checklistsIgrejas');
+        const local = localStr ? JSON.parse(localStr) : { igrejas: [] };
+        const localMap = {};
+        (local.igrejas || []).forEach(ig => { localMap[(ig.nome || '') + '_' + (ig.id || '')] = ig; });
+        (dados.igrejas || []).forEach(ig => {
+          const localIg = localMap[(ig.nome || '') + '_' + (ig.id || '')];
+          if (localIg && localIg.checklist && localIg.checklist.assinatura) {
+            if (!ig.checklist) ig.checklist = {};
+            ig.checklist.assinatura = localIg.checklist.assinatura;
+          }
+        });
+      }
 
       localStorage.setItem('checklistsIgrejas', JSON.stringify(dados));
       if (typeof checklistData !== 'undefined') {

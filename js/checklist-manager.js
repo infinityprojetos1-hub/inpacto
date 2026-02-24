@@ -5,6 +5,34 @@ let checklistData = {
     igrejas: [] // Lista de igrejas com seus checklists
 };
 
+// ── Assinaturas em storage separado (nunca sobrescrito pelo Firebase) ──────────
+const _ASSINATURAS_KEY = 'checklistAssinaturas';
+
+function _salvarAssinatura(nome, id, dataUrl) {
+    try {
+        const mapa = JSON.parse(localStorage.getItem(_ASSINATURAS_KEY) || '{}');
+        const key  = (nome || '') + '_' + (id || '');
+        if (dataUrl) mapa[key] = dataUrl; else delete mapa[key];
+        localStorage.setItem(_ASSINATURAS_KEY, JSON.stringify(mapa));
+    } catch (e) { console.error('Erro ao salvar assinatura:', e); }
+}
+
+function _restaurarAssinaturas(igrejas) {
+    try {
+        const mapa = JSON.parse(localStorage.getItem(_ASSINATURAS_KEY) || '{}');
+        (igrejas || []).forEach(ig => {
+            const key = (ig.nome || '') + '_' + (ig.id || '');
+            if (mapa[key]) {
+                if (!ig.checklist) ig.checklist = {};
+                ig.checklist.assinatura = mapa[key];
+            }
+        });
+    } catch (e) { console.error('Erro ao restaurar assinaturas:', e); }
+}
+
+// Expõe restaurarAssinaturas para firebase-config.js usar
+window._restaurarAssinaturas = _restaurarAssinaturas;
+
 // Perguntas do checklist (baseadas nas imagens fornecidas)
 const perguntasChecklist = {
     responsavel: [
@@ -46,6 +74,8 @@ function carregarDadosChecklist() {
         if (dadosSalvos) {
             checklistData = JSON.parse(dadosSalvos);
             if (!checklistData.igrejas) checklistData.igrejas = [];
+            // Restaura assinaturas do storage separado (proteção contra sync do Firebase)
+            _restaurarAssinaturas(checklistData.igrejas);
             console.log('Dados de checklist carregados:', checklistData);
         }
         sincronizarIgrejasChecklistNF();
@@ -98,19 +128,25 @@ function sincronizarIgrejasChecklistNF() {
 
         const nfData = JSON.parse(nfDataStr);
         const igrejasNF = nfData.igrejas || [];
+        // Inclui arquivadas e especiais para não remover do Checklist ao arquivar
+        const todasIgrejasNF = [
+            ...igrejasNF,
+            ...(nfData.arquivadas || []),
+            ...(nfData.especiais  || [])
+        ];
 
-        // Remove igrejas que não existem mais nas Notas Fiscais
+        // Remove igrejas apenas quando excluídas de todas as listas NF
         checklistData.igrejas = checklistData.igrejas.filter(igrejaCheck => {
-            const aindaExiste = igrejasNF.some(igrejaNF =>
+            const aindaExiste = todasIgrejasNF.some(igrejaNF =>
                 igrejaNF.nome === igrejaCheck.nome && igrejaNF.id === igrejaCheck.id
             );
             if (!aindaExiste) {
-                console.log(`🗑️ Removendo igreja "${igrejaCheck.nome}" do Checklist - não existe mais nas NFs`);
+                console.log(`🗑️ Removendo igreja "${igrejaCheck.nome}" do Checklist - excluída das NFs`);
             }
             return aindaExiste;
         });
 
-        // Adiciona igrejas que estão em NF mas não em Checklist
+        // Adiciona igrejas ativas que estão em NF mas não em Checklist
         igrejasNF.forEach(igrejaNF => {
             const jaExiste = checklistData.igrejas.find(
                 ig => ig.nome === igrejaNF.nome && ig.id === igrejaNF.id
@@ -409,6 +445,9 @@ async function salvarChecklist(event, igrejaIndex) {
 
     // Coleta assinatura
     const assinatura = canvasAssinatura ? canvasAssinatura.toDataURL() : null;
+
+    // Salva assinatura em storage separado (isolado do Firebase sync)
+    if (assinatura) _salvarAssinatura(igreja.nome, igreja.id, assinatura);
 
     // Salva no objeto
     igreja.checklist = {
