@@ -1442,7 +1442,13 @@ function atualizarListaNF() {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 2px;
         }
+        .nf-tabs::-webkit-scrollbar { display: none; }
         .nf-tab-button {
             padding: 10px 20px;
             border: none;

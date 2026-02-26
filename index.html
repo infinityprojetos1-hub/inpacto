@@ -1762,14 +1762,18 @@
             }
 
             .material-tabs {
+                overflow-x: auto !important;
+                flex-wrap: nowrap !important;
                 width: 100% !important;
+                -webkit-overflow-scrolling: touch;
             }
 
             .material-tab-button {
-                flex: 1 1 auto !important;
+                flex: 0 0 auto !important;
+                white-space: nowrap !important;
                 text-align: center !important;
                 font-size: 0.8em !important;
-                padding: 8px 6px !important;
+                padding: 8px 12px !important;
             }
 
             .material-table {
@@ -1995,13 +1999,21 @@
             }
 
             .nf-tabs {
+                overflow-x: auto !important;
                 flex-wrap: nowrap !important;
-                gap: 8px !important;
+                gap: 6px !important;
+                padding-bottom: 4px !important;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
             }
 
+            .nf-tabs::-webkit-scrollbar { display: none; }
+
             .nf-tab-button {
-                padding: 10px 16px !important;
-                font-size: 0.85em !important;
+                flex: 0 0 auto !important;
+                white-space: nowrap !important;
+                padding: 8px 14px !important;
+                font-size: 0.8em !important;
             }
         }
         
@@ -4723,15 +4735,31 @@
         }
 
         // ── Prompt de instalação PWA ──────────────────────────────────────────
+        const _pwaInstallKey = 'pwaInstallDismissed_v2';
         let _deferredInstallPrompt = null;
-        const _pwaJaFechou = localStorage.getItem('pwaInstallDismissed');
+        const _pwaJaFechou = localStorage.getItem(_pwaInstallKey);
+
+        // iOS: não dispara beforeinstallprompt — mostra instrução manual
+        const _isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const _isStandalone = window.navigator.standalone === true;
+        if (_isIOS && !_isStandalone && !_pwaJaFechou) {
+            setTimeout(() => {
+                const banner = document.getElementById('pwaInstallBanner');
+                const installBtn = document.getElementById('pwaInstallBtn');
+                if (banner && installBtn) {
+                    banner.querySelector('div > div:first-child').textContent = 'Instalar Inpacto';
+                    banner.querySelector('div > div:last-child').textContent = 'Toque em   e "Adicionar à Tela de Início"';
+                    installBtn.style.display = 'none';
+                    banner.style.display = 'flex';
+                }
+            }, 3000);
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             _deferredInstallPrompt = e;
             console.log('📱 PWA pode ser instalado');
 
-            // Mostra banner apenas se nunca foi fechado
             if (!_pwaJaFechou) {
                 setTimeout(() => {
                     const banner = document.getElementById('pwaInstallBanner');
@@ -4752,7 +4780,7 @@
 
         document.getElementById('pwaInstallClose').addEventListener('click', () => {
             document.getElementById('pwaInstallBanner').style.display = 'none';
-            localStorage.setItem('pwaInstallDismissed', '1');
+            localStorage.setItem(_pwaInstallKey, '1');
         });
 
         window.addEventListener('appinstalled', () => {
