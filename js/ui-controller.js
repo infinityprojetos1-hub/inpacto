@@ -31,7 +31,7 @@ function inicializarTabs() {
     }
 
     document.querySelectorAll('.tab-button').forEach(tab => {
-        // Garante que o toque no botão não seja capturado como scroll horizontal
+        // touch-action:manipulation diz ao browser que este elemento responde a tap, não a scroll
         tab.style.touchAction = 'manipulation';
 
         function ativarAba() {
@@ -46,7 +46,6 @@ function inicializarTabs() {
             const content = document.getElementById(tabId);
             if (content) content.classList.add('active');
 
-            // Callbacks específicos por aba
             if (tabId === 'pagamento' && typeof window.renderizarAbaPagamento === 'function') {
                 setTimeout(window.renderizarAbaPagamento, 80);
             }
@@ -54,30 +53,38 @@ function inicializarTabs() {
                 setTimeout(window.atualizarListaNF, 50);
             }
 
-            // Scroll suave para o topo no mobile
             if (window.innerWidth <= 768) {
                 requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
             }
         }
 
-        tab.addEventListener('click', ativarAba);
-
-        // Fallback touchend para Android/MIUI onde overflow-x:auto pode capturar o click
+        // Flag para evitar duplo disparo touchend + click no mobile
+        let _touchHandled = false;
         let _touchStartX = 0;
         let _touchStartY = 0;
+
         tab.addEventListener('touchstart', (e) => {
             _touchStartX = e.touches[0].clientX;
             _touchStartY = e.touches[0].clientY;
+            _touchHandled = false;
         }, { passive: true });
+
         tab.addEventListener('touchend', (e) => {
             const dx = Math.abs(e.changedTouches[0].clientX - _touchStartX);
             const dy = Math.abs(e.changedTouches[0].clientY - _touchStartY);
-            // Só ativa se foi um toque (deslocamento pequeno), não um swipe
-            if (dx < 10 && dy < 10) {
-                e.preventDefault();
+            if (dx < 15 && dy < 15) {
+                _touchHandled = true;
                 ativarAba();
+                // Limpa flag após o click sintético do browser (que deve ser ignorado)
+                setTimeout(() => { _touchHandled = false; }, 500);
             }
-        }, { passive: false });
+        }, { passive: true });
+
+        // Click só ativa se não foi tratado pelo touchend (desktop ou touch sem touchend)
+        tab.addEventListener('click', () => {
+            if (_touchHandled) return;
+            ativarAba();
+        });
     });
 
     // Atualiza ao redimensionar (debounced)
