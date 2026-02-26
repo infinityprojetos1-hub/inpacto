@@ -45,15 +45,21 @@ function obterIgrejasPagamento() {
     try {
         let lista = [];
 
-        // Tenta usar a variável global nfData (do nf-manager.js) — mais atualizada
-        if (typeof nfData !== 'undefined' && Array.isArray(nfData.igrejas)) {
-            lista = nfData.igrejas;
+        // Combina igrejas de TODAS as categorias do NF: ativas + arquivadas + especiais
+        if (typeof nfData !== 'undefined') {
+            const ativas   = Array.isArray(nfData.igrejas)    ? nfData.igrejas    : [];
+            const arquiv   = Array.isArray(nfData.arquivadas) ? nfData.arquivadas : [];
+            const especiais = Array.isArray(nfData.especiais)  ? nfData.especiais  : [];
+            lista = [...ativas, ...arquiv, ...especiais];
         } else {
             // Fallback: localStorage
             const nfStr = localStorage.getItem('notasFiscais');
             if (!nfStr) return [];
             const parsed = JSON.parse(nfStr);
-            lista = parsed.igrejas || [];
+            const ativas    = parsed.igrejas    || [];
+            const arquiv    = parsed.arquivadas  || [];
+            const especiais = parsed.especiais   || [];
+            lista = [...ativas, ...arquiv, ...especiais];
         }
 
         // Filtra inválidas e remove duplicatas por nome+id
@@ -205,7 +211,7 @@ function renderizarAbaPagamento() {
 
             '</div>'; // fim pag-layout
 
-        console.log('[Pagamento] Renderizado com ' + igrejas.length + ' igrejas');
+        console.log('[Pagamento] Renderizado com ' + todasIgrejas.length + ' igrejas');
     } catch (e) {
         console.error('[Pagamento] Erro ao renderizar aba:', e);
     }
