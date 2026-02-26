@@ -18,6 +18,10 @@ let pagamentoState = {
 
 // Flag para evitar loop de sincronização Firebase ↔ local
 let _pagCarregando = false;
+// Cooldown após salvar para não re-renderizar do próprio eco do Firebase
+let _pagSalvandoTs = 0;
+// Timer do debounce para salvar valores digitados
+let _pagValorDebounce = null;
 
 // Carrega todos os dados do pagamento do localStorage
 function carregarDadosPagamento() {
@@ -62,12 +66,19 @@ function salvarDadosPagamento() {
         const dados = _serializarEstadoPagamento();
         localStorage.setItem('pagamentoData', JSON.stringify(dados));
         if (typeof salvarNoDatabase === 'function') {
+            _pagSalvandoTs = Date.now(); // marca que acabamos de salvar (cooldown 3s)
             salvarNoDatabase('dados/pagamento', dados);
             if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
         }
     } catch (e) {
         console.error('[Pagamento] Erro ao salvar dados:', e);
     }
+}
+
+// Versão debounced — aguarda 800ms sem digitação antes de salvar (evita re-render a cada tecla)
+function salvarDadosPagamentoDebounced() {
+    if (_pagValorDebounce) clearTimeout(_pagValorDebounce);
+    _pagValorDebounce = setTimeout(salvarDadosPagamento, 800);
 }
 
 // Mantém compatibilidade com chamadas antigas
@@ -426,7 +437,7 @@ function atualizarValorIgreja(chave, valor) {
         pagamentoState.igrejasSelecionadas[chave].valor = valor;
     }
     atualizarResumoPagamento();
-    salvarDadosPagamento();
+    salvarDadosPagamentoDebounced(); // debounce: não salva a cada tecla
 }
 
 function adicionarItemExtra() {
@@ -515,9 +526,10 @@ function atualizarPainelIgrejas() {
     var badge = document.querySelector('.pag-card-header .pag-badge');
     if (badge) badge.textContent = igrejasAtivas.length + ' ativas';
 
-    // Atualiza busca e lista
-    var buscaWrapper = document.querySelector('.pag-busca-wrapper');
+    // Preserva o scroll da lista antes de atualizar
     var lista = document.getElementById('pagIgrejaLista');
+    var scrollAntes = lista ? lista.scrollTop : 0;
+    var buscaWrapper = document.querySelector('.pag-busca-wrapper');
 
     if (!mostrarArq) {
         // Mostra campo de busca
@@ -530,15 +542,21 @@ function atualizarPainelIgrejas() {
                 subTabsEl.parentNode.insertBefore(div, lista);
             }
         }
-        if (lista) lista.innerHTML = igrejasAtivas.length === 0
-            ? '<div class="pag-empty-busca">Todas as igrejas estão arquivadas.</div>'
-            : renderizarListaIgrejas(igrejasAtivas, '', false);
+        if (lista) {
+            lista.innerHTML = igrejasAtivas.length === 0
+                ? '<div class="pag-empty-busca">Todas as igrejas estão arquivadas.</div>'
+                : renderizarListaIgrejas(igrejasAtivas, '', false);
+            lista.scrollTop = scrollAntes; // restaura posição do scroll
+        }
     } else {
         // Esconde campo de busca
         if (buscaWrapper) buscaWrapper.remove();
-        if (lista) lista.innerHTML = igrejasArq.length === 0
-            ? '<div class="pag-empty-busca">Nenhuma igreja arquivada.</div>'
-            : renderizarListaIgrejas(igrejasArq, '', true);
+        if (lista) {
+            lista.innerHTML = igrejasArq.length === 0
+                ? '<div class="pag-empty-busca">Nenhuma igreja arquivada.</div>'
+                : renderizarListaIgrejas(igrejasArq, '', true);
+            lista.scrollTop = scrollAntes;
+        }
     }
 }
 
@@ -967,6 +985,11 @@ function inicializarPagamento() {
 
 // Aplica dados recebidos do Firebase no estado local e re-renderiza
 function _aplicarDadosFirebasePagamento(dados) {
+    // Se acabamos de salvar (< 3s), ignora o eco para não interromper digitação
+    if (Date.now() - _pagSalvandoTs < 3000) {
+        console.log('[Pagamento] Eco ignorado (cooldown pós-save)');
+        return;
+    }
     _pagCarregando = true;
     try {
         pagamentoState.igrejasArquivadas   = new Set(Array.isArray(dados.igrejasArquivadas) ? dados.igrejasArquivadas : []);
@@ -975,9 +998,10 @@ function _aplicarDadosFirebasePagamento(dados) {
         if (dados.mesSelecionado  !== undefined) pagamentoState.mesSelecionado  = dados.mesSelecionado;
         if (dados.anoSelecionado  !== undefined) pagamentoState.anoSelecionado  = dados.anoSelecionado;
         localStorage.setItem('pagamentoData', JSON.stringify(dados));
-        // Re-renderiza se a aba estiver visível
+        // Re-renderiza somente se a aba estiver visível e não houver input com foco
         const abaPag = document.getElementById('pagamento');
-        if (abaPag && abaPag.classList.contains('active')) {
+        const inputFocado = document.activeElement && document.activeElement.classList.contains('pag-valor-input');
+        if (abaPag && abaPag.classList.contains('active') && !inputFocado) {
             renderizarAbaPagamento();
         }
         console.log('[Pagamento] Dados sincronizados do Firebase');
