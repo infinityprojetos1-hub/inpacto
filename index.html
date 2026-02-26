@@ -234,6 +234,7 @@
             --tab-indicator-left: 0px;
             --tab-indicator-width: 0px;
             --tab-indicator-height: 100%;
+            touch-action: pan-x;
         }
 
         /* Fundo roxo animado que desliza entre as abas */
@@ -278,6 +279,8 @@
             border-radius: 12px 12px 0 0;
             text-decoration: none;
             z-index: 1;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(102,126,234,0.15);
         }
 
         .tab-button:hover {

@@ -31,7 +31,10 @@ function inicializarTabs() {
     }
 
     document.querySelectorAll('.tab-button').forEach(tab => {
-        tab.addEventListener('click', () => {
+        // Garante que o toque no botão não seja capturado como scroll horizontal
+        tab.style.touchAction = 'manipulation';
+
+        function ativarAba() {
             document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
 
@@ -40,7 +43,8 @@ function inicializarTabs() {
             const tabId = tab.getAttribute('data-tab');
             const allContents = document.querySelectorAll('.tab-content');
             allContents.forEach(content => content.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
+            const content = document.getElementById(tabId);
+            if (content) content.classList.add('active');
 
             // Callbacks específicos por aba
             if (tabId === 'pagamento' && typeof window.renderizarAbaPagamento === 'function') {
@@ -54,7 +58,26 @@ function inicializarTabs() {
             if (window.innerWidth <= 768) {
                 requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
             }
-        });
+        }
+
+        tab.addEventListener('click', ativarAba);
+
+        // Fallback touchend para Android/MIUI onde overflow-x:auto pode capturar o click
+        let _touchStartX = 0;
+        let _touchStartY = 0;
+        tab.addEventListener('touchstart', (e) => {
+            _touchStartX = e.touches[0].clientX;
+            _touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+        tab.addEventListener('touchend', (e) => {
+            const dx = Math.abs(e.changedTouches[0].clientX - _touchStartX);
+            const dy = Math.abs(e.changedTouches[0].clientY - _touchStartY);
+            // Só ativa se foi um toque (deslocamento pequeno), não um swipe
+            if (dx < 10 && dy < 10) {
+                e.preventDefault();
+                ativarAba();
+            }
+        }, { passive: false });
     });
 
     // Atualiza ao redimensionar (debounced)
