@@ -16,26 +16,63 @@ let pagamentoState = {
     mostrarArquivadas: false
 };
 
-// Carrega igrejas arquivadas do localStorage
-function carregarArquivadasPagamento() {
+// Flag para evitar loop de sincronização Firebase ↔ local
+let _pagCarregando = false;
+
+// Carrega todos os dados do pagamento do localStorage
+function carregarDadosPagamento() {
     try {
-        var salvo = localStorage.getItem('pagamento_arquivadas');
+        const salvo = localStorage.getItem('pagamentoData');
         if (salvo) {
-            var arr = JSON.parse(salvo);
-            pagamentoState.igrejasArquivadas = new Set(Array.isArray(arr) ? arr : []);
+            const dados = JSON.parse(salvo);
+            pagamentoState.igrejasArquivadas   = new Set(Array.isArray(dados.igrejasArquivadas) ? dados.igrejasArquivadas : []);
+            pagamentoState.igrejasSelecionadas = dados.igrejasSelecionadas  || {};
+            pagamentoState.itensExtras         = Array.isArray(dados.itensExtras) ? dados.itensExtras : [];
+            if (dados.mesSelecionado  !== undefined) pagamentoState.mesSelecionado  = dados.mesSelecionado;
+            if (dados.anoSelecionado  !== undefined) pagamentoState.anoSelecionado  = dados.anoSelecionado;
+        } else {
+            // Compatibilidade com chave antiga (apenas arquivadas)
+            const arquivadas = localStorage.getItem('pagamento_arquivadas');
+            if (arquivadas) {
+                const arr = JSON.parse(arquivadas);
+                pagamentoState.igrejasArquivadas = new Set(Array.isArray(arr) ? arr : []);
+            }
         }
     } catch (e) {
-        pagamentoState.igrejasArquivadas = new Set();
+        console.error('[Pagamento] Erro ao carregar dados:', e);
     }
 }
 
-function salvarArquivadasPagamento() {
+// Serializa o estado para objeto salvo
+function _serializarEstadoPagamento() {
+    return {
+        igrejasArquivadas:   Array.from(pagamentoState.igrejasArquivadas),
+        igrejasSelecionadas: pagamentoState.igrejasSelecionadas,
+        itensExtras:         pagamentoState.itensExtras,
+        mesSelecionado:      pagamentoState.mesSelecionado,
+        anoSelecionado:      pagamentoState.anoSelecionado,
+        _ts:                 Date.now()
+    };
+}
+
+// Salva estado completo no localStorage e no Firebase
+function salvarDadosPagamento() {
+    if (_pagCarregando) return; // evita loop durante sync do Firebase
     try {
-        localStorage.setItem('pagamento_arquivadas', JSON.stringify(Array.from(pagamentoState.igrejasArquivadas)));
+        const dados = _serializarEstadoPagamento();
+        localStorage.setItem('pagamentoData', JSON.stringify(dados));
+        if (typeof salvarNoDatabase === 'function') {
+            salvarNoDatabase('dados/pagamento', dados);
+            if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
+        }
     } catch (e) {
-        console.error('[Pagamento] Erro ao salvar arquivadas:', e);
+        console.error('[Pagamento] Erro ao salvar dados:', e);
     }
 }
+
+// Mantém compatibilidade com chamadas antigas
+function carregarArquivadasPagamento() { carregarDadosPagamento(); }
+function salvarArquivadasPagamento()   { salvarDadosPagamento(); }
 
 // =============================================
 // HELPERS DE DADOS
@@ -333,10 +370,12 @@ function renderizarTotal() {
 
 function alterarMesPagamento(valor) {
     pagamentoState.mesSelecionado = parseInt(valor, 10);
+    salvarDadosPagamento();
 }
 
 function alterarAnoPagamento(valor) {
     pagamentoState.anoSelecionado = parseInt(valor, 10);
+    salvarDadosPagamento();
 }
 
 function filtrarIgrejasPagamento(busca) {
@@ -356,6 +395,7 @@ function toggleIgrejaPagamento(chave, marcada, nome, id) {
     }
     atualizarItemVisualPagamento(chave, marcada);
     atualizarResumoPagamento();
+    salvarDadosPagamento();
 }
 
 function atualizarItemVisualPagamento(chave, selecionada) {
@@ -386,6 +426,7 @@ function atualizarValorIgreja(chave, valor) {
         pagamentoState.igrejasSelecionadas[chave].valor = valor;
     }
     atualizarResumoPagamento();
+    salvarDadosPagamento();
 }
 
 function adicionarItemExtra() {
@@ -406,6 +447,7 @@ function adicionarItemExtra() {
     var lista = document.getElementById('pagItensExtras');
     if (lista) lista.innerHTML = renderizarItensExtras();
     atualizarResumoPagamento();
+    salvarDadosPagamento();
 }
 
 function removerItemExtra(index) {
@@ -413,6 +455,7 @@ function removerItemExtra(index) {
     var lista = document.getElementById('pagItensExtras');
     if (lista) lista.innerHTML = renderizarItensExtras();
     atualizarResumoPagamento();
+    salvarDadosPagamento();
 }
 
 function atualizarResumoPagamento() {
@@ -433,18 +476,17 @@ function alternarAbaPagamento(mostrarArquivadas) {
 
 function arquivarIgrejaPagamento(chave) {
     pagamentoState.igrejasArquivadas.add(chave);
-    // Remove da seleção se estiver selecionada
     if (pagamentoState.igrejasSelecionadas[chave]) {
         delete pagamentoState.igrejasSelecionadas[chave];
         atualizarResumoPagamento();
     }
-    salvarArquivadasPagamento();
+    salvarDadosPagamento();
     atualizarPainelIgrejas();
 }
 
 function desarquivarIgrejaPagamento(chave) {
     pagamentoState.igrejasArquivadas.delete(chave);
-    salvarArquivadasPagamento();
+    salvarDadosPagamento();
     atualizarPainelIgrejas();
 }
 
@@ -909,8 +951,8 @@ function mostrarToastPagamento(htmlMsg) {
 // =============================================
 
 function inicializarPagamento() {
-    // Carrega arquivadas persistidas
-    carregarArquivadasPagamento();
+    // Carrega todos os dados persistidos (localStorage)
+    carregarDadosPagamento();
 
     // Dispara o render quando o usuário clica na aba
     document.querySelectorAll('.tab-button').forEach(function(btn) {
@@ -922,6 +964,28 @@ function inicializarPagamento() {
     });
     console.log('[Pagamento] Módulo inicializado');
 }
+
+// Aplica dados recebidos do Firebase no estado local e re-renderiza
+function _aplicarDadosFirebasePagamento(dados) {
+    _pagCarregando = true;
+    try {
+        pagamentoState.igrejasArquivadas   = new Set(Array.isArray(dados.igrejasArquivadas) ? dados.igrejasArquivadas : []);
+        pagamentoState.igrejasSelecionadas = dados.igrejasSelecionadas  || {};
+        pagamentoState.itensExtras         = Array.isArray(dados.itensExtras) ? dados.itensExtras : [];
+        if (dados.mesSelecionado  !== undefined) pagamentoState.mesSelecionado  = dados.mesSelecionado;
+        if (dados.anoSelecionado  !== undefined) pagamentoState.anoSelecionado  = dados.anoSelecionado;
+        localStorage.setItem('pagamentoData', JSON.stringify(dados));
+        // Re-renderiza se a aba estiver visível
+        const abaPag = document.getElementById('pagamento');
+        if (abaPag && abaPag.classList.contains('active')) {
+            renderizarAbaPagamento();
+        }
+        console.log('[Pagamento] Dados sincronizados do Firebase');
+    } finally {
+        _pagCarregando = false;
+    }
+}
+window._aplicarDadosFirebasePagamento = _aplicarDadosFirebasePagamento;
 
 // Expõe explicitamente no window para uso via main.js
 window.renderizarAbaPagamento = renderizarAbaPagamento;

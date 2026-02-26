@@ -387,6 +387,41 @@ function iniciarSincronizacaoTempoReal() {
     window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'materiais' } }));
   });
 
+  // ── Pagamento ──────────────────────────────────────────────────
+  database.ref('dados/pagamento').on('value', (snapshot) => {
+    const dados = snapshot.val();
+
+    if (!dados) {
+      // Firebase vazio → sobe dados locais se existirem
+      const localStr = localStorage.getItem('pagamentoData');
+      if (localStr) {
+        try {
+          const local = JSON.parse(localStr);
+          const temDados = (local.igrejasArquivadas && local.igrejasArquivadas.length > 0) ||
+                           Object.keys(local.igrejasSelecionadas || {}).length > 0 ||
+                           (local.itensExtras && local.itensExtras.length > 0);
+          if (temDados) {
+            if (!local._ts) local._ts = Date.now();
+            salvarNoDatabase('dados/pagamento', local);
+            console.log('📤 Pagamento local enviado para Firebase (primeiro upload)');
+          }
+        } catch (e) { /* ignora */ }
+      }
+      return;
+    }
+
+    window._fbReceivendo = true;
+    try {
+      if (typeof window._aplicarDadosFirebasePagamento === 'function') {
+        window._aplicarDadosFirebasePagamento(dados);
+      }
+      console.log('🔄 Pagamento atualizado do Firebase');
+    } finally {
+      window._fbReceivendo = false;
+    }
+    window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'pagamento' } }));
+  });
+
   // ── Checklists ─────────────────────────────────────────────────
   database.ref('dados/checklists').on('value', (snapshot) => {
     const dados = snapshot.val();
