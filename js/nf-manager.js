@@ -1198,13 +1198,23 @@ function atualizarListaNF() {
     contentContainer.className = 'nf-content';
     container.appendChild(contentContainer);
 
-    // Adiciona event listeners para as abas
+    // Adiciona event listeners para as abas (com touchend para Android/MIUI)
     tabsContainer.querySelectorAll('.nf-tab-button').forEach(button => {
-        button.addEventListener('click', () => {
+        function ativarTabNF() {
             tabsContainer.querySelectorAll('.nf-tab-button').forEach(b => b.classList.remove('active'));
             button.classList.add('active');
             mostrarLista(button.dataset.tab);
-        });
+        }
+
+        let _touchHandled = false;
+        let _tx = 0, _ty = 0;
+        button.addEventListener('touchstart', (e) => { _tx = e.touches[0].clientX; _ty = e.touches[0].clientY; _touchHandled = false; }, { passive: true });
+        button.addEventListener('touchend', (e) => {
+            const dx = Math.abs(e.changedTouches[0].clientX - _tx);
+            const dy = Math.abs(e.changedTouches[0].clientY - _ty);
+            if (dx < 15 && dy < 15) { _touchHandled = true; ativarTabNF(); setTimeout(() => { _touchHandled = false; }, 500); }
+        }, { passive: true });
+        button.addEventListener('click', () => { if (_touchHandled) return; ativarTabNF(); });
     });
 
     // Função para mostrar a lista apropriada
@@ -1215,12 +1225,12 @@ function atualizarListaNF() {
         const searchContainer = document.createElement('div');
         searchContainer.className = 'nf-search-container';
         searchContainer.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="nf-search-box">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div class="nf-search-box" style="flex: 1; min-width: 160px;">
                     <i class="fas fa-search"></i>
                     <input type="text" placeholder="Pesquisar igreja..." class="nf-search-input">
                 </div>
-                ${tipo === 'ativas' ? '<button class="btn-primary nf-add-button"><i class="fas fa-plus"></i> Adicionar</button>' : ''}
+                ${tipo === 'ativas' ? '<button class="btn-primary nf-add-button" style="white-space: nowrap;"><i class="fas fa-plus"></i> Adicionar</button>' : ''}
             </div>
         `;
         contentContainer.appendChild(searchContainer);

@@ -282,6 +282,15 @@
             -webkit-tap-highlight-color: rgba(102,126,234,0.15);
         }
 
+        /* touch-action em todos os sub-tabs para evitar conflito com scroll no Android */
+        .material-tab-button,
+        .nf-tab-button,
+        .checklist-tab-button,
+        .relatorio-tab-button {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(102,126,234,0.15);
+        }
+
         .tab-button:hover {
             color: var(--primary-color);
         }
@@ -1776,6 +1785,27 @@
                 text-align: center !important;
                 font-size: 0.8em !important;
                 padding: 8px 12px !important;
+                touch-action: manipulation !important;
+            }
+
+            /* Esconde descrição das sections no mobile (economiza espaço vertical) */
+            #material .section > p,
+            #notasFiscais .section > p,
+            #checklist .section > p {
+                display: none !important;
+            }
+
+            /* Esconde h2 da section de Material e NF no mobile (o título dinâmico já aparece) */
+            #notasFiscais .section > h2 {
+                font-size: 1em !important;
+                margin-bottom: 8px !important;
+            }
+
+            /* Botões de ação material: mostra título abreviado */
+            .material-col-acoes .btn-icon::after {
+                content: attr(data-label-mobile);
+                font-weight: 600;
+                font-size: 0.9em;
             }
 
             .material-table {
@@ -1812,7 +1842,7 @@
                 justify-content: flex-start !important;
             }
 
-            /* Botões de mover status: mostra com label no mobile */
+            /* Botões de mover status: mostra com label abreviado no mobile */
             .material-col-acoes .btn-icon {
                 display: flex !important;
                 align-items: center !important;
@@ -1825,7 +1855,7 @@
             }
 
             .material-col-acoes .btn-icon::after {
-                content: attr(title);
+                content: attr(data-label-mobile);
                 font-weight: 600;
             }
 
@@ -1990,14 +2020,49 @@
                 border-left: 4px solid var(--primary-color) !important;
             }
 
+            /* NF: botões de ação envolvem em vez de transbordar */
+            .nf-acoes {
+                white-space: normal !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                width: 100% !important;
+                padding: 4px 0 !important;
+            }
+
+            .nf-acoes button {
+                flex: 0 0 auto !important;
+                padding: 8px 12px !important;
+                font-size: 0.9em !important;
+                min-width: 36px !important;
+                border-radius: 6px !important;
+            }
+
+            /* Esconde células vazias de empresa em modo card */
+            .nf-table td:empty {
+                display: none !important;
+            }
+
+            /* Select de pendência: sem largura fixa no mobile */
             .nf-pendencia-select {
+                min-width: unset !important;
+                width: 100% !important;
                 font-size: 0.85em !important;
                 padding: 6px 8px !important;
+            }
+
+            /* Search box ocupa toda a largura */
+            .nf-search-container {
+                padding: 0 0 12px 0 !important;
                 width: 100% !important;
             }
 
-            .nf-search-container {
-                padding: 0 0 12px 0 !important;
+            .nf-search-box {
+                max-width: 100% !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
             }
 
             .nf-tabs {
@@ -2016,6 +2081,7 @@
                 white-space: nowrap !important;
                 padding: 8px 14px !important;
                 font-size: 0.8em !important;
+                touch-action: manipulation !important;
             }
         }
         

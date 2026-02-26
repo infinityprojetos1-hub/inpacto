@@ -289,16 +289,26 @@ function atualizarListaMaterial() {
 
     container.innerHTML = tabsHTML;
 
-    // Adiciona eventos aos botões de tabs
+    // Adiciona eventos aos botões de tabs (com touchend para Android/MIUI)
     const tabButtons = container.querySelectorAll('.material-tab-button');
     tabButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
+        function ativarTabMaterial() {
             tabButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             const tipo = btn.getAttribute('data-tipo');
-            abaAtivaMaterial = tipo; // Salva a aba ativa
+            abaAtivaMaterial = tipo;
             mostrarListaTipo(tipo);
-        });
+        }
+
+        let _touchHandled = false;
+        let _tx = 0, _ty = 0;
+        btn.addEventListener('touchstart', (e) => { _tx = e.touches[0].clientX; _ty = e.touches[0].clientY; _touchHandled = false; }, { passive: true });
+        btn.addEventListener('touchend', (e) => {
+            const dx = Math.abs(e.changedTouches[0].clientX - _tx);
+            const dy = Math.abs(e.changedTouches[0].clientY - _ty);
+            if (dx < 15 && dy < 15) { _touchHandled = true; ativarTabMaterial(); setTimeout(() => { _touchHandled = false; }, 500); }
+        }, { passive: true });
+        btn.addEventListener('click', () => { if (_touchHandled) return; ativarTabMaterial(); });
     });
 
     // Adiciona botões de gerenciamento de JSON
@@ -381,13 +391,13 @@ function mostrarListaTipo(tipo) {
                 <span class="material-status ${statusClass}">${statusText}</span>
             </div>
             <div class="material-col-acoes">
-                ${tipo !== 'pendentes' ? `<button class="btn-icon btn-warning" onclick="moverParaPendentes('${tipo}', ${index})" title="Mover para Pendentes">
+                ${tipo !== 'pendentes' ? `<button class="btn-icon btn-warning" onclick="moverParaPendentes('${tipo}', ${index})" title="Mover para Pendentes" data-label-mobile="Pendentes">
                     <i class="fas fa-clock"></i>
                 </button>` : ''}
-                ${tipo !== 'enviadas' ? `<button class="btn-icon btn-success" onclick="moverParaEnviadas('${tipo}', ${index})" title="Mover para Enviadas">
+                ${tipo !== 'enviadas' ? `<button class="btn-icon btn-success" onclick="moverParaEnviadas('${tipo}', ${index})" title="Mover para Enviadas" data-label-mobile="Enviadas">
                     <i class="fas fa-check"></i>
                 </button>` : ''}
-                ${tipo !== 'pedidosSandro' ? `<button class="btn-icon btn-secondary" onclick="moverParaSandro('${tipo}', ${index})" title="Mover para Pedidos do Sandro">
+                ${tipo !== 'pedidosSandro' ? `<button class="btn-icon btn-secondary" onclick="moverParaSandro('${tipo}', ${index})" title="Mover para Sandro" data-label-mobile="Sandro">
                     <i class="fas fa-user"></i>
                 </button>` : ''}
                 <button class="btn-primary" onclick="abrirModalMaterial('${tipo}', ${index})">
