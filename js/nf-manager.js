@@ -1284,16 +1284,21 @@ function atualizarListaNF() {
                     tr.className = empresa.includes('Impacto') ? 'nf-row-impacto' : 'nf-row-spg';
 
                     const idx = dados.indexOf(igreja);
+                    const btnWhatsApp = `<button onclick="compartilharNFWhatsApp('${tipo}', ${idx})" class="btn-whatsapp-nf" title="Compartilhar via WhatsApp"><i class="fab fa-whatsapp"></i></button>`;
+
                     const acaoBotao = tipo === 'ativas'
                         ? `<button onclick="arquivarIgreja(${idx})" class="btn-archive" title="Arquivar igreja"><i class="fas fa-archive"></i></button>
                            <button onclick="moverParaEspeciais(${idx})" class="btn-especial" title="Mover para Igrejas Especiais"><i class="fas fa-star"></i></button>
+                           ${btnWhatsApp}
                            <button onclick="editarIgreja(${idx}, '${tipo}')" class="btn-edit" title="Editar igreja"><i class="fas fa-edit"></i></button>
                            <button onclick="excluirIgreja(${idx}, '${tipo}')" class="btn-delete" title="Excluir igreja"><i class="fas fa-trash"></i></button>`
                         : tipo === 'especiais'
                         ? `<button onclick="moverEspecialParaAtiva(${idx})" class="btn-restore" title="Mover para Ativas"><i class="fas fa-undo"></i></button>
+                           ${btnWhatsApp}
                            <button onclick="editarIgreja(${idx}, '${tipo}')" class="btn-edit" title="Editar igreja"><i class="fas fa-edit"></i></button>
                            <button onclick="excluirIgreja(${idx}, '${tipo}')" class="btn-delete" title="Excluir igreja"><i class="fas fa-trash"></i></button>`
                         : `<button onclick="restaurarIgreja(${idx})" class="btn-restore" title="Restaurar igreja"><i class="fas fa-undo"></i></button>
+                           ${btnWhatsApp}
                            <button onclick="editarIgreja(${idx}, '${tipo}')" class="btn-edit" title="Editar igreja"><i class="fas fa-edit"></i></button>
                            <button onclick="excluirIgreja(${idx}, '${tipo}')" class="btn-delete" title="Excluir igreja"><i class="fas fa-trash"></i></button>`;
 
@@ -1543,6 +1548,20 @@ function atualizarListaNF() {
             background: #fde68a;
             color: #d97706;
         }
+        .btn-whatsapp-nf {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #e8f5e9;
+            color: #25d366;
+            transition: all 0.2s ease;
+            font-size: 1em;
+        }
+        .btn-whatsapp-nf:hover {
+            background: #25d366;
+            color: #fff;
+        }
         .btn-restore {
             background: var(--primary-color);
             color: white;
@@ -1678,6 +1697,32 @@ function excluirIgreja(index, tipo) {
     lista.splice(index, 1);
     salvarDadosNF();
     atualizarListaNF();
+}
+
+function compartilharNFWhatsApp(tipo, index) {
+    const lista = tipo === 'ativas' ? nfData.igrejas
+                : tipo === 'especiais' ? (nfData.especiais || [])
+                : nfData.arquivadas;
+    const igreja = lista && lista[index];
+    if (!igreja) return;
+
+    const nome = (igreja.nome || '').trim();
+    const id   = (igreja.id   || '').toString().trim();
+    const mensagem = id ? `${nome} - ${id}` : nome;
+    const encoded  = encodeURIComponent(mensagem);
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+        if (navigator.share) {
+            navigator.share({ text: mensagem }).catch(() => {
+                window.location.href = 'whatsapp://send?text=' + encoded;
+            });
+        } else {
+            window.location.href = 'whatsapp://send?text=' + encoded;
+        }
+    } else {
+        window.open('https://web.whatsapp.com/send?text=' + encoded, '_blank');
+    }
 }
 
 function moverParaEspeciais(index) {
@@ -1917,6 +1962,7 @@ window.gerarPDFRelatorioPendencias = gerarPDFRelatorioPendencias;
 window.abrirModalRelatorioPendenciasImagem = abrirModalRelatorioPendenciasImagem;
 window.arquivarIgreja = arquivarIgreja;
 window.restaurarIgreja = restaurarIgreja;
+window.compartilharNFWhatsApp = compartilharNFWhatsApp;
 window.moverParaEspeciais     = moverParaEspeciais;
 window.moverEspecialParaAtiva = moverEspecialParaAtiva;
 window.atualizarPendencia = atualizarPendencia;
