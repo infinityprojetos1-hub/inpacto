@@ -388,6 +388,8 @@ function iniciarSincronizacaoTempoReal() {
   });
 
   // ── Pagamento ──────────────────────────────────────────────────
+  // IMPORTANTE: NÃO usa window._fbReceivendo (flag global que bloqueia saves de NF/Material/Checklist)
+  // O módulo de Pagamento tem seu próprio controle via _pagCarregando + cooldown _pagSalvandoTs
   database.ref('dados/pagamento').on('value', (snapshot) => {
     const dados = snapshot.val();
 
@@ -410,15 +412,11 @@ function iniciarSincronizacaoTempoReal() {
       return;
     }
 
-    window._fbReceivendo = true;
-    try {
-      if (typeof window._aplicarDadosFirebasePagamento === 'function') {
-        window._aplicarDadosFirebasePagamento(dados);
-      }
-      console.log('🔄 Pagamento atualizado do Firebase');
-    } finally {
-      window._fbReceivendo = false;
+    // Usa controle interno do módulo de pagamento (não o flag global)
+    if (typeof window._aplicarDadosFirebasePagamento === 'function') {
+      window._aplicarDadosFirebasePagamento(dados);
     }
+    console.log('🔄 Pagamento atualizado do Firebase');
     window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'pagamento' } }));
   });
 
