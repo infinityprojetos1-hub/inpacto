@@ -2137,6 +2137,11 @@ document.addEventListener('DOMContentLoaded', () => {
         inicializarPagamento();
     }
 
+    // Inicializa o gerenciador de estoque
+    if (typeof inicializarEstoque === 'function') {
+        inicializarEstoque();
+    }
+
     // Inicializa o sistema de pasta de trabalho
     inicializarPastaTrabalho();
 

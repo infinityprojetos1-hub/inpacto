@@ -387,6 +387,41 @@ function iniciarSincronizacaoTempoReal() {
     window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'materiais' } }));
   });
 
+  // ── Estoque ─────────────────────────────────────────────────────
+  database.ref('dados/estoque').on('value', (snapshot) => {
+    const dados = snapshot.val();
+    if (!dados) {
+      const localStr = localStorage.getItem('estoqueData');
+      if (localStr) {
+        try {
+          const local = JSON.parse(localStr);
+          if (local.itens && local.itens.length > 0) {
+            if (!local._ts) local._ts = Date.now();
+            salvarNoDatabase('dados/estoque', local);
+            console.log('📤 Estoque local enviado para Firebase (primeiro upload)');
+          }
+        } catch (e) { /* ignora */ }
+      }
+      return;
+    }
+    window._estoqueCarregando = true;
+    try {
+      if (typeof estoqueData !== 'undefined') {
+        estoqueData.itens = Array.isArray(dados.itens) ? dados.itens : [];
+      }
+      localStorage.setItem('estoqueData', JSON.stringify(dados));
+      if (typeof window.renderizarAbaEstoque === 'function') {
+        const content = document.getElementById('estoque');
+        if (content && content.classList.contains('active')) {
+          window.renderizarAbaEstoque();
+        }
+      }
+      console.log('🔄 Estoque atualizado do Firebase');
+    } finally {
+      window._estoqueCarregando = false;
+    }
+  });
+
   // ── Pagamento ──────────────────────────────────────────────────
   // IMPORTANTE: NÃO usa window._fbReceivendo (flag global que bloqueia saves de NF/Material/Checklist)
   // O módulo de Pagamento tem seu próprio controle via _pagCarregando + cooldown _pagSalvandoTs

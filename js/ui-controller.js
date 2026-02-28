@@ -49,6 +49,9 @@ function inicializarTabs() {
             if (tabId === 'pagamento' && typeof window.renderizarAbaPagamento === 'function') {
                 setTimeout(window.renderizarAbaPagamento, 80);
             }
+            if (tabId === 'estoque' && typeof window.renderizarAbaEstoque === 'function') {
+                setTimeout(window.renderizarAbaEstoque, 80);
+            }
             if (tabId === 'notasFiscais' && typeof window.atualizarListaNF === 'function') {
                 setTimeout(window.atualizarListaNF, 50);
             }

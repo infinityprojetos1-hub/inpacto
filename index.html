@@ -3014,6 +3014,52 @@
             gap: 8px;
         }
 
+        /* Estoque */
+        .estoque-actions {
+            margin-bottom: 20px;
+        }
+        .estoque-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .estoque-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: white;
+            transition: border-color 0.2s;
+        }
+        .estoque-item:hover {
+            border-color: var(--primary-color);
+        }
+        .estoque-item-info strong {
+            display: block;
+            color: var(--text-color);
+            font-size: 1em;
+        }
+        .estoque-item-qtd {
+            font-size: 0.9em;
+            color: var(--text-muted);
+        }
+        .estoque-item-acoes {
+            display: flex;
+            gap: 8px;
+        }
+        .estoque-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .estoque-empty i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
         .pag-card-titulo i {
             color: var(--primary-color);
         }
@@ -3814,6 +3860,9 @@
             <button class="tab-button" data-tab="material">
                 <i class="fas fa-boxes"></i> Material
             </button>
+            <button class="tab-button" data-tab="estoque">
+                <i class="fas fa-warehouse"></i> Estoque
+            </button>
             <button class="tab-button" data-tab="notasFiscais">
                 <i class="fas fa-receipt"></i> Notas Fiscais
             </button>
@@ -4183,6 +4232,10 @@
             </div>
         </div>
 
+        <div id="estoque" class="tab-content" style="display: none;">
+            <div id="estoqueContainer"></div>
+        </div>
+
         <div id="checklist" class="tab-content" style="display: none;">
             <div class="section">
                 <h2><i class="fas fa-clipboard-check"></i> Checklist das Igrejas</h2>
@@ -4500,6 +4553,7 @@
     <script src="js/empresa-virtualguitar.js"></script>
     <script src="js/empresa-glauber.js"></script>
     <script src="js/nf-manager.js"></script>
+    <script src="js/estoque-manager.js"></script>
     <script src="js/material-manager.js"></script>
     <script src="js/checklist-manager.js"></script>
     <script src="js/main.js"></script>

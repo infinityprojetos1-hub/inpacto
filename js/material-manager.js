@@ -521,6 +521,12 @@ function atualizarListaMaterialModal(tipo, igrejaIndex) {
 
 // Abre o modal secundário para adicionar um item
 function abrirModalAdicionarItem(tipo, igrejaIndex) {
+    const itensEstoque = typeof obterItensEstoque === 'function' ? obterItensEstoque() : [];
+    const optsEstoque = itensEstoque.map((it, i) =>
+        `<option value="${(it.nome || '').replace(/"/g, '&quot;')}" data-qtd="${it.quantidade}">${it.nome} (${it.quantidade} disp.)</option>`
+    ).join('');
+    const temEstoque = optsEstoque.length > 0;
+
     const modal = document.createElement('div');
     modal.className = 'material-modal material-modal-small';
     modal.innerHTML = `
@@ -532,16 +538,28 @@ function abrirModalAdicionarItem(tipo, igrejaIndex) {
             
             <div class="material-modal-form-body">
                 <form id="formAdicionarItem" onsubmit="adicionarItem(event, '${tipo}', ${igrejaIndex})">
-                    <div class="form-group">
-                        <label for="itemNome"><i class="fas fa-tag"></i> Item:</label>
-                        <input type="text" id="itemNome" placeholder="Ex: Cabo HDMI" required>
+                    ${temEstoque ? `<div class="form-group" id="grupoOrigemItem">
+                        <label><i class="fas fa-boxes"></i> Origem:</label>
+                        <select id="itemOrigem" onchange="toggleItemOrigem(this.value)">
+                            <option value="estoque">Do estoque</option>
+                            <option value="livre">Digitar manualmente</option>
+                        </select>
+                    </div>` : ''}
+                    <div class="form-group" id="grupoItemEstoque" style="${temEstoque ? '' : 'display:none'}">
+                        <label><i class="fas fa-tag"></i> Item do estoque:</label>
+                        <select id="itemEstoqueSelect">
+                            <option value="">Selecione...</option>
+                            ${optsEstoque}
+                        </select>
                     </div>
-                    
+                    <div class="form-group" id="grupoItemLivre" style="${temEstoque ? 'display:none' : ''}">
+                        <label><i class="fas fa-tag"></i> Item:</label>
+                        <input type="text" id="itemNome" placeholder="Ex: Cabo HDMI">
+                    </div>
                     <div class="form-group">
                         <label for="itemQuantidade"><i class="fas fa-sort-numeric-up"></i> Quantidade:</label>
                         <input type="number" id="itemQuantidade" placeholder="Ex: 5" min="1" required>
                     </div>
-                    
                     <div class="material-modal-buttons">
                         <button type="submit" class="btn-primary"><i class="fas fa-check"></i> Adicionar</button>
                         <button type="button" class="btn-secondary" onclick="this.closest('.material-modal').remove()"><i class="fas fa-times"></i> Cancelar</button>
@@ -553,36 +571,65 @@ function abrirModalAdicionarItem(tipo, igrejaIndex) {
 
     document.body.appendChild(modal);
 
-    // Foca no primeiro campo
     setTimeout(() => {
-        document.getElementById('itemNome').focus();
+        const origem = document.getElementById('itemOrigem');
+        if (origem && origem.value === 'estoque') document.getElementById('itemEstoqueSelect').focus();
+        else document.getElementById('itemNome').focus();
     }, 100);
+}
+
+function toggleItemOrigem(valor) {
+    const grupoEstoque = document.getElementById('grupoItemEstoque');
+    const grupoLivre = document.getElementById('grupoItemLivre');
+    const selEstoque = document.getElementById('itemEstoqueSelect');
+    const inpLivre = document.getElementById('itemNome');
+    if (valor === 'estoque') {
+        if (grupoEstoque) grupoEstoque.style.display = '';
+        if (grupoLivre) grupoLivre.style.display = 'none';
+        if (selEstoque) { selEstoque.required = true; selEstoque.value = selEstoque.options[1] ? selEstoque.options[1].value : ''; }
+        if (inpLivre) { inpLivre.required = false; inpLivre.value = ''; }
+    } else {
+        if (grupoEstoque) grupoEstoque.style.display = 'none';
+        if (grupoLivre) grupoLivre.style.display = '';
+        if (selEstoque) { selEstoque.required = false; selEstoque.value = ''; }
+        if (inpLivre) inpLivre.required = true;
+    }
 }
 
 // Adiciona um item à lista de materiais
 function adicionarItem(event, tipo, igrejaIndex) {
     event.preventDefault();
 
-    const item = document.getElementById('itemNome').value.trim();
+    const origem = document.getElementById('itemOrigem');
+    let item = '';
     const quantidade = document.getElementById('itemQuantidade').value.trim();
+    if (!quantidade) return;
 
-    if (!item || !quantidade) return;
-
-    const igreja = materialData[tipo][igrejaIndex];
-    if (!igreja.materiais) {
-        igreja.materiais = [];
+    if (origem && origem.value === 'estoque') {
+        const sel = document.getElementById('itemEstoqueSelect');
+        item = sel ? sel.value.trim() : '';
+        if (!item) return;
+        if (typeof temEstoqueSuficiente === 'function' && !temEstoqueSuficiente(item, quantidade)) {
+            alert('Quantidade insuficiente no estoque.');
+            return;
+        }
+    } else {
+        item = document.getElementById('itemNome').value.trim();
+        if (!item) return;
     }
 
-    igreja.materiais.push({
-        item: item,
-        quantidade: quantidade
-    });
+    const igreja = materialData[tipo][igrejaIndex];
+    if (!igreja.materiais) igreja.materiais = [];
+
+    igreja.materiais.push({ item, quantidade });
+
+    if (origem && origem.value === 'estoque' && typeof deduzirEstoque === 'function') {
+        deduzirEstoque(item, quantidade);
+    }
 
     salvarDadosMaterial();
     atualizarListaMaterialModal(tipo, igrejaIndex);
-    atualizarListaMaterial(); // Atualiza a lista principal para mostrar a contagem
-
-    // Fecha o modal de adicionar item
+    atualizarListaMaterial();
     event.target.closest('.material-modal').remove();
 }
 
@@ -634,22 +681,25 @@ function editarMaterial(tipo, igrejaIndex, materialIndex) {
 function salvarEdicaoMaterial(event, tipo, igrejaIndex, materialIndex) {
     event.preventDefault();
 
-    const item = document.getElementById('itemNomeEdit').value.trim();
-    const quantidade = document.getElementById('itemQuantidadeEdit').value.trim();
-
-    if (!item || !quantidade) return;
+    const itemNovo = document.getElementById('itemNomeEdit').value.trim();
+    const quantidadeNova = document.getElementById('itemQuantidadeEdit').value.trim();
+    if (!itemNovo || !quantidadeNova) return;
 
     const igreja = materialData[tipo][igrejaIndex];
-    igreja.materiais[materialIndex] = {
-        item: item,
-        quantidade: quantidade
-    };
+    const materialAntigo = igreja.materiais[materialIndex];
+
+    if (materialAntigo && typeof devolverEstoque === 'function') {
+        devolverEstoque(materialAntigo.item, materialAntigo.quantidade);
+    }
+    if (typeof deduzirEstoque === 'function') {
+        deduzirEstoque(itemNovo, quantidadeNova);
+    }
+
+    igreja.materiais[materialIndex] = { item: itemNovo, quantidade: quantidadeNova };
 
     salvarDadosMaterial();
     atualizarListaMaterialModal(tipo, igrejaIndex);
-    atualizarListaMaterial(); // Atualiza a lista principal para mostrar a contagem
-
-    // Fecha o modal de editar item
+    atualizarListaMaterial();
     event.target.closest('.material-modal').remove();
 }
 
@@ -658,11 +708,16 @@ function removerMaterial(tipo, igrejaIndex, materialIndex) {
     if (!confirm('Deseja remover este item?')) return;
 
     const igreja = materialData[tipo][igrejaIndex];
+    const material = igreja.materiais[materialIndex];
     igreja.materiais.splice(materialIndex, 1);
+
+    if (material && typeof devolverEstoque === 'function') {
+        devolverEstoque(material.item, material.quantidade);
+    }
 
     salvarDadosMaterial();
     atualizarListaMaterialModal(tipo, igrejaIndex);
-    atualizarListaMaterial(); // Atualiza a lista principal para mostrar a contagem
+    atualizarListaMaterial();
 }
 
 // Compartilha a lista de materiais via WhatsApp
