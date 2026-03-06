@@ -2477,7 +2477,7 @@
 
         .checklist-header {
             display: grid;
-            grid-template-columns: 1fr 200px 250px;
+            grid-template-columns: 1fr 200px minmax(280px, 1fr);
             padding: 16px 20px;
             background: var(--primary-gradient);
             color: white;
@@ -2494,7 +2494,7 @@
 
         .checklist-row {
             display: grid;
-            grid-template-columns: 1fr 200px 250px;
+            grid-template-columns: 1fr 200px minmax(280px, 1fr);
             padding: 16px 20px;
             border-bottom: 2px solid var(--border-color);
             align-items: center;
@@ -2551,9 +2551,16 @@
 
         .checklist-col-acoes {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
-            justify-content: center;
+            justify-content: flex-end;
             align-items: center;
+            min-width: 0;
+        }
+        .checklist-col-acoes .btn-primary {
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: fit-content;
         }
 
         /* Canvas de Assinatura */
