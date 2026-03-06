@@ -2,7 +2,8 @@
 
 // Estrutura de dados para checklists
 let checklistData = {
-    igrejas: [] // Lista de igrejas com seus checklists
+    igrejas: [],        // Lista geral de igrejas com seus checklists
+    pedidosSandro: []   // Igrejas dos pedidos do Sandro
 };
 
 // ── Assinaturas em storage separado (nunca sobrescrito pelo Firebase) ──────────
@@ -96,17 +97,18 @@ function carregarDadosChecklist() {
         if (dadosSalvos) {
             checklistData = JSON.parse(dadosSalvos);
             if (!checklistData.igrejas) checklistData.igrejas = [];
+            if (!checklistData.pedidosSandro) checklistData.pedidosSandro = [];
             // Migra assinaturas antigas para o storage separado (executa uma vez)
-            _migrarAssinaturasAntigas(checklistData.igrejas);
+            _migrarAssinaturasAntigas([...checklistData.igrejas, ...checklistData.pedidosSandro]);
             // Restaura assinaturas do storage separado (proteção contra sync do Firebase)
-            _restaurarAssinaturas(checklistData.igrejas);
+            _restaurarAssinaturas([...checklistData.igrejas, ...checklistData.pedidosSandro]);
             console.log('Dados de checklist carregados:', checklistData);
         }
         sincronizarIgrejasChecklistNF();
         atualizarListaChecklist();
     } catch (error) {
         console.error('Erro ao carregar dados de checklist:', error);
-        checklistData = { igrejas: [] };
+        checklistData = { igrejas: [], pedidosSandro: [] };
     } finally {
         _checklistCarregando = false;
     }
@@ -149,7 +151,7 @@ function sincronizarIgrejasChecklistNF() {
         ];
 
         // Remove igrejas apenas quando excluídas de todas as listas NF
-        checklistData.igrejas = checklistData.igrejas.filter(igrejaCheck => {
+        const _filtrarExistentes = (lista) => lista.filter(igrejaCheck => {
             const aindaExiste = todasIgrejasNF.some(igrejaNF =>
                 igrejaNF.nome === igrejaCheck.nome && igrejaNF.id === igrejaCheck.id
             );
@@ -158,14 +160,16 @@ function sincronizarIgrejasChecklistNF() {
             }
             return aindaExiste;
         });
+        checklistData.igrejas = _filtrarExistentes(checklistData.igrejas || []);
+        checklistData.pedidosSandro = _filtrarExistentes(checklistData.pedidosSandro || []);
 
-        // Adiciona igrejas ativas que estão em NF mas não em Checklist
+        // Adiciona igrejas ativas que estão em NF mas não em Checklist (nem em igrejas nem em pedidosSandro)
+        const _jaExisteEmQualquer = (nome, id) =>
+            (checklistData.igrejas || []).some(ig => ig.nome === nome && ig.id === id) ||
+            (checklistData.pedidosSandro || []).some(ig => ig.nome === nome && ig.id === id);
+
         igrejasNF.forEach(igrejaNF => {
-            const jaExiste = checklistData.igrejas.find(
-                ig => ig.nome === igrejaNF.nome && ig.id === igrejaNF.id
-            );
-
-            if (!jaExiste) {
+            if (!_jaExisteEmQualquer(igrejaNF.nome, igrejaNF.id)) {
                 const novaIgreja = {
                     nome: igrejaNF.nome,
                     id: igrejaNF.id || '',
@@ -184,6 +188,9 @@ function sincronizarIgrejasChecklistNF() {
     }
 }
 
+// Variável para rastrear a aba ativa do checklist
+let abaAtivaChecklist = 'igrejas';
+
 // Atualiza a lista de igrejas na interface
 function atualizarListaChecklist() {
     const container = document.getElementById('checklistList');
@@ -192,13 +199,54 @@ function atualizarListaChecklist() {
     container.innerHTML = '';
 
     const igrejas = checklistData.igrejas || [];
+    const sandro = checklistData.pedidosSandro || [];
+    const total = igrejas.length + sandro.length;
 
-    if (igrejas.length === 0) {
+    if (total === 0) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-clipboard"></i><h3>Nenhuma igreja cadastrada</h3><p>Adicione igrejas através das Notas Fiscais</p></div>';
         return;
     }
 
-    // Cria a tabela
+    // Cria as sub-tabs (Geral e Sandro)
+    const tabsHTML = `
+        <div class="checklist-tabs">
+            <button class="checklist-tab-button ${abaAtivaChecklist === 'igrejas' ? 'active' : ''}" data-tipo="igrejas">
+                <i class="fas fa-list"></i> Geral (${igrejas.length})
+            </button>
+            <button class="checklist-tab-button ${abaAtivaChecklist === 'pedidosSandro' ? 'active' : ''}" data-tipo="pedidosSandro">
+                <i class="fas fa-user"></i> Sandro (${sandro.length})
+            </button>
+        </div>
+        <div class="checklist-content-container"></div>
+    `;
+    container.innerHTML = tabsHTML;
+
+    // Eventos nas tabs
+    container.querySelectorAll('.checklist-tab-button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            container.querySelectorAll('.checklist-tab-button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            abaAtivaChecklist = btn.getAttribute('data-tipo');
+            mostrarListaChecklistTipo(abaAtivaChecklist);
+        });
+    });
+
+    mostrarListaChecklistTipo(abaAtivaChecklist);
+}
+
+// Mostra a lista de um tipo específico (igrejas ou pedidosSandro)
+function mostrarListaChecklistTipo(tipo) {
+    const contentContainer = document.querySelector('.checklist-content-container');
+    if (!contentContainer) return;
+
+    contentContainer.innerHTML = '';
+    const dados = checklistData[tipo] || [];
+
+    if (dados.length === 0) {
+        contentContainer.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>Nenhuma igreja nesta categoria</h3><p>Mova igrejas para cá usando o botão na aba Geral</p></div>';
+        return;
+    }
+
     const tabela = document.createElement('div');
     tabela.className = 'checklist-table';
     tabela.innerHTML = `
@@ -209,13 +257,14 @@ function atualizarListaChecklist() {
         </div>
     `;
 
-    igrejas.forEach((igreja, index) => {
+    dados.forEach((igreja, index) => {
         const linha = document.createElement('div');
         linha.className = 'checklist-row';
 
         const temChecklist = igreja.checklist && igreja.checklist.respostas;
         const statusClass = temChecklist ? 'preenchido' : 'pendente';
         const statusText = temChecklist ? 'Preenchido' : 'Pendente';
+        const statusSandroClass = tipo === 'pedidosSandro' ? 'status-sandro' : '';
 
         linha.innerHTML = `
             <div class="checklist-col-igreja">
@@ -223,18 +272,24 @@ function atualizarListaChecklist() {
                 ${igreja.id ? `<span class="checklist-id"><i class="fas fa-tag"></i> ID: ${igreja.id}</span>` : ''}
             </div>
             <div>
-                <span class="checklist-status ${statusClass}">${statusText}</span>
+                <span class="checklist-status ${statusClass} ${statusSandroClass}">${tipo === 'pedidosSandro' ? 'Sandro' : statusText}</span>
             </div>
             <div class="checklist-col-acoes">
+                ${tipo !== 'pedidosSandro' ? `<button class="btn-icon btn-secondary" onclick="moverParaSandroChecklist(${index})" title="Mover para Sandro" data-label-mobile="Sandro">
+                    <i class="fas fa-user"></i>
+                </button>` : ''}
+                ${tipo !== 'igrejas' ? `<button class="btn-icon btn-warning" onclick="moverParaGeralChecklist(${index})" title="Mover para Geral" data-label-mobile="Geral">
+                    <i class="fas fa-list"></i>
+                </button>` : ''}
                 ${temChecklist ? `
-                    <button class="btn-icon btn-primary" onclick="visualizarChecklist(${index})" title="Visualizar Checklist">
+                    <button class="btn-icon btn-primary" onclick="visualizarChecklist('${tipo}', ${index})" title="Visualizar Checklist">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn-icon btn-success" onclick="downloadChecklistPDF(${index})" title="Baixar PDF">
+                    <button class="btn-icon btn-success" onclick="downloadChecklistPDF('${tipo}', ${index})" title="Baixar PDF">
                         <i class="fas fa-download"></i>
                     </button>
                 ` : ''}
-                <button class="btn-primary" onclick="abrirModalChecklist(${index})">
+                <button class="btn-primary" onclick="abrirModalChecklist('${tipo}', ${index})">
                     <i class="fas fa-clipboard-check"></i> ${temChecklist ? 'Editar' : 'Adicionar'} Checklist
                 </button>
             </div>
@@ -243,12 +298,32 @@ function atualizarListaChecklist() {
         tabela.appendChild(linha);
     });
 
-    container.appendChild(tabela);
+    contentContainer.appendChild(tabela);
+}
+
+// Move igreja para a aba Sandro
+function moverParaSandroChecklist(index) {
+    const igreja = checklistData.igrejas[index];
+    if (!igreja) return;
+    checklistData.igrejas.splice(index, 1);
+    checklistData.pedidosSandro.push(igreja);
+    salvarDadosChecklist();
+    atualizarListaChecklist();
+}
+
+// Move igreja de volta para a aba Geral
+function moverParaGeralChecklist(index) {
+    const igreja = checklistData.pedidosSandro[index];
+    if (!igreja) return;
+    checklistData.pedidosSandro.splice(index, 1);
+    checklistData.igrejas.push(igreja);
+    salvarDadosChecklist();
+    atualizarListaChecklist();
 }
 
 // Abre o modal para preencher/editar checklist
-function abrirModalChecklist(igrejaIndex) {
-    const igreja = checklistData.igrejas[igrejaIndex];
+function abrirModalChecklist(tipo, igrejaIndex) {
+    const igreja = checklistData[tipo] ? checklistData[tipo][igrejaIndex] : null;
     if (!igreja) return;
 
     const checklistExistente = igreja.checklist || {};
@@ -312,7 +387,7 @@ function abrirModalChecklist(igrejaIndex) {
             </div>
             
             <div class="material-modal-body">
-                <form id="formChecklist" onsubmit="salvarChecklist(event, ${igrejaIndex})">
+                <form id="formChecklist" onsubmit="salvarChecklist(event, '${tipo}', ${igrejaIndex})">
                     <!-- Informações do Responsável -->
                     <div class="checklist-form-section">
                         <h4><i class="fas fa-user-tie"></i> Informações do Responsável</h4>
@@ -435,10 +510,10 @@ function limparAssinatura() {
 }
 
 // Salva o checklist
-async function salvarChecklist(event, igrejaIndex) {
+async function salvarChecklist(event, tipo, igrejaIndex) {
     event.preventDefault();
 
-    const igreja = checklistData.igrejas[igrejaIndex];
+    const igreja = checklistData[tipo] ? checklistData[tipo][igrejaIndex] : null;
     if (!igreja) return;
 
     // Coleta dados do responsável
@@ -503,8 +578,8 @@ async function salvarChecklist(event, igrejaIndex) {
 }
 
 // Visualiza um checklist existente
-async function visualizarChecklist(igrejaIndex) {
-    const igreja = checklistData.igrejas[igrejaIndex];
+async function visualizarChecklist(tipo, igrejaIndex) {
+    const igreja = checklistData[tipo] ? checklistData[tipo][igrejaIndex] : null;
     if (!igreja || !igreja.checklist) return;
 
     // Cria modal de loading imediatamente
@@ -534,7 +609,7 @@ async function visualizarChecklist(igrejaIndex) {
 
     // Gera o PDF e exibe no iframe
     try {
-        const pdf = await _gerarPDFChecklist(igrejaIndex);
+        const pdf = await _gerarPDFChecklist(tipo, igrejaIndex);
         if (!pdf) { modal.remove(); return; }
 
         const dataUri = pdf.output('datauristring');
@@ -544,7 +619,7 @@ async function visualizarChecklist(igrejaIndex) {
 
         // Botão de download
         modal.querySelector('#_btnDownloadChecklist').addEventListener('click', () => {
-            downloadChecklistPDF(igrejaIndex);
+            downloadChecklistPDF(tipo, igrejaIndex);
         });
     } catch (e) {
         console.error('Erro ao gerar preview do checklist:', e);
@@ -554,8 +629,8 @@ async function visualizarChecklist(igrejaIndex) {
 }
 
 // Gera o objeto jsPDF do checklist (sem baixar)
-async function _gerarPDFChecklist(igrejaIndex) {
-    const igreja = checklistData.igrejas[igrejaIndex];
+async function _gerarPDFChecklist(tipo, igrejaIndex) {
+    const igreja = checklistData[tipo] ? checklistData[tipo][igrejaIndex] : null;
     if (!igreja || !igreja.checklist) return null;
 
     const { jsPDF } = window.jspdf;
@@ -641,14 +716,14 @@ async function _gerarPDFChecklist(igrejaIndex) {
 }
 
 // Gera e baixa o PDF do checklist
-async function downloadChecklistPDF(igrejaIndex) {
-    const igreja = checklistData.igrejas[igrejaIndex];
+async function downloadChecklistPDF(tipo, igrejaIndex) {
+    const igreja = checklistData[tipo] ? checklistData[tipo][igrejaIndex] : null;
     if (!igreja || !igreja.checklist) {
         alert('Checklist não encontrado!');
         return;
     }
 
-    const pdf = await _gerarPDFChecklist(igrejaIndex);
+    const pdf = await _gerarPDFChecklist(tipo, igrejaIndex);
     if (!pdf) { alert('Checklist não encontrado!'); return; }
 
     // Nome do arquivo
@@ -703,6 +778,8 @@ window.visualizarChecklist = visualizarChecklist;
 window.downloadChecklistPDF = downloadChecklistPDF;
 window.limparAssinatura = limparAssinatura;
 window.sincronizarIgrejasChecklistNF = sincronizarIgrejasChecklistNF;
+window.moverParaSandroChecklist = moverParaSandroChecklist;
+window.moverParaGeralChecklist = moverParaGeralChecklist;
 
 // Inicializa quando a página carregar
 document.addEventListener('DOMContentLoaded', () => {

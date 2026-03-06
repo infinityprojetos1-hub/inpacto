@@ -465,10 +465,10 @@ function iniciarSincronizacaoTempoReal() {
       if (localStr) {
         try {
           const local = JSON.parse(localStr);
-          if (local.igrejas && local.igrejas.length > 0) {
+          if ((local.igrejas && local.igrejas.length > 0) || (local.pedidosSandro && local.pedidosSandro.length > 0)) {
             // Restaura assinaturas do storage separado antes de subir
             const mapaAss = JSON.parse(localStorage.getItem('checklistAssinaturas') || '{}');
-            local.igrejas.forEach(ig => {
+            [...(local.igrejas || []), ...(local.pedidosSandro || [])].forEach(ig => {
               const key = (ig.nome || '') + '_' + (ig.id || '');
               if (mapaAss[key]) { if (!ig.checklist) ig.checklist = {}; ig.checklist.assinatura = mapaAss[key]; }
             });
@@ -487,14 +487,14 @@ function iniciarSincronizacaoTempoReal() {
       // Garante que assinaturas locais (storage separado) não sejam perdidas caso o Firebase
       // ainda tenha dados antigos (sem assinatura).
       if (typeof window._restaurarAssinaturas === 'function') {
-        window._restaurarAssinaturas(dados.igrejas || []);
+        window._restaurarAssinaturas([...(dados.igrejas || []), ...(dados.pedidosSandro || [])]);
       }
 
       // Atualiza também o storage separado com assinaturas vindas do Firebase
       try {
         const mapaAtual = JSON.parse(localStorage.getItem('checklistAssinaturas') || '{}');
         let atualizou = false;
-        (dados.igrejas || []).forEach(ig => {
+        [...(dados.igrejas || []), ...(dados.pedidosSandro || [])].forEach(ig => {
           if (ig.checklist && ig.checklist.assinatura) {
             const key = (ig.nome || '') + '_' + (ig.id || '');
             mapaAtual[key] = ig.checklist.assinatura;
@@ -507,7 +507,8 @@ function iniciarSincronizacaoTempoReal() {
       localStorage.setItem('checklistsIgrejas', JSON.stringify(dados));
       if (typeof checklistData !== 'undefined') {
         checklistData.igrejas = Array.isArray(dados.igrejas) ? dados.igrejas : [];
-        checklistData._ts     = dados._ts || 0;
+        checklistData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
+        checklistData._ts = dados._ts || 0;
       }
       if (typeof atualizarListaChecklist === 'function') atualizarListaChecklist();
       console.log('🔄 Checklists atualizados do Firebase');
