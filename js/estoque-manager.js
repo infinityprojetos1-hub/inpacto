@@ -103,18 +103,23 @@ function renderizarAbaEstoque() {
                 <button class="btn-primary" onclick="abrirModalAdicionarEstoque()">
                     <i class="fas fa-plus"></i> Adicionar Item ao Estoque
                 </button>
+                ${itens.length > 0 ? `
+                <button class="btn-success" onclick="abrirModalAdicionarAExistente()">
+                    <i class="fas fa-boxes-stacked"></i> Adicionar a Item Existente
+                </button>
+                ` : ''}
             </div>
 
             <div class="estoque-lista" id="estoqueLista">
                 ${itens.length === 0
                     ? '<div class="estoque-empty"><i class="fas fa-box-open"></i><p>Nenhum item no estoque.</p><p>Clique em "Adicionar Item ao Estoque" para começar.</p></div>'
                     : itens.map((it, i) => `
-                        <div class="estoque-item" data-index="${i}">
+                        <div class="estoque-item" data-index="${i}" onclick="editarItemEstoque(${i})" role="button" tabindex="0">
                             <div class="estoque-item-info">
                                 <strong>${it.nome}</strong>
                                 <span class="estoque-item-qtd">${it.quantidade} un.</span>
                             </div>
-                            <div class="estoque-item-acoes">
+                            <div class="estoque-item-acoes" onclick="event.stopPropagation()">
                                 <button class="btn-secondary btn-icon" onclick="editarItemEstoque(${i})" title="Editar"><i class="fas fa-edit"></i></button>
                                 <button class="btn-danger btn-icon" onclick="removerItemEstoque(${i})" title="Remover"><i class="fas fa-trash"></i></button>
                             </div>
@@ -124,6 +129,64 @@ function renderizarAbaEstoque() {
             </div>
         </div>
     `;
+}
+
+function abrirModalAdicionarAExistente() {
+    const itens = obterItensEstoque();
+    if (itens.length === 0) return;
+
+    const opts = itens.map((it, i) =>
+        `<option value="${i}">${(it.nome || '').replace(/"/g, '&quot;')} (${it.quantidade} un. atual)</option>`
+    ).join('');
+
+    const modal = document.createElement('div');
+    modal.className = 'material-modal material-modal-small';
+    modal.innerHTML = `
+        <div class="material-modal-content material-modal-content-small">
+            <div class="material-modal-header">
+                <h3><i class="fas fa-boxes-stacked"></i> Adicionar Quantidade a Item Existente</h3>
+                <button class="material-modal-close" onclick="this.closest('.material-modal').remove()">×</button>
+            </div>
+            <div class="material-modal-form-body">
+                <form onsubmit="adicionarAItemExistente(event)">
+                    <div class="form-group">
+                        <label><i class="fas fa-tag"></i> Item:</label>
+                        <select id="estoqueItemExistenteSelect" required>
+                            <option value="">Selecione o item...</option>
+                            ${opts}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-sort-numeric-up"></i> Quantidade a adicionar:</label>
+                        <input type="number" id="estoqueItemExistenteQtd" placeholder="0" min="1" value="1" required>
+                    </div>
+                    <div class="material-modal-buttons">
+                        <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Somar</button>
+                        <button type="button" class="btn-secondary" onclick="this.closest('.material-modal').remove()">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => document.getElementById('estoqueItemExistenteSelect').focus(), 100);
+}
+
+function adicionarAItemExistente(event) {
+    event.preventDefault();
+    const sel = document.getElementById('estoqueItemExistenteSelect');
+    const qtd = parseInt(document.getElementById('estoqueItemExistenteQtd').value, 10) || 0;
+    if (!sel || sel.value === '' || qtd < 1) return;
+
+    const index = parseInt(sel.value, 10);
+    const item = estoqueData.itens[index];
+    if (!item) return;
+
+    const atual = parseInt(item.quantidade, 10) || 0;
+    item.quantidade = atual + qtd;
+    salvarDadosEstoque();
+    renderizarAbaEstoque();
+    event.target.closest('.material-modal').remove();
 }
 
 function abrirModalAdicionarEstoque() {
