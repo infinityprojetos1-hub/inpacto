@@ -55,6 +55,12 @@ function inicializarTabs() {
             if (tabId === 'notasFiscais' && typeof window.atualizarListaNF === 'function') {
                 setTimeout(window.atualizarListaNF, 50);
             }
+            if (tabId === 'checklist' && typeof window.sincronizarIgrejasChecklistNF === 'function') {
+                setTimeout(() => {
+                    window.sincronizarIgrejasChecklistNF();
+                    if (typeof window.atualizarListaChecklist === 'function') window.atualizarListaChecklist();
+                }, 80);
+            }
 
             if (window.innerWidth <= 768) {
                 requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));

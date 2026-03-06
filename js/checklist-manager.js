@@ -163,12 +163,13 @@ function sincronizarIgrejasChecklistNF() {
         checklistData.igrejas = _filtrarExistentes(checklistData.igrejas || []);
         checklistData.pedidosSandro = _filtrarExistentes(checklistData.pedidosSandro || []);
 
-        // Adiciona igrejas ativas que estão em NF mas não em Checklist (nem em igrejas nem em pedidosSandro)
+        // Adiciona igrejas ativas e especiais que estão em NF mas não em Checklist (igual ao Material)
         const _jaExisteEmQualquer = (nome, id) =>
             (checklistData.igrejas || []).some(ig => ig.nome === nome && ig.id === id) ||
             (checklistData.pedidosSandro || []).some(ig => ig.nome === nome && ig.id === id);
 
-        igrejasNF.forEach(igrejaNF => {
+        const igrejasParaChecklist = [...igrejasNF, ...(nfData.especiais || [])];
+        igrejasParaChecklist.forEach(igrejaNF => {
             if (!_jaExisteEmQualquer(igrejaNF.nome, igrejaNF.id)) {
                 const novaIgreja = {
                     nome: igrejaNF.nome,

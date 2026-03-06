@@ -229,6 +229,16 @@ function adicionarIgrejaNF(nomeIgreja, empresa, valor, id, link, codigo, tipoTex
 
     salvarDadosNF();
     atualizarListaNF();
+
+    // Sincroniza com Checklist e Material para que as novas igrejas apareçam nessas abas
+    if (typeof sincronizarIgrejasChecklistNF === 'function') {
+        sincronizarIgrejasChecklistNF();
+        if (typeof atualizarListaChecklist === 'function') atualizarListaChecklist();
+    }
+    if (typeof sincronizarIgrejasNF === 'function') {
+        sincronizarIgrejasNF();
+        if (typeof atualizarListaMaterial === 'function') atualizarListaMaterial();
+    }
 }
 
 // Modal de checklist (visualização)
