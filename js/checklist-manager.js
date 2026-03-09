@@ -286,7 +286,7 @@ function mostrarListaChecklistTipo(tipo) {
                     <button class="btn-icon btn-primary" onclick="visualizarChecklist('${tipo}', ${index})" title="Visualizar Checklist" data-label-mobile="Visualizar">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn-icon btn-success" onclick="downloadChecklistPDF('${tipo}', ${index})" title="Baixar PDF" data-label-mobile="Baixar PDF">
+                    <button class="btn-icon btn-success" onclick="downloadChecklistPDF('${tipo}', ${index})" title="Baixar PDF" data-label-mobile="Compartilhar">
                         <i class="fas fa-download"></i>
                     </button>
                 ` : ''}
@@ -716,7 +716,12 @@ async function _gerarPDFChecklist(tipo, igrejaIndex) {
     return pdf;
 }
 
-// Gera e baixa o PDF do checklist
+// Detecta se está em dispositivo mobile
+function _ehMobile() {
+    return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+}
+
+// Gera e baixa o PDF do checklist (desktop: só baixa | mobile: compartilha via Web Share, incluindo WhatsApp)
 async function downloadChecklistPDF(tipo, igrejaIndex) {
     const igreja = checklistData[tipo] ? checklistData[tipo][igrejaIndex] : null;
     if (!igreja || !igreja.checklist) {
@@ -727,49 +732,57 @@ async function downloadChecklistPDF(tipo, igrejaIndex) {
     const pdf = await _gerarPDFChecklist(tipo, igrejaIndex);
     if (!pdf) { alert('Checklist não encontrado!'); return; }
 
-    // Nome do arquivo
     const nomeArquivo = `Checklist_${igreja.nome.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-    
-    // ===== SALVA LOCALMENTE NA PASTA IMPRIMIR =====
+    const pdfBlob = pdf.output('blob');
+    const arquivo = new File([pdfBlob], nomeArquivo, { type: 'application/pdf' });
+
+    const isMobile = _ehMobile();
+
+    // ===== MOBILE: tenta compartilhar (inclui WhatsApp no menu de compartilhar) =====
+    if (isMobile && navigator.share && navigator.canShare && navigator.canShare({ files: [arquivo] })) {
+        try {
+            await navigator.share({
+                files: [arquivo],
+                title: `Checklist - ${igreja.nome}`,
+                text: `Checklist técnico - ${igreja.nome}${igreja.id ? ' (ID: ' + igreja.id + ')' : ''}`
+            });
+            return;
+        } catch (e) {
+            if (e.name !== 'AbortError') {
+                console.warn('Share API falhou, fazendo download:', e);
+                pdf.save(nomeArquivo);
+            }
+        }
+        return;
+    }
+
+    // ===== DESKTOP ou fallback: salva na pasta IMPRIMIR ou faz download =====
     try {
-        // Verifica se tem pasta de trabalho configurada
         if (window.pastaTrabalhoHandle) {
             const igrejaId = igreja.id || igreja.nome.replace(/[^a-z0-9]/gi, '_');
-            
-            // Acessa a pasta da igreja
             const pastaIgreja = await window.pastaTrabalhoHandle.getDirectoryHandle(igrejaId, { create: true });
-            
-            // Acessa/Cria a pasta IMPRIMIR
             const pastaImprimir = await pastaIgreja.getDirectoryHandle('IMPRIMIR', { create: true });
-            
-            // Cria o arquivo PDF na pasta IMPRIMIR
             const fileHandle = await pastaImprimir.getFileHandle(nomeArquivo, { create: true });
             const writable = await fileHandle.createWritable();
-            
-            // Converte o PDF para Blob
-            const pdfBlob = pdf.output('blob');
-            
-            // Escreve o arquivo
             await writable.write(pdfBlob);
             await writable.close();
-            
-            console.log(`✅ Checklist salvo localmente em: ${igrejaId}/IMPRIMIR/${nomeArquivo}`);
-            alert(`✅ Checklist salvo com sucesso na pasta:\n${igrejaId}/IMPRIMIR/${nomeArquivo}`);
+            console.log(`✅ Checklist salvo em: ${igrejaId}/IMPRIMIR/${nomeArquivo}`);
+            alert(`✅ Checklist salvo na pasta:\n${igrejaId}/IMPRIMIR/${nomeArquivo}`);
         } else {
-            // Se não tiver pasta configurada, faz download normal
-            console.warn('⚠️ Pasta de trabalho não configurada. Fazendo download normal...');
             pdf.save(nomeArquivo);
-            alert('⚠️ Pasta de trabalho não configurada.\nArquivo baixado no diretório de Downloads.\n\n💡 Configure a pasta de trabalho na aba "Gerar Orçamentos".');
+            if (isMobile) {
+                const msg = encodeURIComponent(`Segue o checklist - ${igreja.nome}. O arquivo foi baixado; anexe no WhatsApp.`);
+                window.open(`https://wa.me/?text=${msg}`, '_blank');
+            }
         }
     } catch (error) {
-        console.error('❌ Erro ao salvar checklist localmente:', error);
-        // Em caso de erro, faz download normal
+        console.error('❌ Erro ao salvar checklist:', error);
         pdf.save(nomeArquivo);
-        alert(`⚠️ Erro ao salvar na pasta: ${error.message}\nArquivo baixado no diretório de Downloads.`);
+        if (isMobile) {
+            const msg = encodeURIComponent(`Segue o checklist - ${igreja.nome}. Anexe o PDF baixado.`);
+            window.open(`https://wa.me/?text=${msg}`, '_blank');
+        }
     }
-    
-    // NÃO salva mais no Firebase (para economizar espaço)
-    console.log('ℹ️ Checklists não são salvos no Firebase para economizar espaço.');
 }
 
 // Expõe funções globalmente
