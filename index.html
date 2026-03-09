@@ -1582,7 +1582,18 @@
             }
             
             .checklist-col-acoes .btn-icon {
-                display: none !important; /* Remove ícones isolados no mobile */
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 8px !important;
+                width: 100% !important;
+                padding: 10px 14px !important;
+                font-size: 0.85em !important;
+                border-radius: 8px !important;
+            }
+            .checklist-col-acoes .btn-icon::after {
+                content: attr(data-label-mobile);
+                font-weight: 600;
             }
             
             .checklist-question {

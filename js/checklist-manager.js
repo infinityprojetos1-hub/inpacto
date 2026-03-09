@@ -283,10 +283,10 @@ function mostrarListaChecklistTipo(tipo) {
                     <i class="fas fa-list"></i>
                 </button>` : ''}
                 ${temChecklist ? `
-                    <button class="btn-icon btn-primary" onclick="visualizarChecklist('${tipo}', ${index})" title="Visualizar Checklist">
+                    <button class="btn-icon btn-primary" onclick="visualizarChecklist('${tipo}', ${index})" title="Visualizar Checklist" data-label-mobile="Visualizar">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn-icon btn-success" onclick="downloadChecklistPDF('${tipo}', ${index})" title="Baixar PDF">
+                    <button class="btn-icon btn-success" onclick="downloadChecklistPDF('${tipo}', ${index})" title="Baixar PDF" data-label-mobile="Baixar PDF">
                         <i class="fas fa-download"></i>
                     </button>
                 ` : ''}
