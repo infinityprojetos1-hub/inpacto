@@ -492,8 +492,12 @@ function iniciarSincronizacaoTempoReal() {
       } else {
         if (typeof estoqueData !== 'undefined') {
           estoqueData.itens = Array.isArray(dados.itens) ? dados.itens : [];
+          if (typeof window._ordenarItensEstoque === 'function') {
+            window._ordenarItensEstoque();
+          }
         }
-        localStorage.setItem('estoqueData', JSON.stringify(dados));
+        const dadosParaSalvar = { ...dados, itens: estoqueData?.itens || dados.itens || [] };
+        localStorage.setItem('estoqueData', JSON.stringify(dadosParaSalvar));
         if (typeof window.renderizarAbaEstoque === 'function') {
           const content = document.getElementById('estoque');
           if (content && content.classList.contains('active')) {

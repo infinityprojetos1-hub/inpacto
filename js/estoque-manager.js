@@ -15,16 +15,27 @@ function carregarDadosEstoque() {
         if (salvo) {
             const dados = JSON.parse(salvo);
             estoqueData.itens = Array.isArray(dados.itens) ? dados.itens : [];
+            _ordenarItensEstoque();
         }
     } catch (e) {
         console.error('[Estoque] Erro ao carregar:', e);
     }
 }
 
+// Ordena itens alfabeticamente por nome
+function _ordenarItensEstoque() {
+    estoqueData.itens.sort((a, b) => {
+        const na = String(a.nome || '').trim().toLowerCase();
+        const nb = String(b.nome || '').trim().toLowerCase();
+        return na.localeCompare(nb);
+    });
+}
+
 // Salva no localStorage e Firebase
 function salvarDadosEstoque() {
     if (window._estoqueCarregando) return;
     try {
+        _ordenarItensEstoque();
         const dados = { itens: estoqueData.itens, _ts: Date.now() };
         localStorage.setItem('estoqueData', JSON.stringify(dados));
         if (typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
@@ -57,7 +68,7 @@ function deduzirEstoque(nome, quantidade) {
     const atual = parseInt(item.quantidade, 10) || 0;
     const novo = Math.max(0, atual - qtd);
     item.quantidade = novo;
-    if (novo <= 0) estoqueData.itens.splice(idx, 1); // remove se zerou
+    // Mantém item na lista mesmo com quantidade 0 (não remove)
     salvarDadosEstoque();
     return true;
 }
@@ -298,8 +309,9 @@ function inicializarEstoque() {
     });
 }
 
-// Expõe globalmente para material-manager
+// Expõe globalmente para material-manager e firebase-config
 window.obterItensEstoque = obterItensEstoque;
+window._ordenarItensEstoque = _ordenarItensEstoque;
 window.deduzirEstoque = deduzirEstoque;
 window.devolverEstoque = devolverEstoque;
 window.temEstoqueSuficiente = temEstoqueSuficiente;
