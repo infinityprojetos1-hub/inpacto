@@ -485,14 +485,13 @@ async function criarArquivoNFs() {
 
 async function inicializarArquivoNF() {
     try {
-        // Tenta carregar automaticamente o arquivo nf_data.json da pasta
-        await tentarCarregarNFAutomatico();
-
-        // Tenta restaurar handle vinculado
+        // NÃO carrega mais de nf_data.json nem do arquivo vinculado automaticamente.
+        // Dados vêm de localStorage + Firebase para evitar reset para versão antiga.
+        // Usuário pode importar manualmente via "Importar JSON" se quiser.
         const handle = await getStoredHandle();
         if (handle) {
             nfFileHandle = handle;
-            await lerNFsDoArquivo();
+            // Não chama lerNFsDoArquivo() - handle só para salvar quando usuário exportar
         }
     } catch (error) {
         console.warn('Sem arquivo de NFs vinculado ou erro ao carregar handle:', error);
@@ -561,7 +560,7 @@ async function forcarPermissaoNF() {
 
         if (resultado === 'granted') {
             nfFileHandle = handle;
-            await lerNFsDoArquivo();
+            // Não lê do arquivo - evita sobrescrever dados com versão antiga
             console.log('✅ NF: Permissão concedida!');
             return { vinculado: true, permissao: true };
         } else {
@@ -575,38 +574,6 @@ async function forcarPermissaoNF() {
 }
 
 window.forcarPermissaoNF = forcarPermissaoNF;
-
-// Tenta carregar automaticamente o arquivo JSON da mesma pasta
-async function tentarCarregarNFAutomatico() {
-    try {
-        // Tenta fazer fetch do arquivo nf_data.json na mesma pasta
-        const response = await fetch('nf_data.json');
-        if (response.ok) {
-            const dadosImportados = await response.json();
-
-            // Valida estrutura
-            const dados = {
-                igrejas: Array.isArray(dadosImportados.igrejas) ? dadosImportados.igrejas : [],
-                arquivadas: Array.isArray(dadosImportados.arquivadas) ? dadosImportados.arquivadas : []
-            };
-
-            dados.igrejas = dados.igrejas.filter(igreja => igreja && igreja.nome && igreja.empresa && igreja.valor);
-            dados.arquivadas = dados.arquivadas.filter(igreja => igreja && igreja.nome && igreja.empresa && igreja.valor);
-            dados.igrejas.forEach(ig => { if (!ig.checklist) ig.checklist = getDefaultChecklist(); });
-            dados.arquivadas.forEach(ig => { if (!ig.checklist) ig.checklist = getDefaultChecklist(); });
-
-            nfData = dados;
-            localStorage.setItem('notasFiscais', JSON.stringify(nfData));
-            console.log('✅ Arquivo nf_data.json carregado automaticamente!');
-            atualizarListaNF();
-
-            // Vinculação automática desativada (Firebase é a fonte da verdade)
-        }
-    } catch (error) {
-        // Arquivo não encontrado (normal na primeira vez)
-        console.log('Arquivo nf_data.json não encontrado na pasta');
-    }
-}
 
 // Abre modal para adicionar uma nova igreja
 function abrirModalAdicionarIgreja() {

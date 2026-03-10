@@ -939,14 +939,13 @@ async function criarArquivoMaterial() {
 // Inicializa o sistema de arquivo - igual ao NF
 async function inicializarArquivoMaterial() {
     try {
-        // Tenta carregar automaticamente o arquivo material_data.json da pasta
-        await tentarCarregarMaterialAutomatico();
-
-        // Tenta restaurar handle vinculado
+        // NÃO carrega mais de material_data.json nem do arquivo vinculado automaticamente.
+        // Dados vêm de localStorage + Firebase para evitar reset para versão antiga.
+        // Usuário pode importar manualmente via "Importar JSON" se quiser.
         const handle = await obterHandleSalvoMaterial();
         if (handle) {
             materialFileHandle = handle;
-            await lerMaterialDoArquivo();
+            // Não chama lerMaterialDoArquivo() - handle só para salvar quando usuário exportar
         }
     } catch (error) {
         console.warn('Sem arquivo de Material vinculado ou erro ao carregar handle:', error);
@@ -1015,7 +1014,7 @@ async function forcarPermissaoMaterial() {
 
         if (resultado === 'granted') {
             materialFileHandle = handle;
-            await lerMaterialDoArquivo();
+            // Não lê do arquivo - evita sobrescrever dados com versão antiga
             console.log('✅ Material: Permissão concedida!');
             return { vinculado: true, permissao: true };
         } else {
@@ -1029,32 +1028,6 @@ async function forcarPermissaoMaterial() {
 }
 
 window.forcarPermissaoMaterial = forcarPermissaoMaterial;
-
-// Tenta carregar automaticamente o arquivo JSON da mesma pasta
-async function tentarCarregarMaterialAutomatico() {
-    try {
-        // Tenta fazer fetch do arquivo material_data.json na mesma pasta
-        const response = await fetch('material_data.json');
-        if (response.ok) {
-            const dadosImportados = await response.json();
-
-            // Valida estrutura básica
-            if (!dadosImportados.pendentes) dadosImportados.pendentes = [];
-            if (!dadosImportados.enviadas) dadosImportados.enviadas = [];
-            if (!dadosImportados.pedidosSandro) dadosImportados.pedidosSandro = [];
-
-            materialData = dadosImportados;
-            localStorage.setItem('materiaisIgrejas', JSON.stringify(materialData));
-            console.log('✅ Arquivo material_data.json carregado automaticamente!');
-            atualizarListaMaterial();
-
-            // Vinculação automática desativada (Firebase é a fonte da verdade)
-        }
-    } catch (error) {
-        // Arquivo não encontrado (normal na primeira vez)
-        console.log('Arquivo material_data.json não encontrado na pasta');
-    }
-}
 
 // Funções para gerenciar IndexedDB (armazenar o file handle)
 async function abrirBDMaterial() {
