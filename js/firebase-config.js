@@ -56,7 +56,38 @@ try {
 
 // ===== FUNÇÕES AUXILIARES =====
 
-// Salva dados no Realtime Database
+// Fila de retry para saves que falharam
+let _filaRetryFirebase = [];
+const _MAX_RETRIES = 5;
+let _retryInterval = null;
+
+function _agendarRetry(caminho, dados) {
+  _filaRetryFirebase.push({ caminho, dados, tentativas: 0 });
+  if (!_retryInterval) {
+    _retryInterval = setInterval(_processarRetryFila, 5000);
+  }
+}
+
+async function _processarRetryFila() {
+  if (_filaRetryFirebase.length === 0 || !database) {
+    if (_retryInterval) { clearInterval(_retryInterval); _retryInterval = null; }
+    return;
+  }
+  const item = _filaRetryFirebase.shift();
+  try {
+    await database.ref(item.caminho).set(item.dados);
+    console.log(`✅ Retry: dados salvos em ${item.caminho}`);
+  } catch (e) {
+    item.tentativas++;
+    if (item.tentativas < _MAX_RETRIES) {
+      _filaRetryFirebase.push(item);
+    } else {
+      console.error(`❌ Falha após ${_MAX_RETRIES} tentativas em ${item.caminho}`);
+    }
+  }
+}
+
+// Salva dados no Realtime Database (com retry automático em caso de falha)
 async function salvarNoDatabase(caminho, dados) {
   try {
     if (!firebaseDisponivel || !database) {
@@ -69,7 +100,7 @@ async function salvarNoDatabase(caminho, dados) {
     return true;
   } catch (error) {
     console.error(`❌ Erro ao salvar em ${caminho}:`, error);
-    console.warn('📝 Dados salvos apenas localmente');
+    _agendarRetry(caminho, dados);
     return null;
   }
 }
@@ -331,16 +362,34 @@ function iniciarSincronizacaoTempoReal() {
 
     window._fbReceivendo = true;
     try {
-      // Firebase é sempre a fonte da verdade ao sincronizar
-      localStorage.setItem('notasFiscais', JSON.stringify(dados));
-      if (typeof nfData !== 'undefined') {
-        nfData.igrejas    = Array.isArray(dados.igrejas)    ? dados.igrejas    : [];
-        nfData.arquivadas = Array.isArray(dados.arquivadas) ? dados.arquivadas : [];
-        nfData.especiais  = Array.isArray(dados.especiais)  ? dados.especiais  : [];
-        nfData._ts        = dados._ts || 0;
+      // PROTEÇÃO: só aceita Firebase se for mais recente; nunca sobrescreve se local tem mais dados
+      const localStr = localStorage.getItem('notasFiscais');
+      let localParsed = null;
+      try { localParsed = localStr ? JSON.parse(localStr) : null; } catch (_) {}
+      const localTs = localParsed ? (localParsed._ts || 0) : 0;
+      const remoteTs = dados._ts || 0;
+      const localTotal = localParsed ? ((localParsed.igrejas||[]).length + (localParsed.arquivadas||[]).length + (localParsed.especiais||[]).length) : 0;
+      const remoteTotal = (dados.igrejas||[]).length + (dados.arquivadas||[]).length + (dados.especiais||[]).length;
+      const perdaDados = localTotal > 0 && remoteTotal < localTotal;
+      const mesmoDado = remoteTs === localTs && remoteTs > 0;
+      if (!mesmoDado && ((remoteTs < localTs && localStr) || (perdaDados && localStr))) {
+        console.log('🛡️ NF: protegendo dados locais, enviando para Firebase');
+        try {
+          const local = localParsed || JSON.parse(localStr);
+          if (!local._ts) local._ts = Date.now();
+          salvarNoDatabase('dados/notasFiscais', local);
+        } catch (e) { /* ignora */ }
+      } else {
+        localStorage.setItem('notasFiscais', JSON.stringify(dados));
+        if (typeof nfData !== 'undefined') {
+          nfData.igrejas    = Array.isArray(dados.igrejas)    ? dados.igrejas    : [];
+          nfData.arquivadas = Array.isArray(dados.arquivadas) ? dados.arquivadas : [];
+          nfData.especiais  = Array.isArray(dados.especiais)  ? dados.especiais  : [];
+          nfData._ts        = dados._ts || 0;
+        }
+        if (typeof atualizarListaNF === 'function') atualizarListaNF();
+        console.log('🔄 Notas Fiscais atualizadas do Firebase');
       }
-      if (typeof atualizarListaNF === 'function') atualizarListaNF();
-      console.log('🔄 Notas Fiscais atualizadas do Firebase');
     } finally {
       window._fbReceivendo = false;
     }
@@ -372,15 +421,33 @@ function iniciarSincronizacaoTempoReal() {
 
     window._fbReceivendo = true;
     try {
-      localStorage.setItem('materiaisIgrejas', JSON.stringify(dados));
-      if (typeof materialData !== 'undefined') {
-        materialData.pendentes     = Array.isArray(dados.pendentes)     ? dados.pendentes     : [];
-        materialData.enviadas      = Array.isArray(dados.enviadas)      ? dados.enviadas      : [];
-        materialData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
-        materialData._ts           = dados._ts || 0;
+      const localStr = localStorage.getItem('materiaisIgrejas');
+      let localMat = null;
+      try { localMat = localStr ? JSON.parse(localStr) : null; } catch (_) {}
+      const localTs = localMat ? (localMat._ts || 0) : 0;
+      const remoteTs = dados._ts || 0;
+      const localMatTotal = localMat ? ((localMat.pendentes||[]).length + (localMat.enviadas||[]).length + (localMat.pedidosSandro||[]).length) : 0;
+      const remoteMatTotal = (dados.pendentes||[]).length + (dados.enviadas||[]).length + (dados.pedidosSandro||[]).length;
+      const perdaMat = localMatTotal > 0 && remoteMatTotal < localMatTotal;
+      const mesmoMat = remoteTs === localTs && remoteTs > 0;
+      if (!mesmoMat && ((remoteTs < localTs && localStr) || (perdaMat && localStr))) {
+        console.log('🛡️ Material: protegendo dados locais, enviando para Firebase');
+        try {
+          const local = localMat || JSON.parse(localStr);
+          if (!local._ts) local._ts = Date.now();
+          salvarNoDatabase('dados/materiais', local);
+        } catch (e) { /* ignora */ }
+      } else {
+        localStorage.setItem('materiaisIgrejas', JSON.stringify(dados));
+        if (typeof materialData !== 'undefined') {
+          materialData.pendentes     = Array.isArray(dados.pendentes)     ? dados.pendentes     : [];
+          materialData.enviadas      = Array.isArray(dados.enviadas)      ? dados.enviadas      : [];
+          materialData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
+          materialData._ts           = dados._ts || 0;
+        }
+        if (typeof atualizarListaMaterial === 'function') atualizarListaMaterial();
+        console.log('🔄 Materiais atualizados do Firebase');
       }
-      if (typeof atualizarListaMaterial === 'function') atualizarListaMaterial();
-      console.log('🔄 Materiais atualizados do Firebase');
     } finally {
       window._fbReceivendo = false;
     }
@@ -406,17 +473,35 @@ function iniciarSincronizacaoTempoReal() {
     }
     window._estoqueCarregando = true;
     try {
-      if (typeof estoqueData !== 'undefined') {
-        estoqueData.itens = Array.isArray(dados.itens) ? dados.itens : [];
-      }
-      localStorage.setItem('estoqueData', JSON.stringify(dados));
-      if (typeof window.renderizarAbaEstoque === 'function') {
-        const content = document.getElementById('estoque');
-        if (content && content.classList.contains('active')) {
-          window.renderizarAbaEstoque();
+      const localStr = localStorage.getItem('estoqueData');
+      let localEst = null;
+      try { localEst = localStr ? JSON.parse(localStr) : null; } catch (_) {}
+      const localTs = localEst ? (localEst._ts || 0) : 0;
+      const remoteTs = dados._ts || 0;
+      const localEstLen = localEst && localEst.itens ? localEst.itens.length : 0;
+      const remoteEstLen = Array.isArray(dados.itens) ? dados.itens.length : 0;
+      const perdaEst = localEstLen > 0 && remoteEstLen < localEstLen;
+      const mesmoEst = remoteTs === localTs && remoteTs > 0;
+      if (!mesmoEst && ((remoteTs < localTs && localStr) || (perdaEst && localStr))) {
+        console.log('🛡️ Estoque: protegendo dados locais, enviando para Firebase');
+        try {
+          const local = localEst || JSON.parse(localStr);
+          if (!local._ts) local._ts = Date.now();
+          salvarNoDatabase('dados/estoque', local);
+        } catch (e) { /* ignora */ }
+      } else {
+        if (typeof estoqueData !== 'undefined') {
+          estoqueData.itens = Array.isArray(dados.itens) ? dados.itens : [];
         }
+        localStorage.setItem('estoqueData', JSON.stringify(dados));
+        if (typeof window.renderizarAbaEstoque === 'function') {
+          const content = document.getElementById('estoque');
+          if (content && content.classList.contains('active')) {
+            window.renderizarAbaEstoque();
+          }
+        }
+        console.log('🔄 Estoque atualizado do Firebase');
       }
-      console.log('🔄 Estoque atualizado do Firebase');
     } finally {
       window._estoqueCarregando = false;
     }
@@ -447,11 +532,26 @@ function iniciarSincronizacaoTempoReal() {
       return;
     }
 
-    // Usa controle interno do módulo de pagamento (não o flag global)
-    if (typeof window._aplicarDadosFirebasePagamento === 'function') {
+    const localStr = localStorage.getItem('pagamentoData');
+    let localPag = null;
+    try { localPag = localStr ? JSON.parse(localStr) : null; } catch (_) {}
+    const localTs = localPag ? (localPag._ts || 0) : 0;
+    const remoteTs = dados._ts || 0;
+    const localPagLen = localPag ? (Object.keys(localPag.igrejasSelecionadas||{}).length + (localPag.itensExtras||[]).length) : 0;
+    const remotePagLen = Object.keys(dados.igrejasSelecionadas||{}).length + (dados.itensExtras||[]).length;
+    const perdaPag = localPagLen > 0 && remotePagLen < localPagLen;
+    const mesmoPag = remoteTs === localTs && remoteTs > 0;
+    if (!mesmoPag && ((remoteTs < localTs && localStr) || (perdaPag && localStr))) {
+      console.log('🛡️ Pagamento: protegendo dados locais, enviando para Firebase');
+      try {
+        const local = localPag || JSON.parse(localStr);
+        if (!local._ts) local._ts = Date.now();
+        salvarNoDatabase('dados/pagamento', local);
+      } catch (e) { /* ignora */ }
+    } else if (typeof window._aplicarDadosFirebasePagamento === 'function') {
       window._aplicarDadosFirebasePagamento(dados);
+      console.log('🔄 Pagamento atualizado do Firebase');
     }
-    console.log('🔄 Pagamento atualizado do Firebase');
     window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'pagamento' } }));
   });
 
@@ -483,35 +583,47 @@ function iniciarSincronizacaoTempoReal() {
 
     window._fbReceivendo = true;
     try {
-      // Firebase agora traz assinaturas completas.
-      // Garante que assinaturas locais (storage separado) não sejam perdidas caso o Firebase
-      // ainda tenha dados antigos (sem assinatura).
-      if (typeof window._restaurarAssinaturas === 'function') {
-        window._restaurarAssinaturas([...(dados.igrejas || []), ...(dados.pedidosSandro || [])]);
+      const localStr = localStorage.getItem('checklistsIgrejas');
+      let localChk = null;
+      try { localChk = localStr ? JSON.parse(localStr) : null; } catch (_) {}
+      const localTs = localChk ? (localChk._ts || 0) : 0;
+      const remoteTs = dados._ts || 0;
+      const localChkTotal = localChk ? ((localChk.igrejas||[]).length + (localChk.pedidosSandro||[]).length) : 0;
+      const remoteChkTotal = (dados.igrejas||[]).length + (dados.pedidosSandro||[]).length;
+      const perdaChk = localChkTotal > 0 && remoteChkTotal < localChkTotal;
+      const mesmoChk = remoteTs === localTs && remoteTs > 0;
+      if (!mesmoChk && ((remoteTs < localTs && localStr) || (perdaChk && localStr))) {
+        console.log('🛡️ Checklist: protegendo dados locais, enviando para Firebase');
+        try {
+          const local = localChk || JSON.parse(localStr);
+          if (!local._ts) local._ts = Date.now();
+          salvarNoDatabase('dados/checklists', local);
+        } catch (e) { /* ignora */ }
+      } else {
+        if (typeof window._restaurarAssinaturas === 'function') {
+          window._restaurarAssinaturas([...(dados.igrejas || []), ...(dados.pedidosSandro || [])]);
+        }
+        try {
+          const mapaAtual = JSON.parse(localStorage.getItem('checklistAssinaturas') || '{}');
+          let atualizou = false;
+          [...(dados.igrejas || []), ...(dados.pedidosSandro || [])].forEach(ig => {
+            if (ig.checklist && ig.checklist.assinatura) {
+              const key = (ig.nome || '') + '_' + (ig.id || '');
+              mapaAtual[key] = ig.checklist.assinatura;
+              atualizou = true;
+            }
+          });
+          if (atualizou) localStorage.setItem('checklistAssinaturas', JSON.stringify(mapaAtual));
+        } catch (_) {}
+        localStorage.setItem('checklistsIgrejas', JSON.stringify(dados));
+        if (typeof checklistData !== 'undefined') {
+          checklistData.igrejas = Array.isArray(dados.igrejas) ? dados.igrejas : [];
+          checklistData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
+          checklistData._ts = dados._ts || 0;
+        }
+        if (typeof atualizarListaChecklist === 'function') atualizarListaChecklist();
+        console.log('🔄 Checklists atualizados do Firebase');
       }
-
-      // Atualiza também o storage separado com assinaturas vindas do Firebase
-      try {
-        const mapaAtual = JSON.parse(localStorage.getItem('checklistAssinaturas') || '{}');
-        let atualizou = false;
-        [...(dados.igrejas || []), ...(dados.pedidosSandro || [])].forEach(ig => {
-          if (ig.checklist && ig.checklist.assinatura) {
-            const key = (ig.nome || '') + '_' + (ig.id || '');
-            mapaAtual[key] = ig.checklist.assinatura;
-            atualizou = true;
-          }
-        });
-        if (atualizou) localStorage.setItem('checklistAssinaturas', JSON.stringify(mapaAtual));
-      } catch (_) {}
-
-      localStorage.setItem('checklistsIgrejas', JSON.stringify(dados));
-      if (typeof checklistData !== 'undefined') {
-        checklistData.igrejas = Array.isArray(dados.igrejas) ? dados.igrejas : [];
-        checklistData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
-        checklistData._ts = dados._ts || 0;
-      }
-      if (typeof atualizarListaChecklist === 'function') atualizarListaChecklist();
-      console.log('🔄 Checklists atualizados do Firebase');
     } finally {
       window._fbReceivendo = false;
     }
@@ -545,6 +657,62 @@ function _piscarBadgeSync() {
 }
 window._piscarBadgeSync = _piscarBadgeSync;
 
+// Força envio de TODOS os dados locais para o Firebase (ignora _fbReceivendo)
+function forcarSyncParaFirebase() {
+  if (!firebaseDisponivel || !database) return;
+  // Garante que dados em memória sejam salvos no localStorage antes de enviar
+  try {
+    if (typeof window.salvarDadosNF === 'function') window.salvarDadosNF();
+    if (typeof window.salvarDadosMaterial === 'function') window.salvarDadosMaterial();
+    if (typeof window.salvarDadosChecklist === 'function') window.salvarDadosChecklist();
+    if (typeof window.salvarDadosEstoque === 'function') window.salvarDadosEstoque();
+    if (typeof window.salvarDadosPagamento === 'function') window.salvarDadosPagamento();
+  } catch (_) {}
+  const ts = Date.now();
+  try {
+    const nf = localStorage.getItem('notasFiscais');
+    if (nf) {
+      const d = JSON.parse(nf);
+      if (!d._ts) d._ts = ts;
+      salvarNoDatabase('dados/notasFiscais', d);
+    }
+    const mat = localStorage.getItem('materiaisIgrejas');
+    if (mat) {
+      const d = JSON.parse(mat);
+      if (!d._ts) d._ts = ts;
+      salvarNoDatabase('dados/materiais', d);
+    }
+    const chk = localStorage.getItem('checklistsIgrejas');
+    if (chk) {
+      const d = JSON.parse(chk);
+      if (!d._ts) d._ts = ts;
+      salvarNoDatabase('dados/checklists', d);
+    }
+    const est = localStorage.getItem('estoqueData');
+    if (est) {
+      const d = JSON.parse(est);
+      if (!d._ts) d._ts = ts;
+      salvarNoDatabase('dados/estoque', d);
+    }
+    const pag = localStorage.getItem('pagamentoData');
+    if (pag) {
+      const d = JSON.parse(pag);
+      if (!d._ts) d._ts = ts;
+      salvarNoDatabase('dados/pagamento', d);
+    }
+    console.log('📤 Sync forçado: todos os dados enviados para Firebase');
+  } catch (e) { console.error('Erro ao forçar sync:', e); }
+}
+window.forcarSyncParaFirebase = forcarSyncParaFirebase;
+
+// Ao fechar aba ou trocar de aba: garante que dados locais sejam enviados ao Firebase
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    forcarSyncParaFirebase();
+  }
+});
+window.addEventListener('pagehide', () => forcarSyncParaFirebase());
+
 // Expõe funções globalmente
 window.firebaseDB = {
   salvar: salvarNoDatabase,
@@ -555,6 +723,7 @@ window.firebaseDB = {
   buscarArquivo: buscarArquivoBase64,
   migrarDados: migrarLocalStorageParaFirebase,
   iniciarSync: iniciarSincronizacaoTempoReal,
+  forcarSync: forcarSyncParaFirebase,
   disponivel: () => firebaseDisponivel
 };
 

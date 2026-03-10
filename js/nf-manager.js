@@ -124,25 +124,12 @@ function salvarDadosNF() {
         localStorage.setItem('notasFiscais', dadosParaSalvar);
         console.log('Dados NF salvos localmente');
 
-        // Salva no Firebase
+        // Salva no Firebase imediatamente (sempre automático)
         if (typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
-            if (window._fbReceivendo) {
-                // Se estiver recebendo sync agora, aguarda e tenta novamente
-                clearTimeout(window._nfSaveRetry);
-                window._nfSaveRetry = setTimeout(() => {
-                    if (!window._fbReceivendo) {
-                        if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
-                        salvarNoDatabase('dados/notasFiscais', nfData)
-                            .then(() => console.log('✅ NF salva no Firebase (retry)'))
-                            .catch(err => console.warn('⚠️ NF não salva no Firebase:', err));
-                    }
-                }, 600);
-            } else {
-                if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
-                salvarNoDatabase('dados/notasFiscais', nfData)
-                    .then(() => console.log('✅ NF salva no Firebase'))
-                    .catch(err => console.warn('⚠️ NF não salva no Firebase:', err));
-            }
+            if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
+            salvarNoDatabase('dados/notasFiscais', nfData)
+                .then(() => console.log('✅ NF salva no Firebase'))
+                .catch(err => console.warn('⚠️ NF não salva no Firebase:', err));
         }
     } catch (error) {
         console.error('Erro ao salvar dados das NFs:', error);

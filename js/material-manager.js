@@ -105,8 +105,8 @@ function salvarDadosMaterial() {
         // Salva no localStorage próprio
         localStorage.setItem('materiaisIgrejas', JSON.stringify(materialData));
 
-        // Salva no Firebase (se não estamos recebendo sync e não estamos no carregamento inicial)
-        if (!window._fbReceivendo && !_materialCarregando && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
+        // Salva no Firebase imediatamente (sempre automático, exceto no carregamento inicial)
+        if (!_materialCarregando && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
             if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
             salvarNoDatabase('dados/materiais', materialData)
                 .then(() => console.log('✅ Material salvo no Firebase'))

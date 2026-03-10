@@ -124,7 +124,7 @@ function salvarDadosChecklist() {
         console.log('✅ Dados de checklist salvos localmente');
 
         // Salva no Firebase completo (com assinaturas), fora do carregamento inicial
-        if (!window._fbReceivendo && !_checklistCarregando && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
+        if (!_checklistCarregando && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
             if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
             salvarNoDatabase('dados/checklists', checklistData)
                 .then(() => console.log('✅ Checklist salvo no Firebase (com assinaturas)'))

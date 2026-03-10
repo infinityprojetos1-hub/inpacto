@@ -27,7 +27,7 @@ function salvarDadosEstoque() {
     try {
         const dados = { itens: estoqueData.itens, _ts: Date.now() };
         localStorage.setItem('estoqueData', JSON.stringify(dados));
-        if (typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel && !window._fbReceivendo) {
+        if (typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
             salvarNoDatabase('dados/estoque', dados);
             if (typeof window._piscarBadgeSync === 'function') window._piscarBadgeSync();
         }
