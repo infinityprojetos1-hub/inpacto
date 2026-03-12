@@ -311,28 +311,6 @@ function atualizarListaMaterial() {
         btn.addEventListener('click', () => { if (_touchHandled) return; ativarTabMaterial(); });
     });
 
-    // Adiciona botões de gerenciamento de JSON
-    const botoesContainer = document.createElement('div');
-    botoesContainer.className = 'material-botoes-container';
-    botoesContainer.style.cssText = 'margin-top: 32px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;';
-    botoesContainer.innerHTML = `
-        <button onclick="salvarMaterialJsonEmArquivo()" class="btn-success">
-            <i class="fas fa-download"></i> Exportar JSON
-        </button>
-        <input type="file" id="materialImportInput" accept="application/json" style="display:none" onchange="importarMaterialJsonDeArquivo(this.files[0]); this.value=null;">
-        <button onclick="document.getElementById('materialImportInput').click()" class="btn-primary">
-            <i class="fas fa-upload"></i> Importar JSON
-        </button>
-        <button onclick="selecionarArquivoMaterial()" class="btn-warning">
-            <i class="fas fa-link"></i> Vincular JSON
-        </button>
-        <button onclick="criarArquivoMaterial()" class="btn-primary">
-            <i class="fas fa-file"></i> Criar JSON
-        </button>
-    `;
-
-    container.appendChild(botoesContainer);
-
     // Mostra a lista da aba ativa atual
     mostrarListaTipo(abaAtivaMaterial);
 }

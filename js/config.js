@@ -1,4 +1,74 @@
 // Configurações e variáveis globais
+
+// Valores min/max por tipo de igreja (editáveis nas configurações)
+const VALORES_IGREJA_DEFAULT = {
+    padrao: { min: 3200, max: 4000 },
+    som_para_tras: { min: 4500, max: 5500 },
+    longe_2: { min: 4500, max: 5000 },
+    longe_3: { min: 4000, max: 4500 }
+};
+const CONFIG_VALORES_KEY = 'configValoresIgreja';
+
+function obterValoresIgreja() {
+    try {
+        const salvo = localStorage.getItem(CONFIG_VALORES_KEY);
+        if (salvo) {
+            const parsed = JSON.parse(salvo);
+            return { ...VALORES_IGREJA_DEFAULT, ...parsed };
+        }
+    } catch (e) { console.warn('Erro ao carregar valores:', e); }
+    return { ...VALORES_IGREJA_DEFAULT };
+}
+
+function salvarValoresIgreja(valores) {
+    try {
+        localStorage.setItem(CONFIG_VALORES_KEY, JSON.stringify(valores));
+        // Sincroniza com Firebase para refletir no notebook/outros dispositivos
+        if (typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
+            salvarNoDatabase('dados/valoresIgreja', { ...valores, _ts: Date.now() });
+        }
+        return true;
+    } catch (e) {
+        console.error('Erro ao salvar valores:', e);
+        return false;
+    }
+}
+
+function carregarConfigValores() {
+    const v = obterValoresIgreja();
+    ['padrao', 'som_para_tras', 'longe_2', 'longe_3'].forEach(tipo => {
+        const elMin = document.getElementById('valMin_' + tipo);
+        const elMax = document.getElementById('valMax_' + tipo);
+        if (elMin) elMin.value = v[tipo] ? v[tipo].min : '';
+        if (elMax) elMax.value = v[tipo] ? v[tipo].max : '';
+    });
+}
+
+function salvarConfigValores() {
+    const v = {};
+    ['padrao', 'som_para_tras', 'longe_2', 'longe_3'].forEach(tipo => {
+        const elMin = document.getElementById('valMin_' + tipo);
+        const elMax = document.getElementById('valMax_' + tipo);
+        const min = parseFloat(elMin && elMin.value) || 0;
+        const max = parseFloat(elMax && elMax.value) || 0;
+        if (min > max) {
+            const nomes = { padrao: 'Padrão', som_para_tras: 'Som para trás', longe_2: 'Longe (Até 2 igrejas)', longe_3: 'Longe (Acima de 3 igrejas)' };
+            alert(`Em "${nomes[tipo] || tipo}": o valor mínimo não pode ser maior que o máximo.`);
+            return;
+        }
+        v[tipo] = { min, max };
+    });
+    if (salvarValoresIgreja(v)) {
+        alert('Valores salvos com sucesso!');
+    } else {
+        alert('Erro ao salvar. Tente novamente.');
+    }
+}
+
+window.obterValoresIgreja = obterValoresIgreja;
+window.carregarConfigValores = carregarConfigValores;
+window.salvarConfigValores = salvarConfigValores;
+
 const configuracao = {
     servicos: [
         "Confecção de cabeamento de microfone",

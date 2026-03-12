@@ -1222,8 +1222,6 @@ function atualizarListaRelatoriosNovo() {
         container.innerHTML += tabelaHTML;
     }
 
-    // Adiciona botões de gerenciamento de JSON
-    container.insertAdjacentHTML('beforeend', criarBotoesGerenciamentoRelatorio());
 }
 
 // Muda aba ativa
@@ -1244,36 +1242,6 @@ window.moverParaGeradosRelatorio = moverParaGeradosRelatorio;
 window.moverParaSandroRelatorio = moverParaSandroRelatorio;
 window.mudarAbaRelatorio = mudarAbaRelatorio;
 window.recarregarRelatorios = recarregarRelatorios;
-
-// Cria os botões de gerenciamento de JSON para relatórios
-function criarBotoesGerenciamentoRelatorio() {
-    return `
-        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #dee2e6;">
-            <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #666;">
-                <i class="fas fa-database"></i> Gerenciamento de Dados
-            </h4>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                <button onclick="exportarRelatoriosJson()" class="btn-secondary" style="padding: 8px 15px; font-size: 13px;">
-                    <i class="fas fa-download"></i> Exportar JSON
-                </button>
-                <input type="file" id="relatorioImportInput" accept="application/json" style="display:none" 
-                    onchange="importarRelatoriosJson(this.files[0]); this.value=null;">
-                <button onclick="document.getElementById('relatorioImportInput').click()" class="btn-secondary" style="padding: 8px 15px; font-size: 13px;">
-                    <i class="fas fa-upload"></i> Importar JSON
-                </button>
-                <button onclick="selecionarArquivoRelatorios()" class="btn-secondary" style="padding: 8px 15px; font-size: 13px;">
-                    <i class="fas fa-link"></i> Vincular JSON
-                </button>
-                <button onclick="criarArquivoRelatorios()" class="btn-secondary" style="padding: 8px 15px; font-size: 13px;">
-                    <i class="fas fa-file"></i> Criar JSON
-                </button>
-                <span id="relatorioArquivoStatus" style="font-size: 12px; color: #666; margin-left: 10px;">
-                    Nenhum arquivo vinculado
-                </span>
-            </div>
-        </div>
-    `;
-}
 
 // Abre o modal para gerar relatório
 function abrirModalRelatorio(nome, id, index, tipoOrigem = 'pendentes') {
@@ -2103,8 +2071,8 @@ function inicializarAbas() {
         });
     });
 
-    // Mostra a primeira aba por padrão
-    mostrarAba('orcamentos');
+    // Mostra a aba Home por padrão (tela inicial)
+    mostrarAba('home');
 }
 
 // Inicializa tudo quando o documento estiver pronto
@@ -2140,6 +2108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicializa o gerenciador de estoque
     if (typeof inicializarEstoque === 'function') {
         inicializarEstoque();
+    }
+
+    // Inicializa a Home (tela inicial com pesquisa)
+    if (typeof inicializarHome === 'function') {
+        inicializarHome();
     }
 
     // Inicializa o sistema de pasta de trabalho

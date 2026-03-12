@@ -1401,19 +1401,6 @@ function atualizarListaNF() {
 				<button onclick="abrirModalRelatorioPendenciasImagem()" class="btn-secondary">
 					<i class="fas fa-clipboard-list"></i> Relatório
 				</button>
-                <button onclick="salvarNFJsonEmArquivo()" class="btn-secondary">
-                    <i class="fas fa-download"></i> Exportar JSON
-                </button>
-                <input type="file" id="nfImportInput" accept="application/json" style="display:none" onchange="importarNFJsonDeArquivo(this.files[0]); this.value=null;">
-                <button onclick="document.getElementById('nfImportInput').click()" class="btn-secondary">
-                    <i class="fas fa-upload"></i> Importar JSON
-                </button>
-                <button onclick="selecionarArquivoNFs()" class="btn-secondary">
-                    <i class="fas fa-link"></i> Vincular JSON
-                </button>
-                <button onclick="criarArquivoNFs()" class="btn-secondary">
-                    <i class="fas fa-file"></i> Criar JSON
-                </button>
             `;
             contentContainer.appendChild(botoesContainer);
         }

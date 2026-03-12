@@ -2727,6 +2727,233 @@
             box-shadow: var(--shadow-md);
         }
 
+        /* ===== HOME - Página inicial com pesquisa ===== */
+        .home-section { padding: 24px 0; max-width: 800px; margin: 0 auto; }
+        .home-hero {
+            text-align: center;
+            padding: 32px 20px 40px;
+            background: linear-gradient(135deg, rgba(102,126,234,0.08) 0%, rgba(118,75,162,0.08) 100%);
+            border-radius: 20px;
+            margin-bottom: 32px;
+            border: 2px solid rgba(102,126,234,0.2);
+        }
+        .home-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 8px;
+        }
+        .home-title i { color: var(--primary-color); margin-right: 8px; }
+        .home-subtitle {
+            color: var(--text-muted);
+            font-size: 1.05em;
+            margin-bottom: 24px;
+        }
+        .home-search-container {
+            display: flex;
+            gap: 12px;
+            max-width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .home-search-input {
+            flex: 1;
+            min-width: 280px;
+            padding: 16px 20px;
+            font-size: 1.1em;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+        .home-search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(102,126,234,0.2);
+        }
+        .home-search-btn {
+            padding: 16px 28px;
+            font-size: 1.05em;
+            font-weight: 600;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .home-search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        .home-results {
+            min-height: 120px;
+            margin-bottom: 40px;
+        }
+        .home-results-placeholder, .home-results-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .home-results-placeholder i, .home-results-empty i {
+            font-size: 3em;
+            color: var(--border-color);
+            margin-bottom: 16px;
+            display: block;
+        }
+        .home-results-hint { font-size: 0.9em; margin-top: 8px; }
+        .home-results-list { display: flex; flex-direction: column; gap: 16px; }
+        .home-results-card {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px 24px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        .home-results-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+        .home-card-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .home-card-nome { font-size: 1.25em; color: var(--dark-color); margin: 0; }
+        .home-card-status {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .home-card-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+            font-size: 0.95em;
+            color: var(--text-muted);
+        }
+        .home-card-info span { display: flex; align-items: center; gap: 6px; }
+        .home-card-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            color: var(--primary-color);
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 0.95em;
+        }
+        .home-card-link:hover { text-decoration: underline; }
+        .home-results-card-clickable { cursor: pointer; }
+        .home-results-card-clickable:hover { transform: translateY(-2px); }
+
+        /* Modal Checklist Home */
+        .home-checklist-modal .home-checklist-content { max-width: 520px; }
+        .home-checklist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .home-checklist-header h3 {
+            margin: 0;
+            font-size: 1.3em;
+            color: var(--dark-color);
+        }
+        .home-checklist-header h3 i { margin-right: 8px; color: var(--primary-color); }
+        .home-checklist-close {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: #f1f5f9;
+            border-radius: 8px;
+            font-size: 1.4em;
+            cursor: pointer;
+            color: var(--text-muted);
+            line-height: 1;
+            transition: var(--transition);
+        }
+        .home-checklist-close:hover { background: #e2e8f0; color: var(--danger-color); }
+        .home-checklist-body { padding: 8px 0; }
+        .home-checklist-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+            margin-bottom: 24px;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 10px;
+            font-size: 0.95em;
+            color: var(--text-muted);
+        }
+        .home-checklist-info span { display: flex; align-items: center; gap: 6px; }
+        .home-checklist-section {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+        }
+        .home-checklist-section h4 {
+            margin: 0 0 12px 0;
+            font-size: 1em;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        .home-chk-grid { display: flex; flex-direction: column; gap: 8px; }
+        .home-chk-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .home-chk-label { font-weight: 600; color: var(--dark-color); }
+        .home-chk-sim {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            background: #d1fae5;
+            color: #059669;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .home-chk-nao {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            background: #fee2e2;
+            color: #dc2626;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        @media (max-width: 600px) {
+            .home-search-container { flex-direction: column; }
+            .home-search-input { min-width: 100%; }
+            .home-card-header { flex-direction: column; align-items: flex-start; }
+        }
+
         .relatorio-header {
             display: grid;
             grid-template-columns: 1fr 150px 200px;
@@ -3872,7 +4099,10 @@
         </header>
 
         <div class="tabs">
-            <button class="tab-button active" data-tab="orcamentos">
+            <button class="tab-button active" data-tab="home">
+                <i class="fas fa-home"></i> Início
+            </button>
+            <button class="tab-button" data-tab="orcamentos">
                 <i class="fas fa-file-invoice"></i> Gerar Orçamentos
             </button>
             <button class="tab-button" data-tab="resultados">
@@ -3901,7 +4131,11 @@
             </button>
         </div>
 
-        <div id="orcamentos" class="tab-content active">
+        <div id="home" class="tab-content active">
+            <div id="homeContainer"></div>
+        </div>
+
+        <div id="orcamentos" class="tab-content">
             <div class="section">
                 <h2>Dados das Igrejas</h2>
                 <p>Preencha os campos abaixo para adicionar uma igreja à lista de orçamentos</p>
@@ -4295,114 +4529,62 @@
             </div>
             
             <div class="material-modal-body">
-                <!-- Seção Firebase -->
+                <!-- Seção VALORES - Valores min/max por tipo de igreja -->
                 <div style="margin-bottom: 30px; padding: 20px; background: var(--bg-light); border-radius: 12px;">
                     <h4 style="color: var(--primary-color); margin-bottom: 16px;">
-                        <i class="fas fa-cloud"></i> Sincronização com Firebase
+                        <i class="fas fa-coins"></i> Valores por Tipo de Igreja
                     </h4>
-                    <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 0.95em;">
-                        Migre seus dados locais para a nuvem e ative a sincronização em tempo real
+                    <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.95em;">
+                        Defina o valor mínimo e máximo para cada tipo. O orçamento automático gera um valor aleatório dentro desse intervalo.
                     </p>
-                    <button class="btn-primary" onclick="abrirModalMigracao()">
-                        <i class="fas fa-cloud-upload-alt"></i> Migrar para Firebase
-                    </button>
-                </div>
-                
-                <!-- Seção Vinculação de Arquivos JSON -->
-                <div style="margin-bottom: 30px; padding: 20px; background: var(--bg-light); border-radius: 12px;">
-                    <h4 style="color: var(--primary-color); margin-bottom: 16px;">
-                        <i class="fas fa-folder-open"></i> Arquivos JSON
-                    </h4>
-                    <p style="color: var(--text-muted); margin-bottom: 16px; font-size: 0.95em;">
-                        Vincule os arquivos JSON para sincronização bidirecional
-                    </p>
-                    <button class="btn-secondary" onclick="pedirPermissaoArquivos()">
-                        <i class="fas fa-link"></i> Vincular Arquivos JSON
-                    </button>
-                </div>
-                
-                <!-- Status da Sincronização -->
-                <div style="padding: 20px; background: var(--bg-light); border-radius: 12px;">
-                    <h4 style="color: var(--primary-color); margin-bottom: 16px;">
-                        <i class="fas fa-info-circle"></i> Status do Sistema
-                    </h4>
-                    <div style="display: grid; gap: 12px;">
-                        <div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 8px;">
-                            <span style="color: var(--text-color); font-weight: 500;">Firebase:</span>
-                            <span id="statusFirebase" style="color: var(--text-muted);">Verificando...</span>
+                    <div id="configValoresContainer" style="display: grid; gap: 16px;">
+                        <!-- Padrão -->
+                        <div class="config-valores-row" style="display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid var(--border-color);" data-tipo="padrao">
+                            <span style="font-weight: 600;">Padrão</span>
+                            <div><label style="font-size: 0.85em; color: var(--text-muted);">Mín (R$)</label><input type="number" id="valMin_padrao" min="0" step="100" style="width: 90px; padding: 8px;"></div>
+                            <div><label style="font-size: 0.85em; color: var(--text-muted);">Máx (R$)</label><input type="number" id="valMax_padrao" min="0" step="100" style="width: 90px; padding: 8px;"></div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 8px;">
-                            <span style="color: var(--text-color); font-weight: 500;">Arquivos JSON:</span>
-                            <span id="statusJSON" style="color: var(--text-muted);">Verificando...</span>
+                        <!-- Som para trás -->
+                        <div class="config-valores-row" style="display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <span style="font-weight: 600;">Som para trás</span>
+                            <div><label style="font-size: 0.85em; color: var(--text-muted);">Mín (R$)</label><input type="number" id="valMin_som_para_tras" min="0" step="100" style="width: 90px; padding: 8px;"></div>
+                            <div><label style="font-size: 0.85em; color: var(--text-muted);">Máx (R$)</label><input type="number" id="valMax_som_para_tras" min="0" step="100" style="width: 90px; padding: 8px;"></div>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 8px;">
-                            <span style="color: var(--text-color); font-weight: 500;">Dados Locais:</span>
-                            <span id="statusLocal" style="color: var(--text-muted);">Verificando...</span>
+                        <!-- Longe (Até 2 igrejas) -->
+                        <div class="config-valores-row" style="display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <span style="font-weight: 600;">Longe (Até 2 igrejas)</span>
+                            <div><label style="font-size: 0.85em; color: var(--text-muted);">Mín (R$)</label><input type="number" id="valMin_longe_2" min="0" step="100" style="width: 90px; padding: 8px;"></div>
+                            <div><label style="font-size: 0.85em; color: var(--text-muted);">Máx (R$)</label><input type="number" id="valMax_longe_2" min="0" step="100" style="width: 90px; padding: 8px;"></div>
+                        </div>
+                        <!-- Longe (Acima de 3 igrejas) -->
+                        <div class="config-valores-row" style="display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 12px; background: white; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <span style="font-weight: 600;">Longe (Acima de 3 igrejas)</span>
+                            <div><label style="font-size: 0.85em; color: var(--text-muted);">Mín (R$)</label><input type="number" id="valMin_longe_3" min="0" step="100" style="width: 90px; padding: 8px;"></div>
+                            <div><label style="font-size: 0.85em; color: var(--text-muted);">Máx (R$)</label><input type="number" id="valMax_longe_3" min="0" step="100" style="width: 90px; padding: 8px;"></div>
                         </div>
                     </div>
+                    <button class="btn-primary" onclick="salvarConfigValores()" style="margin-top: 12px;">
+                        <i class="fas fa-save"></i> Salvar Valores
+                    </button>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Modal de Migração Firebase -->
-    <div id="modalMigracaoFirebase" class="material-modal" style="display: none;">
-        <div class="material-modal-content" style="animation: modalSlideIn 0.3s ease; max-width: 600px;">
-            <div class="material-modal-header">
-                <h3><i class="fas fa-cloud-upload-alt" style="margin-right: 10px;"></i>Migração para Firebase</h3>
-            </div>
-            
-            <div class="material-modal-body">
-                <div style="text-align: center; padding: 20px;">
-                    <i class="fas fa-database" style="font-size: 64px; color: var(--primary-color); margin-bottom: 20px;"></i>
-                    
-                    <h4 style="color: var(--text-color); margin-bottom: 16px;">Conectar ao Firebase</h4>
-                    
-                    <p style="color: var(--text-muted); margin-bottom: 24px;">
-                        Detectamos dados salvos localmente. Deseja migrar seus dados para o Firebase e ativar a sincronização em nuvem?
+                <!-- Seção BACKUP -->
+                <div style="margin-bottom: 30px; padding: 20px; background: var(--bg-light); border-radius: 12px;">
+                    <h4 style="color: var(--primary-color); margin-bottom: 16px;">
+                        <i class="fas fa-database"></i> Backup
+                    </h4>
+                    <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.95em;">
+                        Faça backup de todos os dados ou restaure a partir de um arquivo salvo anteriormente.
                     </p>
-                    
-                    <div style="background: var(--bg-light); padding: 20px; border-radius: 12px; margin-bottom: 24px; text-align: left;">
-                        <h5 style="color: var(--primary-color); margin-bottom: 12px;">
-                            <i class="fas fa-check-circle"></i> Benefícios:
-                        </h5>
-                        <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="padding: 8px 0; color: var(--text-color);">
-                                <i class="fas fa-cloud" style="color: var(--success-color); margin-right: 8px;"></i>
-                                Backup automático na nuvem
-                            </li>
-                            <li style="padding: 8px 0; color: var(--text-color);">
-                                <i class="fas fa-sync" style="color: var(--success-color); margin-right: 8px;"></i>
-                                Sincronização em tempo real
-                            </li>
-                            <li style="padding: 8px 0; color: var(--text-color);">
-                                <i class="fas fa-mobile-alt" style="color: var(--success-color); margin-right: 8px;"></i>
-                                Acesso de qualquer dispositivo
-                            </li>
-                            <li style="padding: 8px 0; color: var(--text-color);">
-                                <i class="fas fa-shield-alt" style="color: var(--success-color); margin-right: 8px;"></i>
-                                Dados seguros e protegidos
-                            </li>
-                        </ul>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="executarBackupCompleto()">
+                            <i class="fas fa-download"></i> Baixar Backup (JSON)
+                        </button>
+                        <label class="btn-secondary" style="cursor: pointer; margin: 0; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-upload"></i> Restaurar do Backup
+                            <input type="file" id="inputRestaurarBackup" accept=".json,application/json" style="display: none;" onchange="restaurarDoBackup(this)">
+                        </label>
                     </div>
-                    
-                    <div id="progressoMigracao" style="display: none; margin-bottom: 20px;">
-                        <div style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
-                            <div id="barraMigracao" style="width: 0%; height: 100%; background: var(--primary-gradient); transition: width 0.3s ease;"></div>
-                        </div>
-                        <p id="textoMigracao" style="margin-top: 12px; color: var(--text-muted); font-size: 0.9em;"></p>
-                    </div>
-                    
-                    <div id="resultadoMigracao" style="display: none; padding: 16px; border-radius: 8px; margin-bottom: 20px;"></div>
-                </div>
-                
-                <div class="material-modal-buttons">
-                    <button id="btnIniciarMigracao" class="btn-primary" onclick="iniciarMigracaoFirebase()">
-                        <i class="fas fa-cloud-upload-alt"></i> Migrar para Firebase
-                    </button>
-                    <button class="btn-secondary" onclick="fecharModalMigracao()">
-                        <i class="fas fa-times"></i> Agora Não
-                    </button>
                 </div>
             </div>
         </div>
@@ -4426,136 +4608,8 @@
             document.getElementById('modalConfiguracoes').style.display = 'none';
         }
         
-        function abrirModalMigracao() {
-            fecharModalConfiguracoes();
-            document.getElementById('modalMigracaoFirebase').style.display = 'flex';
-        }
-        
         function verificarStatusSistema() {
-            // Verifica Firebase
-            const statusFirebase = document.getElementById('statusFirebase');
-            if (typeof firebase !== 'undefined' && window.firebaseDB && window.firebaseDB.disponivel) {
-                statusFirebase.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> Conectado';
-                const migrado = localStorage.getItem('firebaseMigrado');
-                if (migrado) {
-                    statusFirebase.innerHTML += ' (Migrado)';
-                }
-            } else {
-                statusFirebase.innerHTML = '<i class="fas fa-times-circle" style="color: var(--danger-color);"></i> Desconectado';
-            }
-            
-            // Verifica JSON
-            const statusJSON = document.getElementById('statusJSON');
-            let arquivosVinculados = false;
-            try {
-                if (localStorage.getItem('notasFiscaisHandle') || localStorage.getItem('materiaisHandle')) {
-                    arquivosVinculados = true;
-                }
-            } catch (e) {}
-            
-            if (arquivosVinculados) {
-                statusJSON.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> Vinculados';
-            } else {
-                statusJSON.innerHTML = '<i class="fas fa-times-circle" style="color: var(--warning-color);"></i> Não vinculados';
-            }
-            
-            // Verifica dados locais
-            const statusLocal = document.getElementById('statusLocal');
-            try {
-                const igrejas = JSON.parse(localStorage.getItem('igrejas') || '[]');
-                const notasFiscais = JSON.parse(localStorage.getItem('notasFiscais') || '[]');
-                const total = igrejas.length + notasFiscais.length;
-                statusLocal.innerHTML = `<i class="fas fa-database" style="color: var(--primary-color);"></i> ${total} registros`;
-            } catch (e) {
-                statusLocal.innerHTML = '<i class="fas fa-exclamation-circle" style="color: var(--danger-color);"></i> Erro ao ler';
-            }
-        }
-        
-        // REMOVIDO: Modal automático de migração
-        // Agora só aparece quando o usuário clicar no botão de configurações
-        
-        function fecharModalMigracao() {
-            document.getElementById('modalMigracaoFirebase').style.display = 'none';
-        }
-        
-        async function iniciarMigracaoFirebase() {
-            const btnMigrar = document.getElementById('btnIniciarMigracao');
-            const progresso = document.getElementById('progressoMigracao');
-            const barra = document.getElementById('barraMigracao');
-            const texto = document.getElementById('textoMigracao');
-            const resultado = document.getElementById('resultadoMigracao');
-            
-            btnMigrar.disabled = true;
-            btnMigrar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Migrando...';
-            progresso.style.display = 'block';
-            
-            try {
-                // Simula progresso
-                const etapas = [
-                    { progresso: 20, texto: 'Conectando ao Firebase...' },
-                    { progresso: 40, texto: 'Migrando igrejas...' },
-                    { progresso: 60, texto: 'Migrando notas fiscais...' },
-                    { progresso: 80, texto: 'Migrando materiais e checklists...' },
-                    { progresso: 90, texto: 'Enviando logos...' },
-                    { progresso: 100, texto: 'Finalizando migração...' }
-                ];
-                
-                for (const etapa of etapas) {
-                    barra.style.width = etapa.progresso + '%';
-                    texto.textContent = etapa.texto;
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-                
-                // Executa migração real
-                const resultadoMigracao = await window.firebaseDB.migrarDados();
-                
-                if (resultadoMigracao.sucesso) {
-                    // Marca como migrado
-                    localStorage.setItem('firebaseMigrado', 'true');
-                    
-                    // Inicia sincronização
-                    window.firebaseDB.iniciarSync();
-                    
-                    resultado.style.display = 'block';
-                    resultado.style.background = 'rgba(34, 197, 94, 0.1)';
-                    resultado.style.border = '2px solid #16a34a';
-                    resultado.innerHTML = `
-                        <i class="fas fa-check-circle" style="color: #16a34a; font-size: 48px; margin-bottom: 12px;"></i>
-                        <h4 style="color: #16a34a; margin-bottom: 8px;">Migração Concluída!</h4>
-                        <p style="color: var(--text-color); font-size: 0.9em; margin: 0;">
-                            Todos os seus dados foram migrados com sucesso para o Firebase.<br>
-                            A sincronização em tempo real está ativa!
-                        </p>
-                    `;
-                    
-                    btnMigrar.style.display = 'none';
-                    
-                    setTimeout(() => {
-                        fecharModalMigracao();
-                        location.reload(); // Recarrega para aplicar mudanças
-                    }, 3000);
-                } else {
-                    throw new Error(resultadoMigracao.erro);
-                }
-                
-            } catch (error) {
-                console.error('Erro na migração:', error);
-                
-                resultado.style.display = 'block';
-                resultado.style.background = 'rgba(239, 68, 68, 0.1)';
-                resultado.style.border = '2px solid #dc2626';
-                resultado.innerHTML = `
-                    <i class="fas fa-exclamation-circle" style="color: #dc2626; font-size: 48px; margin-bottom: 12px;"></i>
-                    <h4 style="color: #dc2626; margin-bottom: 8px;">Erro na Migração</h4>
-                    <p style="color: var(--text-color); font-size: 0.9em; margin: 0;">
-                        ${error.message}<br>
-                        Seus dados locais estão seguros. Tente novamente mais tarde.
-                    </p>
-                `;
-                
-                btnMigrar.disabled = false;
-                btnMigrar.innerHTML = '<i class="fas fa-redo"></i> Tentar Novamente';
-            }
+            if (typeof carregarConfigValores === 'function') carregarConfigValores();
         }
     </script>
 
@@ -4566,6 +4620,7 @@
     <script src="js/utils.js"></script>
     <script src="js/config.js"></script>
     <script src="js/firebase-config.js"></script>
+    <script src="js/backup-manager.js"></script>
     <script src="js/ui-controller.js"></script>
     <script src="js/orcamentos.js"></script>
     <script src="js/pdf-concorrentes.js"></script>
@@ -4580,6 +4635,7 @@
     <script src="js/empresa-virtualguitar.js"></script>
     <script src="js/empresa-glauber.js"></script>
     <script src="js/nf-manager.js"></script>
+    <script src="js/home-manager.js"></script>
     <script src="js/estoque-manager.js"></script>
     <script src="js/material-manager.js"></script>
     <script src="js/checklist-manager.js"></script>
@@ -4588,87 +4644,6 @@
     <script src="js/pagamento-manager.js"></script>
 
     <script>
-        // Função para pedir permissão dos arquivos JSON vinculados - SEMPRE PEDE
-        async function pedirPermissaoArquivos() {
-            // Aguarda os scripts carregarem completamente
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            console.log('🔐 ========================================');
-            console.log('🔐 INICIANDO VERIFICAÇÃO DE PERMISSÕES...');
-            console.log('🔐 ========================================');
-
-            let arquivosVinculados = [];
-            let permissoesObtidas = [];
-
-            // ========== NF ==========
-            console.log('📁 Verificando NF...');
-            if (typeof window.forcarPermissaoNF === 'function') {
-                try {
-                    const resultado = await window.forcarPermissaoNF();
-                    console.log('📋 Resultado NF:', resultado);
-                    if (resultado.vinculado) {
-                        arquivosVinculados.push('nf_data.json');
-                        if (resultado.permissao) permissoesObtidas.push('nf_data.json');
-                    }
-                } catch (e) {
-                    console.error('❌ Erro NF:', e);
-                }
-            } else {
-                console.warn('⚠️ forcarPermissaoNF não encontrada');
-            }
-
-            // ========== MATERIAL ==========
-            console.log('📁 Verificando Material...');
-            if (typeof window.forcarPermissaoMaterial === 'function') {
-                try {
-                    const resultado = await window.forcarPermissaoMaterial();
-                    console.log('📋 Resultado Material:', resultado);
-                    if (resultado.vinculado) {
-                        arquivosVinculados.push('material_data.json');
-                        if (resultado.permissao) permissoesObtidas.push('material_data.json');
-                    }
-                } catch (e) {
-                    console.error('❌ Erro Material:', e);
-                }
-            } else {
-                console.warn('⚠️ forcarPermissaoMaterial não encontrada');
-            }
-
-            // ========== RELATÓRIOS ==========
-            console.log('📁 Verificando Relatórios...');
-            if (typeof window.forcarPermissaoRelatorio === 'function') {
-                try {
-                    const resultado = await window.forcarPermissaoRelatorio();
-                    console.log('📋 Resultado Relatórios:', resultado);
-                    if (resultado.vinculado) {
-                        arquivosVinculados.push('relatorios_data.json');
-                        if (resultado.permissao) permissoesObtidas.push('relatorios_data.json');
-                    }
-                } catch (e) {
-                    console.error('❌ Erro Relatórios:', e);
-                }
-            } else {
-                console.warn('⚠️ forcarPermissaoRelatorio não encontrada');
-            }
-
-            // Mostra resultado
-            console.log('🔐 ========================================');
-            console.log('📊 Arquivos vinculados:', arquivosVinculados);
-            console.log('✅ Permissões obtidas:', permissoesObtidas);
-            console.log('🔐 ========================================');
-
-            if (arquivosVinculados.length > 0) {
-                if (permissoesObtidas.length === arquivosVinculados.length) {
-                    mostrarNotificacao('✅ Todos os arquivos JSON conectados!', 'success');
-                } else {
-                    const faltando = arquivosVinculados.filter(a => !permissoesObtidas.includes(a));
-                    mostrarNotificacao('⚠️ Permita acesso aos arquivos: ' + faltando.join(', '), 'warning', true);
-                }
-            } else {
-                console.log('📭 Nenhum arquivo JSON vinculado');
-            }
-        }
-
         // Função para mostrar notificação temporária
         function mostrarNotificacao(mensagem, tipo, persistente) {
             // Remove notificação anterior se existir
@@ -4702,13 +4677,7 @@
             }
 
             notificacao.textContent = mensagem;
-            notificacao.onclick = function () {
-                this.remove();
-                // Se for warning, tenta pedir permissão novamente
-                if (tipo === 'warning') {
-                    pedirPermissaoArquivos();
-                }
-            };
+            notificacao.onclick = function () { this.remove(); };
 
             document.body.appendChild(notificacao);
 

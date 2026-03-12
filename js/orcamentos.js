@@ -39,27 +39,12 @@ function gerarDadosOrcamento(igreja, dataOrcamento, prazoExecucao, config, empre
         };
     }
 
-    // NOVA REGRA: Definir valores conforme o tipo de igreja
-    let valorMinimoBase, valorMaximoBase;
-    switch (igreja.tipoIgreja) {
-        case 'padrao':
-        default:
-            valorMinimoBase = 3200;
-            valorMaximoBase = 4000;
-            break;
-        case 'som_para_tras':
-            valorMinimoBase = 4500;
-            valorMaximoBase = 5500;
-            break;
-        case 'longe_2':
-            valorMinimoBase = 4500;
-            valorMaximoBase = 5000;
-            break;
-        case 'longe_3':
-            valorMinimoBase = 4000;
-            valorMaximoBase = 4500;
-            break;
-    }
+    // Valores conforme o tipo de igreja (configuráveis nas Configurações)
+    const valoresConfig = typeof obterValoresIgreja === 'function' ? obterValoresIgreja() : {};
+    const tipo = igreja.tipoIgreja || 'padrao';
+    const intervalo = valoresConfig[tipo] || { min: 3200, max: 4000 };
+    let valorMinimoBase = intervalo.min;
+    let valorMaximoBase = intervalo.max;
 
     // Cria um valor específico para cada igreja usando uma seed mais variada
     const semente = (igreja.nome.length * igreja.codigo.length) +

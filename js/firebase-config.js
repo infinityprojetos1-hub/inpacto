@@ -559,6 +559,30 @@ function iniciarSincronizacaoTempoReal() {
     window.dispatchEvent(new CustomEvent('firebaseSync', { detail: { tipo: 'pagamento' } }));
   });
 
+  // ── Valores por tipo de igreja (config) ─────────────────────────
+  database.ref('dados/valoresIgreja').on('value', (snapshot) => {
+    const dados = snapshot.val();
+    if (!dados) {
+      const localStr = localStorage.getItem('configValoresIgreja');
+      if (localStr) {
+        try {
+          const local = JSON.parse(localStr);
+          salvarNoDatabase('dados/valoresIgreja', { ...local, _ts: Date.now() });
+          console.log('📤 Valores igreja enviados para Firebase');
+        } catch (e) { /* ignora */ }
+      }
+      return;
+    }
+    const { _ts, ...valores } = dados;
+    if (valores && Object.keys(valores).length > 0) {
+      try {
+        localStorage.setItem('configValoresIgreja', JSON.stringify(valores));
+        if (typeof carregarConfigValores === 'function') carregarConfigValores();
+        console.log('🔄 Valores igreja atualizados do Firebase');
+      } catch (e) { /* ignora */ }
+    }
+  });
+
   // ── Checklists ─────────────────────────────────────────────────
   database.ref('dados/checklists').on('value', (snapshot) => {
     const dados = snapshot.val();
@@ -703,6 +727,13 @@ function forcarSyncParaFirebase() {
       const d = JSON.parse(pag);
       if (!d._ts) d._ts = ts;
       salvarNoDatabase('dados/pagamento', d);
+    }
+    const val = localStorage.getItem('configValoresIgreja');
+    if (val) {
+      try {
+        const d = JSON.parse(val);
+        salvarNoDatabase('dados/valoresIgreja', { ...d, _ts: ts });
+      } catch (_) {}
     }
     console.log('📤 Sync forçado: todos os dados enviados para Firebase');
   } catch (e) { console.error('Erro ao forçar sync:', e); }
