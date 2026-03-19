@@ -4337,16 +4337,27 @@
         <div id="logos" class="tab-content">
             <div class="section">
                 <h2>Logos das Empresas</h2>
-                <p>Carregue as logos das empresas para incluir nos PDFs gerados. As logos serão exibidas nos cabeçalhos
-                    dos documentos.</p>
+                <p>As imagens da pasta <strong>logo/</strong> são vinculadas automaticamente às empresas. Funciona em qualquer PC ou celular sem precisar fazer upload.</p>
+                <p style="margin-bottom:12px;">
+                    <button type="button" class="btn-secondary" onclick="recarregarLogosDaPasta()" style="padding:8px 16px;">
+                        <i class="fas fa-sync-alt"></i> Recarregar imagens da pasta logo/
+                    </button>
+                    <span style="font-size:12px; color:var(--text-muted); margin-left:8px;">Use após adicionar ou trocar arquivos na pasta. O upload abaixo serve para substituir temporariamente.</span>
+                </p>
 
                 <div class="logos-container">
                     <div class="logo-item">
                         <h4>Impacto Soluções</h4>
                         <img id="logoImpacto" class="logo-preview" src="" alt="Logo não carregada">
-                        <p class="logo-instruction">Clique para selecionar uma imagem:</p>
+                        <p class="logo-instruction">Logo (clique para selecionar):</p>
                         <input type="file" id="inputLogoImpacto" class="logo-input" accept="image/*">
                         <p class="logo-status" id="statusLogoImpacto">Status: Aguardando upload</p>
+                        <hr>
+                        <p class="logo-instruction">Carimbo (clique para selecionar):</p>
+                        <img id="carimboImpacto" class="logo-preview" src="" alt="Carimbo não carregado">
+                        <input type="file" id="inputCarimboImpacto" class="logo-input" accept="image/*">
+                        <p class="logo-status" id="statusCarimboImpacto">Status: Aguardando upload</p>
+                        <p style="font-size:11px; color:var(--text-muted); margin-top:4px;">Dica: use PNG com fundo transparente para evitar fundo cinza no PDF.</p>
                     </div>
 
                     <div class="logo-item">

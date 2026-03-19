@@ -253,7 +253,7 @@ const limiteMaximoRepeticao = 2;
 // Conjunto global para evitar repetição de concorrentes dentro do mesmo lote (até 6 orçamentos)
 let empresasUsadasNoLote = new Set();
 
-// Lista canônica de empresas concorrentes
+// Lista canônica de empresas concorrentes (exposta para regenerar)
 const EMPRESAS_CONCORRENTES = [
     'Virtual Guitar Shop',
     'GG PROAUTO LTDA',
@@ -263,6 +263,7 @@ const EMPRESAS_CONCORRENTES = [
     'INSTALASSOM',
     'GLAUBER SISTEMAS CONSTRUTIVOS'
 ];
+window.EMPRESAS_CONCORRENTES = EMPRESAS_CONCORRENTES;
 
 // Função para gerar os PDFs
 async function gerarPDFs(dadosOrcamento, index, pdfsGerados) {
@@ -278,15 +279,20 @@ async function gerarPDFs(dadosOrcamento, index, pdfsGerados) {
         const isEspecial = (dadosOrcamento && dadosOrcamento.igreja && dadosOrcamento.igreja.tipoPedido === 'especial') ||
             (dadosOrcamento && dadosOrcamento.tipoPedido === 'especial');
 
-        // Lista de possíveis concorrentes (todas as empresas canônicas menos a empresa principal) - só para padrão
+        // Lista de possíveis concorrentes (todas as empresas canônicas menos a empresa principal)
         const empresaPrincipal = dadosOrcamento.suaEmpresa.nome;
-        let empresasPossiveis = isEspecial ? [] : EMPRESAS_CONCORRENTES.filter(e => !empresaPrincipal.includes(e));
-
-        // REGRAS ESPECIAIS: Define empresas concorrentes por tipo de texto
         const tipoTexto = (dadosOrcamento.tipoTexto || '').toLowerCase();
-        if (tipoTexto === 'forro' || tipoTexto === 'vidro' || tipoTexto === 'personalizado') {
-            // Para forro, vidro e personalizados: Virtual Guitar Shop e GLAUBER SISTEMAS CONSTRUTIVOS
+        const tipoPermiteGlauber = (tipoTexto === 'forro' || tipoTexto === 'vidro' || tipoTexto === 'personalizado');
+
+        let empresasPossiveis;
+        if (tipoPermiteGlauber) {
+            // Para forro, vidro e personalizados: apenas Virtual Guitar Shop e GLAUBER
             empresasPossiveis = ['Virtual Guitar Shop', 'GLAUBER SISTEMAS CONSTRUTIVOS'];
+        } else {
+            // Padrão e outros: todas exceto empresa principal E exceto Glauber (só em forro/vidro/personalizado)
+            empresasPossiveis = isEspecial ? [] : EMPRESAS_CONCORRENTES
+                .filter(e => !empresaPrincipal.includes(e))
+                .filter(e => e !== 'GLAUBER SISTEMAS CONSTRUTIVOS');
         }
 
         if (empresasPossiveis.length === 0) {
@@ -572,11 +578,12 @@ async function gerarPDFSuaEmpresa(dadosOrcamento) {
         if (empresa.includes("Impacto")) {
             // ------ PDF IMPACTO SOLUÇÕES (REDESENHADO) ------
 
-            // Adiciona logo da Impacto Soluções
+            // Adiciona logo da Impacto Soluções (largura total da página)
             if (logos && logos.impactoSolucoes) {
                 try {
-                    pdf.addImage(logos.impactoSolucoes, 'PNG', 80, 10, 50, 30);
-                    posicaoY = 45; // Ajusta posição Y após a logo
+                    const fmtLogo = (typeof logos.impactoSolucoes === 'string' && logos.impactoSolucoes.includes('jpeg')) ? 'JPEG' : 'PNG';
+                    pdf.addImage(logos.impactoSolucoes, fmtLogo, 15, 5, 180, 22);
+                    posicaoY = 32;
                     console.log("Logo Impacto Soluções adicionada ao PDF com sucesso!");
                 } catch (e) {
                     console.error("Erro ao adicionar logo Impacto:", e);
@@ -584,8 +591,8 @@ async function gerarPDFSuaEmpresa(dadosOrcamento) {
                     useFallbackHeaderImpacto();
                 }
             } else {
-                // Se não conseguir carregar a logo, usa o texto como fallback
                 useFallbackHeaderImpacto();
+                posicaoY = 40;
             }
 
             function useFallbackHeaderImpacto() {
@@ -632,7 +639,7 @@ async function gerarPDFSuaEmpresa(dadosOrcamento) {
 
             const prazoExecucao = textoSeguro(dadosOrcamento.prazoExecucao || "30");
             pdf.text(`Pedido: ${prazoExecucao} Dias`, coordenadaSegura(155), coordenadaSegura(posicaoY));
-            posicaoY += 15;
+            posicaoY += 10;
 
             // Texto explicativo com formatação clara
             pdf.setFont("helvetica", "normal");
@@ -718,9 +725,9 @@ async function gerarPDFSuaEmpresa(dadosOrcamento) {
             }
 
             if (!usandoPersonalizadoImpacto && !usandoTextoEspecial) {
-                // Tabela de itens - cabeçalho com fundo colorido
+                // Tabela de itens - cabeçalho compacto
                 pdf.setFillColor(240, 240, 240);
-                pdf.rect(margemEsquerda, posicaoY - 5, 170, 12, 'F');
+                pdf.rect(margemEsquerda, posicaoY - 4, 170, 10, 'F');
 
                 // Centralizando a tabela melhor no documento - ajustada mais para a esquerda
                 const larguraTabela = 170;
@@ -749,22 +756,27 @@ async function gerarPDFSuaEmpresa(dadosOrcamento) {
                     }
                 }
 
-                posicaoY += 10;
+                posicaoY += 8;
 
                 // Linha abaixo do cabeçalho da tabela
                 pdf.setDrawColor(100, 100, 100);
                 pdf.setLineWidth(0.3);
-                pdf.line(inicioTabela, posicaoY - 3, inicioTabela + larguraTabela, posicaoY - 3);
+                pdf.line(inicioTabela, posicaoY - 2, inicioTabela + larguraTabela, posicaoY - 2);
 
                 // Itens - com linhas alternadas para melhor legibilidade
                 pdf.setFont("helvetica", "normal");
                 let contador = 1;
 
                 for (const item of dadosOrcamento.suaEmpresa.itens) {
-                    // Fundo alternado para linhas
+                    const servico = textoSeguro(item && item.servico ? item.servico : "Serviço não especificado");
+                    const descricaoLinhas = pdf.splitTextToSize(servico, colunas[1].largura);
+                    const linhasAdicionais = descricaoLinhas.length - 1;
+                    const altLinha = 8 + (linhasAdicionais * 4);
+
+                    // Fundo alternado para linhas (compacto)
                     if (contador % 2 === 0) {
                         pdf.setFillColor(248, 248, 248);
-                        pdf.rect(inicioTabela, posicaoY - 3, larguraTabela, 10, 'F');
+                        pdf.rect(inicioTabela, posicaoY - 2, larguraTabela, altLinha, 'F');
                     }
 
                     // Verifica se precisa de nova página
@@ -798,14 +810,10 @@ async function gerarPDFSuaEmpresa(dadosOrcamento) {
                     // Número do item (centralizado)
                     pdf.text(textoSeguro(`${contador}`), coordenadaSegura(colunas[0].x + (colunas[0].largura / 2)), coordenadaSegura(posicaoY), { align: "center" });
 
-                    // Descrição do serviço (com quebra de linha se necessário)
-                    const servico = textoSeguro(item && item.servico ? item.servico : "Serviço não especificado");
-                    const descricaoLinhas = pdf.splitTextToSize(servico, colunas[1].largura);
+                    // Descrição do serviço
                     pdf.text(descricaoLinhas, coordenadaSegura(colunas[1].x), coordenadaSegura(posicaoY));
 
-                    // Ajusta posição Y baseado no número de linhas da descrição
-                    const linhasAdicionais = descricaoLinhas.length - 1;
-                    posicaoY += 10 + (linhasAdicionais * 5);
+                    posicaoY += altLinha;
                     contador++;
                 }
 
@@ -813,7 +821,7 @@ async function gerarPDFSuaEmpresa(dadosOrcamento) {
                 pdf.setDrawColor(100, 100, 100);
                 pdf.setLineWidth(0.5);
                 pdf.line(inicioTabela, posicaoY, inicioTabela + larguraTabela, posicaoY);
-                posicaoY += 15;
+                posicaoY += 10;
 
                 // Total com destaque
                 pdf.setFont("helvetica", "bold");
@@ -860,48 +868,63 @@ async function gerarPDFSuaEmpresa(dadosOrcamento) {
                 pdf.text(totalFormatadoSemR$, coordenadaSegura(195), coordenadaSegura(posicaoY), { align: "right" });
             }
 
-            // Observações (manter mesmo quando houver texto personalizado)
-            posicaoY += 25;
-            if (posicaoY > 250) { pdf.addPage(); posicaoY = 25; }
+            // Observações (compacto para caber em 1 folha)
+            posicaoY += 12;
+            if (posicaoY > 245) { pdf.addPage(); posicaoY = 25; }
             pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(10);
+            pdf.setFontSize(9);
             pdf.text("Observações:", coordenadaSegura(margemEsquerda), coordenadaSegura(posicaoY));
-            posicaoY += 5;
+            posicaoY += 4;
 
-            // Caixa para as observações
-            pdf.setFillColor(248, 248, 248);
-            pdf.rect(margemEsquerda, posicaoY, 170, 40, 'F');
-
-            // Texto das observações dentro da caixa
-            pdf.setFont("helvetica", "normal");
-            posicaoY += 7;
             const obsTexto = "Todos os impostos inclusos, além de despesas com: mão de obra, ferramentas, locação de escadas, andaimes, traslado, alimentação e hospedagem.";
-            const obsLinhas = pdf.splitTextToSize(obsTexto, 160);
+            const obsLinhas = pdf.splitTextToSize(obsTexto, 165);
+            const obsAltura = 5 + obsLinhas.length * 5;
+            pdf.setFillColor(248, 248, 248);
+            pdf.rect(margemEsquerda, posicaoY, 170, Math.min(obsAltura, 25), 'F');
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(8);
+            posicaoY += 5;
             for (let i = 0; i < obsLinhas.length; i++) {
-                pdf.text(textoSeguro(obsLinhas[i]), coordenadaSegura(margemEsquerda + 5), coordenadaSegura(posicaoY));
-                posicaoY += 7;
+                pdf.text(textoSeguro(obsLinhas[i]), coordenadaSegura(margemEsquerda + 3), coordenadaSegura(posicaoY));
+                posicaoY += 5;
             }
 
-            // Aumentando espaço antes da validade da proposta
-            posicaoY += 7;
-            pdf.text(`Validade da Proposta: ${prazoExecucao} dias.`, coordenadaSegura(margemEsquerda + 5), coordenadaSegura(posicaoY));
+            // Validade (centralizada, estilo imagem 4)
+            posicaoY += 4;
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(9);
+            pdf.text(`Validade da Proposta: ${prazoExecucao} dias.`, 105, posicaoY, { align: "center" });
+            pdf.setTextColor(0, 0, 0);
 
-            // (Bloco de observações único fica mais abaixo)
+            // Carimbo Impacto (na mesma página quando possível)
+            posicaoY += 8;
+            if (posicaoY > 230) {
+                pdf.addPage();
+                posicaoY = 20;
+            }
+            try {
+                if (logos && logos.impactoSolucoesCarimbo) {
+                    const fmt = (typeof logos.impactoSolucoesCarimbo === 'string' && logos.impactoSolucoesCarimbo.includes('jpeg')) ? 'JPEG' : 'PNG';
+                    pdf.addImage(logos.impactoSolucoesCarimbo, fmt, 65, posicaoY, 80, 40);
+                }
+            } catch (_) {}
+            posicaoY += 42;
 
-            // Rodapé com linha de separação - aumentar margem para evitar sobreposição
-            posicaoY = 260; // Fixando a posição Y para o rodapé
-            pdf.setDrawColor(220, 0, 0); // Vermelho
+            // Rodapé centralizado (formato imagem 4)
+            if (posicaoY > 250) { pdf.addPage(); posicaoY = 20; }
+            pdf.setDrawColor(220, 0, 0);
             pdf.setLineWidth(0.5);
-            pdf.line(15, posicaoY - 5, 195, posicaoY - 5);
+            pdf.line(15, posicaoY - 3, 195, posicaoY - 3);
 
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(10);
-            pdf.text("IMPACTO SOLUÇÕES", coordenadaSegura(margemEsquerda), coordenadaSegura(posicaoY + 5));
+            pdf.text("IMPACTO SOLUÇÕES", 105, posicaoY + 5, { align: "center" });
 
             pdf.setFont("helvetica", "normal");
             pdf.setFontSize(9);
-            pdf.text("Rua Maria Dalla Brotto, nº 211 – Mata da Praia, Vitória/ES.", coordenadaSegura(margemEsquerda), coordenadaSegura(posicaoY + 12));
-            pdf.text("CNPJ 23.480.575/0001-54 ● Fone: 9.9868-3468 ● s.impactosolucoes@gmail.com", coordenadaSegura(margemEsquerda), coordenadaSegura(posicaoY + 19));
+            pdf.text("Rua Maria Dalla Brotto, nº 211 – Mata da Praia, Vitória/ES.", 105, posicaoY + 11, { align: "center" });
+            pdf.text("CNPJ 23.480.575/0001-54 • Fone: 9.9868-3468 • s.impactosolucoes@gmail.com", 105, posicaoY + 17, { align: "center" });
         } else {
             // ------ PDF SPG DA SILVA ------
 
@@ -1250,8 +1273,14 @@ function atualizarInterfaceResultados(dadosOrcamento, index, pdfsGerados) {
         console.warn("Não foi possível obter nome da empresa concorrente:", e);
     }
 
+    const empresasPossiveis = (!temMega && !temTella) && window.EMPRESAS_CONCORRENTES
+        ? window.EMPRESAS_CONCORRENTES.filter(e => !dadosOrcamento.suaEmpresa.nome.includes(e))
+        : [];
+    const optsConc = empresasPossiveis.map(e => `<option value="${e}" ${e === empresaConcorrente ? 'selected' : ''}>${e}</option>`).join('');
+
     const pdfCard = document.createElement('div');
     pdfCard.className = 'pdf-card';
+    pdfCard.dataset.index = index;
     pdfCard.innerHTML = `
         <div class="igreja-info">
             <h3>${dadosOrcamento.igreja.nome}</h3>
@@ -1267,15 +1296,66 @@ function atualizarInterfaceResultados(dadosOrcamento, index, pdfsGerados) {
             </button>
             ${temMega ? `<button class="btn-download" onclick="baixarPDF('${index}', 'concorrenteMega')">Baixar PDF MEGA EVENTOS</button>` : ''}
             ${temTella ? `<button class="btn-download" onclick="baixarPDF('${index}', 'concorrenteTella')">Baixar PDF TELLA VIDEO</button>` : ''}
-            ${(!temMega && !temTella) ? `<button class="btn-download" onclick="baixarPDF('${index}', 'concorrente')">Baixar PDF ${empresaConcorrente}</button>` : ''}
+            ${(!temMega && !temTella) ? `
+                <button class="btn-download" id="btnConc_${index}" onclick="baixarPDF('${index}', 'concorrente')">Baixar PDF ${empresaConcorrente}</button>
+                <div class="regenerar-concorrente" style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <label style="font-size:12px;">Trocar concorrente:</label>
+                    <select id="selectConc_${index}" style="padding:6px 10px; font-size:13px; min-width:180px;">
+                        ${optsConc}
+                    </select>
+                    <button class="btn-secondary" onclick="regenerarPDFConcorrente('${index}')" style="padding:6px 12px; font-size:12px;">
+                        <i class="fas fa-sync-alt"></i> Regenerar PDF
+                    </button>
+                </div>
+            ` : ''}
         </div>
     `;
 
     pdfsDisplay.appendChild(pdfCard);
 }
 
+// Regenera o PDF do concorrente com outra empresa selecionada
+async function regenerarPDFConcorrente(index) {
+    const pdfsGerados = window.pdfsGerados || {};
+    const key = `igreja_${index}`;
+    const registro = pdfsGerados[key];
+    if (!registro || !registro.pdfConcorrente) {
+        console.warn('Regenerar: sem PDF concorrente para este orçamento');
+        return;
+    }
+    const selectEl = document.getElementById(`selectConc_${index}`);
+    const empresaNome = selectEl ? selectEl.value : null;
+    if (!empresaNome) return;
+
+    const dadosOrcamento = registro.orcamento;
+    const valorSuaEmpresa = dadosOrcamento.suaEmpresa.total || 0;
+    const markup = 1.1 + (Math.random() * 0.05);
+    const valorConcorrente = valorSuaEmpresa * markup;
+
+    const novoConcorrente = {
+        nome: empresaNome,
+        itens: (dadosOrcamento.suaEmpresa.itens || []).map(it => ({ servico: it.servico })),
+        total: valorConcorrente,
+        totalFormatado: (typeof window.formatarMoeda === 'function') ? window.formatarMoeda(valorConcorrente) : ("R$ " + valorConcorrente.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".")),
+        totalPorExtenso: (typeof window.valorPorExtenso === 'function') ? window.valorPorExtenso(valorConcorrente) : (valorConcorrente.toFixed(2).replace('.', ',') + " reais")
+    };
+
+    try {
+        const pdfNovo = await window.gerarPDFConcorrente(dadosOrcamento, novoConcorrente, 1);
+        registro.pdfConcorrente = pdfNovo;
+        registro.empresaConcorrente = empresaNome;
+        const btn = document.getElementById(`btnConc_${index}`);
+        if (btn) btn.textContent = `Baixar PDF ${empresaNome}`;
+        console.log('PDF concorrente regenerado com sucesso para:', empresaNome);
+    } catch (e) {
+        console.error('Erro ao regenerar PDF concorrente:', e);
+        if (typeof alert === 'function') alert('Erro ao regenerar PDF: ' + (e.message || 'Tente novamente'));
+    }
+}
+
 // Disponibiliza as funções globalmente
 window.gerarPDFs = gerarPDFs;
 window.baixarPDF = baixarPDF;
 window.baixarTodosPDFs = baixarTodosPDFs;
-window.atualizarInterfaceResultados = atualizarInterfaceResultados; 
+window.atualizarInterfaceResultados = atualizarInterfaceResultados;
+window.regenerarPDFConcorrente = regenerarPDFConcorrente; 

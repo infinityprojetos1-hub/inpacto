@@ -215,6 +215,7 @@ window.salvarPDFEmPasta = salvarPDFEmPasta;
 // Objeto global para armazenar as logos em base64
 const logosBase64 = {
     impactoSolucoes: null,
+    impactoSolucoesCarimbo: null,
     spgDaSilva: null,
     virtualGuitar: null,
     glauber: null,
@@ -280,9 +281,11 @@ Foi realizada a instalação completa de um novo sistema de som na igreja, conte
 
 // Função para carregar imagens como base64
 function carregarImagemComoBase64(imagem, callback) {
-    // Cria um elemento para carregar a imagem
     const img = new Image();
-    img.crossOrigin = 'Anonymous';
+    // Em file:// o crossOrigin bloqueia o carregamento; só usa em http(s)
+    if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+        img.crossOrigin = 'Anonymous';
+    }
 
     img.onload = function () {
         // Cria um canvas para converter a imagem
@@ -348,6 +351,7 @@ function inicializarUploadLogos() {
 
     // Inicializa os uploads de cada logo
     handleImageUpload('inputLogoImpacto', 'logoImpacto', 'impactoSolucoes', 'statusLogoImpacto');
+    handleImageUpload('inputCarimboImpacto', 'carimboImpacto', 'impactoSolucoesCarimbo', 'statusCarimboImpacto');
     handleImageUpload('inputLogoSPG', 'logoSPG', 'spgDaSilva', 'statusLogoSPG');
     handleImageUpload('inputLogoVirtualGuitar', 'logoVirtualGuitar', 'virtualGuitar', 'statusLogoVirtualGuitar');
 
@@ -380,7 +384,8 @@ function exibirLogosCarregadas() {
 
 // Mapeamento: chave de logosBase64 → arquivo na pasta logo/ e IDs no DOM
 const LOGOS_MAPA = [
-    { key: 'impactoSolucoes', arquivo: 'logo/impacto - logo.jpg',              imgId: 'logoImpacto',       statusId: 'statusLogoImpacto'       },
+    { key: 'impactoSolucoes', arquivo: 'logo/impacto - logo.jpeg',             imgId: 'logoImpacto',       statusId: 'statusLogoImpacto'       },
+    { key: 'impactoSolucoesCarimbo', arquivo: 'logo/impacto - Carimbo.png', imgId: 'carimboImpacto',    statusId: 'statusCarimboImpacto'    },
     { key: 'spgDaSilva',      arquivo: 'logo/spg - logo.jpg',                  imgId: 'logoSPG',           statusId: 'statusLogoSPG'           },
     { key: 'virtualGuitar',   arquivo: 'logo/virtualGuitarShop - logo.jpg',    imgId: 'logoVirtualGuitar', statusId: 'statusLogoVirtualGuitar' },
     { key: 'ggProauto',       arquivo: 'logo/gg proauto - logo.jpg',           imgId: 'logoGGProauto',     statusId: 'statusLogoGGProauto'     },
@@ -409,18 +414,35 @@ function _aplicarLogoNaUI(entry) {
 }
 
 // Função para carregar logos das empresas que já estão no DOM
+// Prioridade: pasta logo/ (vinculada ao projeto) → localStorage (fallback se pasta falhar)
+// Assim as logos funcionam em qualquer PC/celular sem precisar fazer upload
 function inicializarLogos() {
-    // Carrega logos do localStorage (se existirem)
-    const logosSalvas = carregarLogosDoLocalStorage();
-    if (logosSalvas) {
-        Object.assign(logosBase64, logosSalvas);
-        exibirLogosCarregadas();
-    }
+    const logosSalvas = carregarLogosDoLocalStorage() || {};
+    LOGOS_MAPA.forEach(entry => {
+        const urlArquivo = entry.arquivo.replace(/ /g, '%20');
+        carregarImagemComoBase64(urlArquivo, (base64) => {
+            if (base64) {
+                logosBase64[entry.key] = base64;
+                _aplicarLogoNaUI(entry);
+                console.log(`✅ Logo vinculada da pasta: ${entry.key}`);
+                salvarLogosNoLocalStorage(logosBase64);
+            } else {
+                // Fallback: usa localStorage se a pasta falhar (ex: arquivo não existe)
+                if (logosSalvas[entry.key]) {
+                    logosBase64[entry.key] = logosSalvas[entry.key];
+                    _aplicarLogoNaUI(entry);
+                    console.log(`⚠️ Logo ${entry.key} da pasta não encontrada, usando cache local`);
+                } else {
+                    console.warn(`⚠️ Logo não encontrada: ${entry.arquivo}`);
+                }
+            }
+        });
+    });
+}
 
-    // Para cada entrada do mapa, se a logo ainda não foi carregada, busca da pasta logo/
-    let novasLogos = 0;
+// Carrega da pasta logo/ as imagens que ainda não estão em logosBase64
+function _carregarLogosPendentesDaPasta() {
     const pendentes = LOGOS_MAPA.filter(entry => !logosBase64[entry.key]);
-
     if (pendentes.length === 0) return;
 
     pendentes.forEach(entry => {
@@ -428,16 +450,38 @@ function inicializarLogos() {
         carregarImagemComoBase64(urlArquivo, (base64) => {
             if (base64) {
                 logosBase64[entry.key] = base64;
-                novasLogos++;
                 _aplicarLogoNaUI(entry);
                 console.log(`✅ Logo auto-carregada da pasta: ${entry.key}`);
                 salvarLogosNoLocalStorage(logosBase64);
             } else {
-                console.warn(`⚠️ Logo não encontrada na pasta: ${entry.arquivo}`);
+                const logosSalvas = carregarLogosDoLocalStorage() || {};
+                if (logosSalvas[entry.key]) {
+                    logosBase64[entry.key] = logosSalvas[entry.key];
+                    _aplicarLogoNaUI(entry);
+                } else {
+                    console.warn(`⚠️ Logo não encontrada na pasta: ${entry.arquivo}`);
+                }
             }
         });
     });
 }
+
+// Força recarregar todas as imagens da pasta logo/ (substitui as do localStorage)
+function recarregarLogosDaPasta() {
+    LOGOS_MAPA.forEach(entry => {
+        delete logosBase64[entry.key];
+        const img = document.getElementById(entry.imgId);
+        const status = document.getElementById(entry.statusId);
+        if (img) { img.src = ''; img.style.display = 'none'; }
+        if (status) { status.textContent = 'Status: Carregando...'; status.style.color = ''; }
+    });
+    _carregarLogosPendentesDaPasta();
+    setTimeout(() => {
+        if (typeof salvarLogosNoLocalStorage === 'function') salvarLogosNoLocalStorage(logosBase64);
+        if (typeof alert === 'function') alert('Recarregamento concluído. Verifique o status de cada logo.');
+    }, 1500);
+}
+window.recarregarLogosDaPasta = recarregarLogosDaPasta;
 
 // Função para gerar orçamentos
 async function iniciarGeracaoOrcamentos() {
