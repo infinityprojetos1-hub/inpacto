@@ -288,18 +288,19 @@ function carregarImagemComoBase64(imagem, callback) {
     }
 
     img.onload = function () {
-        // Cria um canvas para converter a imagem
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-
-        // Desenha a imagem no canvas
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        // Obtém a string base64
-        const dataURL = canvas.toDataURL('image/png');
-        callback(dataURL);
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const dataURL = canvas.toDataURL('image/png');
+            callback(dataURL);
+        } catch (e) {
+            // Em file:// o canvas pode ficar "tainted" e toDataURL falha
+            console.warn('Erro ao converter imagem:', imagem, e);
+            callback(null);
+        }
     };
 
     img.onerror = function () {
@@ -414,27 +415,27 @@ function _aplicarLogoNaUI(entry) {
 }
 
 // Função para carregar logos das empresas que já estão no DOM
-// Prioridade: pasta logo/ (vinculada ao projeto) → localStorage (fallback se pasta falhar)
-// Assim as logos funcionam em qualquer PC/celular sem precisar fazer upload
+// 1. Carrega do localStorage primeiro (exibe imediatamente o que já foi salvo)
+// 2. Para as que faltam, tenta da pasta logo/ (funciona quando app está em servidor http)
+// 3. Em file:// a pasta pode falhar; localStorage garante que logos continuem visíveis
 function inicializarLogos() {
-    const logosSalvas = carregarLogosDoLocalStorage() || {};
-    LOGOS_MAPA.forEach(entry => {
+    const logosSalvas = carregarLogosDoLocalStorage();
+    if (logosSalvas && Object.keys(logosSalvas).length > 0) {
+        Object.assign(logosBase64, logosSalvas);
+        exibirLogosCarregadas();
+    }
+
+    const pendentes = LOGOS_MAPA.filter(entry => !logosBase64[entry.key]);
+    pendentes.forEach(entry => {
         const urlArquivo = entry.arquivo.replace(/ /g, '%20');
         carregarImagemComoBase64(urlArquivo, (base64) => {
             if (base64) {
                 logosBase64[entry.key] = base64;
                 _aplicarLogoNaUI(entry);
-                console.log(`✅ Logo vinculada da pasta: ${entry.key}`);
+                console.log(`✅ Logo carregada da pasta: ${entry.key}`);
                 salvarLogosNoLocalStorage(logosBase64);
             } else {
-                // Fallback: usa localStorage se a pasta falhar (ex: arquivo não existe)
-                if (logosSalvas[entry.key]) {
-                    logosBase64[entry.key] = logosSalvas[entry.key];
-                    _aplicarLogoNaUI(entry);
-                    console.log(`⚠️ Logo ${entry.key} da pasta não encontrada, usando cache local`);
-                } else {
-                    console.warn(`⚠️ Logo não encontrada: ${entry.arquivo}`);
-                }
+                console.warn(`⚠️ Logo não encontrada na pasta: ${entry.arquivo} (use upload ou servidor local)`);
             }
         });
     });
