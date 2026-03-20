@@ -332,7 +332,7 @@ window._fbReceivendo = false;
 
 // Debounce de UI: evita re-render constante quando dois dispositivos estão abertos
 const _fbDebounceTimers = {};
-const _fbDebounceMs = 600;
+const _fbDebounceMs = 150;
 function _fbDebouncedUI(tipo, fn) {
   if (_fbDebounceTimers[tipo]) clearTimeout(_fbDebounceTimers[tipo]);
   _fbDebounceTimers[tipo] = setTimeout(() => {
@@ -401,8 +401,13 @@ function iniciarSincronizacaoTempoReal() {
           nfData.especiais  = Array.isArray(dados.especiais)  ? dados.especiais  : [];
           nfData._ts        = dados._ts || 0;
         }
-        _fbDebouncedUI('notasFiscais', () => { if (typeof atualizarListaNF === 'function') atualizarListaNF(); });
-        console.log('🔄 Notas Fiscais atualizadas do Firebase');
+        if (!mesmoDado) {
+          _fbDebouncedUI('notasFiscais', () => {
+            const el = document.getElementById('notasFiscais');
+            if (el && el.classList.contains('active') && typeof atualizarListaNF === 'function') atualizarListaNF();
+          });
+          console.log('🔄 Notas Fiscais atualizadas do Firebase');
+        }
       }
     } finally {
       window._fbReceivendo = false;
@@ -444,11 +449,11 @@ function iniciarSincronizacaoTempoReal() {
       const remoteMatTotal = (dados.pendentes||[]).length + (dados.enviadas||[]).length + (dados.pedidosSandro||[]).length;
       const perdaMat = localMatTotal > 0 && remoteMatTotal < localMatTotal;
       const mesmoMat = remoteTs === localTs && remoteTs > 0;
-      // Grace: nos primeiros 20s após carregar, prefere local se tiver dados (evita rollback ao excluir itens)
-      const dentroGrace = (Date.now() - _fbPageLoadTime) < 20000 && localStr && localMatTotal > 0;
+      const materialSalvouHaPouco = (typeof window._materialSalvouTs === 'number') && (Date.now() - window._materialSalvouTs) < 8000;
+      const dentroGrace = (Date.now() - _fbPageLoadTime) < 30000 && localStr && localMatTotal > 0;
       const localMaisRecente = remoteTs < localTs && localStr;
       const localTemMaisItens = perdaMat && localStr;
-      if (!mesmoMat && (dentroGrace || localMaisRecente || localTemMaisItens)) {
+      if (!mesmoMat && (materialSalvouHaPouco || dentroGrace || localMaisRecente || localTemMaisItens)) {
         console.log('🛡️ Material: protegendo dados locais, enviando para Firebase');
         try {
           const local = localMat || JSON.parse(localStr);
@@ -463,8 +468,13 @@ function iniciarSincronizacaoTempoReal() {
           materialData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
           materialData._ts           = dados._ts || 0;
         }
-        _fbDebouncedUI('materiais', () => { if (typeof atualizarListaMaterial === 'function') atualizarListaMaterial(); });
-        console.log('🔄 Materiais atualizados do Firebase');
+        if (!mesmoMat) {
+          _fbDebouncedUI('materiais', () => {
+            const el = document.getElementById('material');
+            if (el && el.classList.contains('active') && typeof atualizarListaMaterial === 'function') atualizarListaMaterial();
+          });
+          console.log('🔄 Materiais atualizados do Firebase');
+        }
       }
     } finally {
       window._fbReceivendo = false;
@@ -667,8 +677,13 @@ function iniciarSincronizacaoTempoReal() {
           checklistData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
           checklistData._ts = dados._ts || 0;
         }
-        _fbDebouncedUI('checklists', () => { if (typeof atualizarListaChecklist === 'function') atualizarListaChecklist(); });
-        console.log('🔄 Checklists atualizados do Firebase');
+        if (!mesmoChk) {
+          _fbDebouncedUI('checklists', () => {
+            const el = document.getElementById('checklist');
+            if (el && el.classList.contains('active') && typeof atualizarListaChecklist === 'function') atualizarListaChecklist();
+          });
+          console.log('🔄 Checklists atualizados do Firebase');
+        }
       }
     } finally {
       window._fbReceivendo = false;
@@ -722,8 +737,13 @@ function iniciarSincronizacaoTempoReal() {
           relatoriosData.pedidosSandro = Array.isArray(dados.pedidosSandro) ? dados.pedidosSandro : [];
           relatoriosData._ts = dados._ts || 0;
         }
-        _fbDebouncedUI('relatorios', () => { if (typeof atualizarListaRelatoriosNovo === 'function') atualizarListaRelatoriosNovo(); });
-        console.log('🔄 Relatórios atualizados do Firebase');
+        if (!mesmoRel) {
+          _fbDebouncedUI('relatorios', () => {
+            const el = document.getElementById('relatorioTecnico');
+            if (el && el.classList.contains('active') && typeof atualizarListaRelatoriosNovo === 'function') atualizarListaRelatoriosNovo();
+          });
+          console.log('🔄 Relatórios atualizados do Firebase');
+        }
       }
     } finally {
       window._fbReceivendo = false;
@@ -823,7 +843,6 @@ function forcarSyncParaFirebase() {
 window.forcarSyncParaFirebase = forcarSyncParaFirebase;
 
 // Ao fechar aba ou trocar de aba: garante que dados locais sejam enviados ao Firebase
-// Debounce de 1s: sync mais rápido ao sair, evita perder dados ao fechar
 let _fbVisibilitySyncTimer = null;
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
@@ -831,7 +850,7 @@ document.addEventListener('visibilitychange', () => {
     _fbVisibilitySyncTimer = setTimeout(() => {
       _fbVisibilitySyncTimer = null;
       forcarSyncParaFirebase();
-    }, 1000);
+    }, 200);
   } else {
     if (_fbVisibilitySyncTimer) { clearTimeout(_fbVisibilitySyncTimer); _fbVisibilitySyncTimer = null; }
   }

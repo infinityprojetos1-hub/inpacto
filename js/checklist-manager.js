@@ -192,10 +192,14 @@ function sincronizarIgrejasChecklistNF() {
 // Variável para rastrear a aba ativa do checklist
 let abaAtivaChecklist = 'igrejas';
 
-// Atualiza a lista de igrejas na interface
+// Evita re-render desnecessário (mantém hover, reduz custo)
+let _checklistLastRenderHash = '';
 function atualizarListaChecklist() {
     const container = document.getElementById('checklistList');
     if (!container) return;
+    const hash = (checklistData._ts || 0) + '-' + (checklistData.igrejas||[]).length + ':' + (checklistData.pedidosSandro||[]).length;
+    if (hash === _checklistLastRenderHash) return;
+    _checklistLastRenderHash = hash;
 
     container.innerHTML = '';
 

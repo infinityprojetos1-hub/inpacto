@@ -866,10 +866,14 @@ function filtrarIgrejas(igrejas, termoBusca) {
     );
 }
 
-// Atualiza a lista de NFs na interface
+// Evita re-render desnecessário (mantém hover, reduz custo)
+let _nfLastRenderHash = '';
 function atualizarListaNF() {
     const container = document.getElementById('nfList');
     if (!container) return;
+    const hash = (nfData._ts || 0) + '-' + (nfData.igrejas||[]).length + ':' + (nfData.arquivadas||[]).length + ':' + (nfData.especiais||[]).length;
+    if (hash === _nfLastRenderHash) return;
+    _nfLastRenderHash = hash;
 
     container.innerHTML = '';
 

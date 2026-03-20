@@ -1845,6 +1845,10 @@
                 transform: none !important;
             }
 
+            .material-row-clicavel:hover {
+                background: rgba(var(--gradient-start-rgb, 102, 126, 234), 0.06) !important;
+            }
+
             .material-row > div:nth-child(2) {
                 text-align: left !important;
             }
@@ -4751,19 +4755,17 @@
                 });
             }
 
-            // Adiciona listener para atualizar materiais quando a aba for aberta
+            // Ao abrir aba Material: só atualiza a lista (não força sync que pode restaurar itens excluídos)
             const tabButtons = document.querySelectorAll('.tab-button');
             tabButtons.forEach(button => {
                 button.addEventListener('click', function () {
                     const tab = this.getAttribute('data-tab');
                     if (tab === 'material') {
-                        // Aguarda um momento para a aba ser exibida e então atualiza
                         setTimeout(() => {
-                            if (typeof window.recarregarMateriais === 'function') {
-                                console.log('🔄 Atualizando materiais automaticamente...');
-                                window.recarregarMateriais();
+                            if (typeof window.atualizarListaMaterial === 'function') {
+                                window.atualizarListaMaterial();
                             }
-                        }, 100);
+                        }, 50);
                     }
                 });
             });

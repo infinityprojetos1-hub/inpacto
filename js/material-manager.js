@@ -101,6 +101,7 @@ function salvarDadosMaterial() {
     try {
         // Marca timestamp para resolver conflitos
         materialData._ts = Date.now();
+        if (typeof window !== 'undefined') window._materialSalvouTs = Date.now();
 
         // Salva no localStorage próprio
         localStorage.setItem('materiaisIgrejas', JSON.stringify(materialData));
@@ -153,9 +154,9 @@ function salvarDadosMaterial() {
             localStorage.setItem('notasFiscais', JSON.stringify(nfData));
             console.log('✅ Dados de material salvos e integrados com NF');
 
-            // Atualiza o arquivo de NF (só fora do carregamento inicial, para não sobrescrever Firebase)
+            // Salva NF no Firebase (defer para priorizar envio do Material)
             if (!_materialCarregando && typeof window.salvarDadosNF === 'function') {
-                window.salvarDadosNF();
+                setTimeout(() => window.salvarDadosNF(), 0);
             }
         }
     } catch (error) {
@@ -229,9 +230,10 @@ function sincronizarIgrejasNF() {
 
                 console.log(`➕ Nova igreja adicionada ao Material: "${novaIgreja.nome}" (ID: ${novaIgreja.id})`);
             } else {
-                // Material (materiaisIgrejas) é a fonte da verdade: NUNCA sobrescrever se local já tem itens
+                // Material é a fonte da verdade: só restaura do NF se NF for mais recente (evita trazer item excluído)
                 const igrejaExistente = jaExistePendente || jaExisteEnviada || jaExisteSandro;
-                if (igrejaExistente && igrejaNF.materiais && igrejaNF.materiais.length > 0) {
+                const materialMaisRecente = (materialData._ts || 0) > (nfData._ts || 0);
+                if (igrejaExistente && igrejaNF.materiais && igrejaNF.materiais.length > 0 && !materialMaisRecente) {
                     const localTemItens = igrejaExistente.materiais && igrejaExistente.materiais.length > 0;
                     if (!localTemItens) {
                         igrejaExistente.materiais = igrejaNF.materiais;
@@ -249,10 +251,14 @@ function sincronizarIgrejasNF() {
 // Variável para rastrear a aba ativa atual
 let abaAtivaMaterial = 'pendentes';
 
-// Atualiza a lista de igrejas na interface
+// Evita re-render desnecessário (mantém hover, reduz custo)
+let _materialLastRenderHash = '';
 function atualizarListaMaterial() {
     const container = document.getElementById('materialList');
     if (!container) return;
+    const hash = (materialData._ts || 0) + '-' + (materialData.pendentes||[]).length + ':' + (materialData.enviadas||[]).length + ':' + (materialData.pedidosSandro||[]).length;
+    if (hash === _materialLastRenderHash) return;
+    _materialLastRenderHash = hash;
 
     container.innerHTML = '';
 
@@ -337,7 +343,23 @@ function mostrarListaTipo(tipo) {
 
     dados.forEach((igreja, index) => {
         const linha = document.createElement('div');
-        linha.className = 'material-row';
+        linha.className = 'material-row material-row-clicavel';
+        linha.style.cursor = 'pointer';
+        linha.setAttribute('role', 'button');
+        linha.setAttribute('tabindex', '0');
+        linha.setAttribute('title', 'Clique para gerenciar material');
+        linha.addEventListener('click', (e) => {
+            if (!e.target.closest('.material-col-acoes')) {
+                e.preventDefault();
+                abrirModalMaterial(tipo, index);
+            }
+        });
+        linha.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (!e.target.closest('.material-col-acoes')) abrirModalMaterial(tipo, index);
+            }
+        });
 
         const totalItens = igreja.materiais ? igreja.materiais.length : 0;
 
@@ -363,17 +385,17 @@ function mostrarListaTipo(tipo) {
             <div class="material-col-status">
                 <span class="material-status ${statusClass}">${statusText}</span>
             </div>
-            <div class="material-col-acoes">
-                ${tipo !== 'pendentes' ? `<button class="btn-icon btn-warning" onclick="moverParaPendentes('${tipo}', ${index})" title="Mover para Pendentes" data-label-mobile="Pendentes">
+            <div class="material-col-acoes" onclick="event.stopPropagation()">
+                ${tipo !== 'pendentes' ? `<button class="btn-icon btn-warning" onclick="event.stopPropagation(); moverParaPendentes('${tipo}', ${index})" title="Mover para Pendentes" data-label-mobile="Pendentes">
                     <i class="fas fa-clock"></i>
                 </button>` : ''}
-                ${tipo !== 'enviadas' ? `<button class="btn-icon btn-success" onclick="moverParaEnviadas('${tipo}', ${index})" title="Mover para Enviadas" data-label-mobile="Enviadas">
+                ${tipo !== 'enviadas' ? `<button class="btn-icon btn-success" onclick="event.stopPropagation(); moverParaEnviadas('${tipo}', ${index})" title="Mover para Enviadas" data-label-mobile="Enviadas">
                     <i class="fas fa-check"></i>
                 </button>` : ''}
-                ${tipo !== 'pedidosSandro' ? `<button class="btn-icon btn-secondary" onclick="moverParaSandro('${tipo}', ${index})" title="Mover para Sandro" data-label-mobile="Sandro">
+                ${tipo !== 'pedidosSandro' ? `<button class="btn-icon btn-secondary" onclick="event.stopPropagation(); moverParaSandro('${tipo}', ${index})" title="Mover para Sandro" data-label-mobile="Sandro">
                     <i class="fas fa-user"></i>
                 </button>` : ''}
-                <button class="btn-primary" onclick="abrirModalMaterial('${tipo}', ${index})">
+                <button class="btn-primary" onclick="event.stopPropagation(); abrirModalMaterial('${tipo}', ${index})">
                     <i class="fas fa-box"></i> Gerenciar Material
                 </button>
             </div>

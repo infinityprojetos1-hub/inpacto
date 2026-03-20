@@ -838,13 +838,16 @@ function moverParaSandroRelatorio(tipoOrigem, index) {
     atualizarListaRelatoriosNovo();
 }
 
-// Atualiza a lista de igrejas na interface de relatórios
+// Evita re-render desnecessário (mantém hover, reduz custo)
+let _relatorioLastRenderHash = '';
 function atualizarListaRelatoriosNovo() {
     const container = document.getElementById('relatorioIgrejasList');
     if (!container) return;
-
     // Sincroniza com NF antes de exibir
     sincronizarIgrejasRelatorio();
+    const hash = (relatoriosData._ts || 0) + '-' + (relatoriosData.pendentes||[]).length + ':' + (relatoriosData.gerados||[]).length + ':' + (relatoriosData.pedidosSandro||[]).length + '-' + abaAtivaRelatorio;
+    if (hash === _relatorioLastRenderHash) return;
+    _relatorioLastRenderHash = hash;
 
     container.innerHTML = '';
 
