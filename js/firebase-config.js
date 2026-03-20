@@ -341,6 +341,9 @@ function _fbDebouncedUI(tipo, fn) {
   }, _fbDebounceMs);
 }
 
+// Timestamp do carregamento da página (evita Firebase sobrescrever dados locais recentes)
+const _fbPageLoadTime = Date.now();
+
 // Listener para sincronizar dados em tempo real
 function iniciarSincronizacaoTempoReal() {
   if (!firebaseDisponivel || !database) {
@@ -441,10 +444,11 @@ function iniciarSincronizacaoTempoReal() {
       const remoteMatTotal = (dados.pendentes||[]).length + (dados.enviadas||[]).length + (dados.pedidosSandro||[]).length;
       const perdaMat = localMatTotal > 0 && remoteMatTotal < localMatTotal;
       const mesmoMat = remoteTs === localTs && remoteTs > 0;
-      // Protege local: timestamp mais novo OU mais itens (evita rollback)
+      // Grace: nos primeiros 20s após carregar, prefere local se tiver dados (evita rollback ao excluir itens)
+      const dentroGrace = (Date.now() - _fbPageLoadTime) < 20000 && localStr && localMatTotal > 0;
       const localMaisRecente = remoteTs < localTs && localStr;
       const localTemMaisItens = perdaMat && localStr;
-      if (!mesmoMat && (localMaisRecente || localTemMaisItens)) {
+      if (!mesmoMat && (dentroGrace || localMaisRecente || localTemMaisItens)) {
         console.log('🛡️ Material: protegendo dados locais, enviando para Firebase');
         try {
           const local = localMat || JSON.parse(localStr);

@@ -229,11 +229,11 @@ function sincronizarIgrejasNF() {
 
                 console.log(`➕ Nova igreja adicionada ao Material: "${novaIgreja.nome}" (ID: ${novaIgreja.id})`);
             } else {
-                // Atualiza materiais de igrejas existentes com dados do JSON
+                // Material (materiaisIgrejas) é a fonte da verdade: NUNCA sobrescrever se local já tem itens
                 const igrejaExistente = jaExistePendente || jaExisteEnviada || jaExisteSandro;
                 if (igrejaExistente && igrejaNF.materiais && igrejaNF.materiais.length > 0) {
-                    // Se o JSON tem materiais mas a estrutura local não, restaura
-                    if (!igrejaExistente.materiais || igrejaExistente.materiais.length === 0) {
+                    const localTemItens = igrejaExistente.materiais && igrejaExistente.materiais.length > 0;
+                    if (!localTemItens) {
                         igrejaExistente.materiais = igrejaNF.materiais;
                     }
                 }
@@ -681,6 +681,7 @@ function removerMaterial(tipo, igrejaIndex, materialIndex) {
     if (!confirm('Deseja remover este item?')) return;
 
     const igreja = materialData[tipo][igrejaIndex];
+    if (!igreja || !igreja.materiais) return;
     const material = igreja.materiais[materialIndex];
     igreja.materiais.splice(materialIndex, 1);
 
@@ -688,6 +689,7 @@ function removerMaterial(tipo, igrejaIndex, materialIndex) {
         devolverEstoque(material.item, material.quantidade);
     }
 
+    // Salva imediatamente (localStorage + Firebase)
     salvarDadosMaterial();
     atualizarListaMaterialModal(tipo, igrejaIndex);
     atualizarListaMaterial();
