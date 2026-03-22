@@ -86,10 +86,13 @@ self.addEventListener('fetch', event => {
   }
 });
 
-// ── Mensagem da página para forçar atualização ────────────────────────────────
+// ── Mensagem da página para forçar atualização ou consultar versão ───────────
 self.addEventListener('message', event => {
   if (event.data === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'GET_CACHE_VERSION' && event.ports && event.ports[0]) {
+    event.ports[0].postMessage({ cacheVersion: CACHE_VERSION });
   }
 });
 

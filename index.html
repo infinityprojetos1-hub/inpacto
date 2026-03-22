@@ -4099,6 +4099,15 @@
                 <span id="syncDot" style="width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;"></span>
                 <span id="syncLabel">Sincronizado com a nuvem</span>
             </div>
+            <div id="cacheVersionBadge" style="
+                display: inline-flex; align-items: center; gap: 4px;
+                margin-top: 6px; margin-left: 6px; padding: 2px 8px; border-radius: 20px;
+                font-size: 0.7em; font-weight: 600; letter-spacing: 0.3px;
+                background: transparent; color: var(--text-muted, #999); border: 1px solid #e0e0e0;
+                opacity: 0.6; cursor: default;" title="Versão do cache local">
+                <i class="fas fa-layer-group" style="font-size:0.85em;"></i>
+                <span id="cacheVersionLabel">—</span>
+            </div>
         </header>
 
         <div class="tabs">
@@ -4838,6 +4847,19 @@
                 navigator.serviceWorker.register('/inpacto/sw.js')
                     .then(registration => {
                         console.log('✅ SW registrado:', registration.scope);
+
+                        // Exibe versão do cache ativo no badge discreto
+                        const _sw = registration.active || registration.installing || registration.waiting;
+                        if (_sw) {
+                            const msgCh = new MessageChannel();
+                            msgCh.port1.onmessage = (ev) => {
+                                if (ev.data && ev.data.cacheVersion) {
+                                    const el = document.getElementById('cacheVersionLabel');
+                                    if (el) el.textContent = ev.data.cacheVersion;
+                                }
+                            };
+                            _sw.postMessage({ type: 'GET_CACHE_VERSION' }, [msgCh.port2]);
+                        }
 
                         // Se já há um SW aguardando, força ativação imediata
                         if (registration.waiting) {
