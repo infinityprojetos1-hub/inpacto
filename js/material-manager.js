@@ -117,12 +117,11 @@ function salvarDadosMaterial() {
         // Integra com o JSON das Notas Fiscais
         const nfDataStr = localStorage.getItem('notasFiscais');
         if (nfDataStr) {
-            const nfData = JSON.parse(nfDataStr);
+            const nfLocal = JSON.parse(nfDataStr);
 
             // Atualiza cada igreja no NF com os dados de material
-            if (nfData.igrejas) {
-                nfData.igrejas.forEach(igrejaNF => {
-                    // Procura a igreja em todas as abas de material
+            if (nfLocal.igrejas) {
+                nfLocal.igrejas.forEach(igrejaNF => {
                     let igrejaComMaterial = null;
                     let statusMaterial = 'pendente';
 
@@ -130,33 +129,32 @@ function salvarDadosMaterial() {
                     const enviada = materialData.enviadas.find(ig => ig.nome === igrejaNF.nome && ig.id === igrejaNF.id);
                     const sandro = materialData.pedidosSandro.find(ig => ig.nome === igrejaNF.nome && ig.id === igrejaNF.id);
 
-                    if (pendente) {
-                        igrejaComMaterial = pendente;
-                        statusMaterial = 'pendente';
-                    } else if (enviada) {
-                        igrejaComMaterial = enviada;
-                        statusMaterial = 'enviado';
-                    } else if (sandro) {
-                        igrejaComMaterial = sandro;
-                        statusMaterial = 'sandro';
-                    }
+                    if (pendente) { igrejaComMaterial = pendente; statusMaterial = 'pendente'; }
+                    else if (enviada) { igrejaComMaterial = enviada; statusMaterial = 'enviado'; }
+                    else if (sandro) { igrejaComMaterial = sandro; statusMaterial = 'sandro'; }
 
-                    // Adiciona os dados de material à igreja do NF
                     if (igrejaComMaterial) {
                         igrejaNF.materiais = igrejaComMaterial.materiais || [];
                         igrejaNF.statusMaterial = statusMaterial;
-                        console.log(`✅ Material salvo para ${igrejaNF.nome}: ${igrejaNF.materiais.length} itens (${statusMaterial})`);
                     }
                 });
             }
 
-            // Salva o JSON atualizado das Notas Fiscais
-            localStorage.setItem('notasFiscais', JSON.stringify(nfData));
-            console.log('✅ Dados de material salvos e integrados com NF');
+            // Usa o mesmo _ts do material para que NF não pareça "mais recente"
+            nfLocal._ts = materialData._ts;
 
-            // Salva NF no Firebase (defer para priorizar envio do Material)
-            if (!_materialCarregando && typeof window.salvarDadosNF === 'function') {
-                setTimeout(() => window.salvarDadosNF(), 0);
+            // Salva o NF atualizado no localStorage e sincroniza o objeto global em memória
+            localStorage.setItem('notasFiscais', JSON.stringify(nfLocal));
+            if (typeof nfData !== 'undefined' && nfData && nfLocal.igrejas) {
+                nfData.igrejas    = nfLocal.igrejas;
+                nfData.arquivadas = nfLocal.arquivadas || nfData.arquivadas;
+                nfData.especiais  = nfLocal.especiais  || nfData.especiais;
+                nfData._ts        = nfLocal._ts;
+            }
+
+            // Salva NF no Firebase direto (sem chamar salvarDadosNF, que usa o objeto global antigo)
+            if (!_materialCarregando && typeof salvarNoDatabase === 'function' && typeof firebaseDisponivel !== 'undefined' && firebaseDisponivel) {
+                setTimeout(() => salvarNoDatabase('dados/notasFiscais', nfLocal), 0);
             }
         }
     } catch (error) {
@@ -230,15 +228,8 @@ function sincronizarIgrejasNF() {
 
                 console.log(`➕ Nova igreja adicionada ao Material: "${novaIgreja.nome}" (ID: ${novaIgreja.id})`);
             } else {
-                // Material é a fonte da verdade: só restaura do NF se NF for mais recente (evita trazer item excluído)
-                const igrejaExistente = jaExistePendente || jaExisteEnviada || jaExisteSandro;
-                const materialMaisRecente = (materialData._ts || 0) > (nfData._ts || 0);
-                if (igrejaExistente && igrejaNF.materiais && igrejaNF.materiais.length > 0 && !materialMaisRecente) {
-                    const localTemItens = igrejaExistente.materiais && igrejaExistente.materiais.length > 0;
-                    if (!localTemItens) {
-                        igrejaExistente.materiais = igrejaNF.materiais;
-                    }
-                }
+                // Material é SEMPRE a fonte da verdade para os itens (nunca restaura do NF)
+                // O NF só serve para adicionar igrejas novas, não para restaurar itens excluídos
             }
         });
 
