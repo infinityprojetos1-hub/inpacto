@@ -724,7 +724,7 @@ function compartilharWhatsApp(tipo, igrejaIndex) {
     if (id) mensagem += ' - ' + id;
     mensagem += '\n\n';
     igreja.materiais.forEach(m => {
-        mensagem += m.item + ' - ' + m.quantidade + '.\n';
+        mensagem += m.quantidade + ' - ' + m.item + '\n';
     });
     mensagem = mensagem.trim();
     const encoded = encodeURIComponent(mensagem);
