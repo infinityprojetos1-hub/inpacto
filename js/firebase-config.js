@@ -740,13 +740,48 @@ database && database.ref('.info/connected').on('value', (snapshot) => {
   }
 });
 
-// Sync periódico automático: garante que Firebase sempre tem os dados mais recentes
-// mesmo que algum save anterior tenha falhado ou a aba ficou aberta muito tempo.
+// Rastreia o último _ts enviado ao Firebase por caminho.
+// O sync periódico SÓ escreve no Firebase se o dado mudou desde o último envio,
+// evitando writes desnecessários que disparariam downloads em todos os dispositivos.
+const _ultimoTsEnviado = {};
+
+function _tsLocal(chave) {
+  try {
+    const raw = localStorage.getItem(chave);
+    if (!raw) return 0;
+    const d = JSON.parse(raw);
+    return d._ts || 0;
+  } catch (_) { return 0; }
+}
+
+// Sync periódico automático — só envia paths cujo _ts mudou desde o último envio.
 setInterval(() => {
   if (typeof window._resetSyncArc === 'function') window._resetSyncArc();
-  if (firebaseDisponivel && database && document.visibilityState !== 'hidden') {
-    forcarSyncParaFirebase();
+  if (!firebaseDisponivel || !database || document.visibilityState === 'hidden') return;
+
+  const mapa = {
+    'notasFiscais':      'dados/notasFiscais',
+    'materiaisIgrejas':  'dados/materiais',
+    'checklistsIgrejas': 'dados/checklists',
+    'estoqueData':       'dados/estoque',
+    'pagamentoData':     'dados/pagamento',
+    'configValoresIgreja': 'dados/valoresIgreja',
+    'relatoriosData':    'dados/relatorios',
+  };
+
+  let algumEnviado = false;
+  for (const [lsKey, fbPath] of Object.entries(mapa)) {
+    const ts = _tsLocal(lsKey);
+    if (ts && ts !== _ultimoTsEnviado[lsKey]) {
+      try {
+        const d = JSON.parse(localStorage.getItem(lsKey));
+        salvarNoDatabase(fbPath, d);
+        _ultimoTsEnviado[lsKey] = ts;
+        algumEnviado = true;
+      } catch (_) {}
+    }
   }
+  if (algumEnviado) console.log('📤 Sync periódico: apenas dados alterados enviados ao Firebase');
 }, 15000); // a cada 15 segundos
 
 // Utilitário: pisca o badge indicando "salvando"
@@ -786,44 +821,31 @@ async function forcarSyncParaFirebase(forcarAgora = false) {
       return d;
     }
 
-    const nfRaw = localStorage.getItem('notasFiscais');
-    if (nfRaw) {
+    // helper: prepara dado, enfileira save e registra ts enviado
+    function enviar(lsKey, fbPath, extraFn) {
+      const raw = localStorage.getItem(lsKey);
+      if (!raw) return;
       try {
-        const nf = prepararDado(nfRaw);
-        if (forcarAgora) {
-          localStorage.setItem('notasFiscais', JSON.stringify(nf));
-          window._nfSalvouTs = tsAgora; // renova proteção do listener
-        }
-        saves.push(salvarNoDatabase('dados/notasFiscais', nf));
+        const d = prepararDado(raw);
+        if (forcarAgora) localStorage.setItem(lsKey, JSON.stringify(d));
+        if (extraFn) extraFn(d);
+        saves.push(salvarNoDatabase(fbPath, d).then(() => {
+          _ultimoTsEnviado[lsKey] = d._ts || 0;
+        }));
       } catch (_) {}
     }
 
-    const matRaw = localStorage.getItem('materiaisIgrejas');
-    if (matRaw) {
-      try {
-        const mat = prepararDado(matRaw);
-        if (forcarAgora) {
-          localStorage.setItem('materiaisIgrejas', JSON.stringify(mat));
-          window._materialSalvouTs = tsAgora;
-        }
-        saves.push(salvarNoDatabase('dados/materiais', mat));
-      } catch (_) {}
-    }
-
-    const chkRaw = localStorage.getItem('checklistsIgrejas');
-    if (chkRaw) { try { saves.push(salvarNoDatabase('dados/checklists', prepararDado(chkRaw))); } catch (_) {} }
-
-    const estRaw = localStorage.getItem('estoqueData');
-    if (estRaw) { try { saves.push(salvarNoDatabase('dados/estoque', prepararDado(estRaw))); } catch (_) {} }
-
-    const pagRaw = localStorage.getItem('pagamentoData');
-    if (pagRaw) { try { saves.push(salvarNoDatabase('dados/pagamento', prepararDado(pagRaw))); } catch (_) {} }
-
-    const valRaw = localStorage.getItem('configValoresIgreja');
-    if (valRaw) { try { saves.push(salvarNoDatabase('dados/valoresIgreja', prepararDado(valRaw))); } catch (_) {} }
-
-    const relRaw = localStorage.getItem('relatoriosData');
-    if (relRaw) { try { saves.push(salvarNoDatabase('dados/relatorios', prepararDado(relRaw))); } catch (_) {} }
+    enviar('notasFiscais', 'dados/notasFiscais', d => {
+      if (forcarAgora) { window._nfSalvouTs = tsAgora; }
+    });
+    enviar('materiaisIgrejas', 'dados/materiais', d => {
+      if (forcarAgora) { window._materialSalvouTs = tsAgora; }
+    });
+    enviar('checklistsIgrejas', 'dados/checklists');
+    enviar('estoqueData',       'dados/estoque');
+    enviar('pagamentoData',     'dados/pagamento');
+    enviar('configValoresIgreja', 'dados/valoresIgreja');
+    enviar('relatoriosData',    'dados/relatorios');
 
     await Promise.all(saves);
     console.log('📤 Sync forçado: todos os dados CONFIRMADOS no Firebase' + (forcarAgora ? ' (timestamp renovado)' : ''));
