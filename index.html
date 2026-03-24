@@ -4635,14 +4635,19 @@
             modalConfig.style.display = 'none';
         }
 
-        function forcarSyncAgora() {
+        async function forcarSyncAgora() {
             if (typeof window.forcarSyncParaFirebase === 'function') {
-                window.forcarSyncParaFirebase();
                 const btn = event.currentTarget;
                 const orig = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Salvo!';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
                 btn.disabled = true;
-                setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2500);
+                try {
+                    await window.forcarSyncParaFirebase();
+                    btn.innerHTML = '<i class="fas fa-check"></i> Confirmado no Firebase!';
+                } catch (e) {
+                    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro ao salvar';
+                }
+                setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 3000);
             }
         }
         

@@ -766,36 +766,37 @@ function _piscarBadgeSync() {
 }
 window._piscarBadgeSync = _piscarBadgeSync;
 
-// Força envio de TODOS os dados locais para o Firebase
+// Força envio de TODOS os dados locais para o Firebase e aguarda confirmação.
 // IMPORTANTE: lê APENAS do localStorage (nunca dos objetos em memória).
-// Objetos em memória podem estar desatualizados quando outro dispositivo
-// enviou uma deleção que ainda não chegou via listener — chamar salvarDadosNF()
-// etc. aqui sobrescreveria o Firebase com dados velhos e timestamp mais novo.
-function forcarSyncParaFirebase() {
+// Retorna uma Promise que resolve quando TODAS as escritas foram confirmadas pelo Firebase.
+async function forcarSyncParaFirebase() {
   if (!firebaseDisponivel || !database) return;
   try {
+    const saves = [];
+
     const nf = localStorage.getItem('notasFiscais');
-    if (nf) { try { salvarNoDatabase('dados/notasFiscais', JSON.parse(nf)); } catch (_) {} }
+    if (nf) { try { saves.push(salvarNoDatabase('dados/notasFiscais', JSON.parse(nf))); } catch (_) {} }
 
     const mat = localStorage.getItem('materiaisIgrejas');
-    if (mat) { try { salvarNoDatabase('dados/materiais', JSON.parse(mat)); } catch (_) {} }
+    if (mat) { try { saves.push(salvarNoDatabase('dados/materiais', JSON.parse(mat))); } catch (_) {} }
 
     const chk = localStorage.getItem('checklistsIgrejas');
-    if (chk) { try { salvarNoDatabase('dados/checklists', JSON.parse(chk)); } catch (_) {} }
+    if (chk) { try { saves.push(salvarNoDatabase('dados/checklists', JSON.parse(chk))); } catch (_) {} }
 
     const est = localStorage.getItem('estoqueData');
-    if (est) { try { salvarNoDatabase('dados/estoque', JSON.parse(est)); } catch (_) {} }
+    if (est) { try { saves.push(salvarNoDatabase('dados/estoque', JSON.parse(est))); } catch (_) {} }
 
     const pag = localStorage.getItem('pagamentoData');
-    if (pag) { try { salvarNoDatabase('dados/pagamento', JSON.parse(pag)); } catch (_) {} }
+    if (pag) { try { saves.push(salvarNoDatabase('dados/pagamento', JSON.parse(pag))); } catch (_) {} }
 
     const val = localStorage.getItem('configValoresIgreja');
-    if (val) { try { const d = JSON.parse(val); salvarNoDatabase('dados/valoresIgreja', d); } catch (_) {} }
+    if (val) { try { saves.push(salvarNoDatabase('dados/valoresIgreja', JSON.parse(val))); } catch (_) {} }
 
     const rel = localStorage.getItem('relatoriosData');
-    if (rel) { try { salvarNoDatabase('dados/relatorios', JSON.parse(rel)); } catch (_) {} }
+    if (rel) { try { saves.push(salvarNoDatabase('dados/relatorios', JSON.parse(rel))); } catch (_) {} }
 
-    console.log('📤 Sync forçado: todos os dados enviados para Firebase (via localStorage)');
+    await Promise.all(saves);
+    console.log('📤 Sync forçado: todos os dados CONFIRMADOS no Firebase');
   } catch (e) { console.error('Erro ao forçar sync:', e); }
 }
 window.forcarSyncParaFirebase = forcarSyncParaFirebase;
