@@ -386,6 +386,9 @@ function mostrarListaTipo(tipo) {
                 ${tipo !== 'pedidosSandro' ? `<button class="btn-icon btn-secondary" onclick="event.stopPropagation(); moverParaSandro('${tipo}', ${index})" title="Mover para Sandro" data-label-mobile="Sandro">
                     <i class="fas fa-user"></i>
                 </button>` : ''}
+                <button class="btn-icon" onclick="event.stopPropagation(); compartilharWhatsApp('${tipo}', ${index})" title="Compartilhar no WhatsApp" style="background:#25D366; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer;">
+                    <i class="fab fa-whatsapp"></i>
+                </button>
                 <button class="btn-primary" onclick="event.stopPropagation(); abrirModalMaterial('${tipo}', ${index})">
                     <i class="fas fa-box"></i> Gerenciar Material
                 </button>
