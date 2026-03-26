@@ -1180,7 +1180,7 @@ function atualizarListaNF() {
             border: none;
             outline: none;
             width: 100%;
-            font-size: 14px;
+            font-size: 16px; /* mínimo 16px evita zoom no iOS Safari */
         }
         .nf-search-input::placeholder {
             color: #999;
@@ -1319,7 +1319,7 @@ function atualizarListaNF() {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 16px; /* mínimo 16px evita zoom no iOS Safari */
         }
         .nf-modal-buttons {
             display: flex;

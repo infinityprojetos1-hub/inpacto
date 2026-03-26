@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Gerador de Orçamentos - Inpacto</title>
     
     <!-- PWA Meta Tags -->
@@ -132,6 +132,10 @@
             background-attachment: fixed;
             min-height: 100vh;
             animation: fadeIn 0.5s ease;
+        }
+        /* background-attachment:fixed causa repaint e jank no iOS Safari */
+        @media (max-width: 768px) {
+            body { background-attachment: scroll; }
         }
 
         body::before {
@@ -1321,7 +1325,7 @@
             }
             
             input, select, textarea {
-                font-size: 14px !important;
+                font-size: 16px !important; /* mínimo 16px evita zoom automático no iOS Safari */
                 padding: 10px !important;
             }
 
@@ -1368,12 +1372,12 @@
                 width: 100% !important;
             }
             
-            /* Botão de configurações menor no mobile */
+            /* Botão de configurações — mínimo 44px de área de toque */
             #btnConfiguracoes {
-                width: 38px !important;
-                height: 38px !important;
-                top: 12px !important;
-                right: 12px !important;
+                width: 44px !important;
+                height: 44px !important;
+                top: 10px !important;
+                right: 10px !important;
                 font-size: 14px !important;
             }
             
@@ -2117,6 +2121,7 @@
             .tab-button {
                 font-size: 0.65em !important;
                 padding: 6px 8px !important;
+                min-height: 44px !important; /* área mínima de toque iOS/Android */
             }
             
             .tab-button i {
@@ -2139,8 +2144,8 @@
             }
             
             #btnConfiguracoes {
-                width: 35px !important;
-                height: 35px !important;
+                width: 44px !important;
+                height: 44px !important;
                 font-size: 13px !important;
             }
         }
@@ -2354,7 +2359,7 @@
             padding: 12px 16px;
             border: 2px solid var(--border-color);
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 16px; /* mínimo 16px evita zoom automático no iOS Safari */
             transition: var(--transition);
             box-sizing: border-box;
         }
@@ -5083,6 +5088,33 @@
             if (arc) arc.setAttribute('stroke', '#4caf50');
             window._resetSyncArc();
         };
+    })();
+    </script>
+
+    <!-- Dispensa teclado virtual ao fechar qualquer modal (mobile) -->
+    <script>
+    (function() {
+        const _obs = new MutationObserver(function(mutations) {
+            mutations.forEach(function(m) {
+                if (m.removedNodes.length > 0) {
+                    // Verifica se algum modal foi removido
+                    m.removedNodes.forEach(function(node) {
+                        if (node.nodeType === 1 &&
+                            (node.classList.contains('material-modal') ||
+                             node.classList.contains('modal-overlay') ||
+                             node.classList.contains('nf-modal') ||
+                             node.classList.contains('checklist-modal'))) {
+                            if (document.activeElement && document.activeElement !== document.body) {
+                                document.activeElement.blur();
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            _obs.observe(document.body, { childList: true, subtree: true });
+        });
     })();
     </script>
 </body>

@@ -450,68 +450,81 @@ function inicializarCanvasAssinatura(assinaturaExistente) {
     if (!canvas) return;
 
     canvasAssinatura = canvas;
-    const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
 
-    // Se existe assinatura, carrega ela
-    if (assinaturaExistente) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0);
-        img.src = assinaturaExistente;
+    // Ajusta o bitmap do canvas para preencher seu tamanho CSS real,
+    // compensando devicePixelRatio para nitidez em telas Retina/HiDPI.
+    function redimensionarCanvas() {
+        const dpr  = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width  = Math.round(rect.width  * dpr);
+        canvas.height = Math.round(rect.height * dpr);
+        const ctx2 = canvas.getContext('2d');
+        ctx2.scale(dpr, dpr);
+        ctx2.strokeStyle = '#000';
+        ctx2.lineWidth   = 2;
+        ctx2.lineCap     = 'round';
+        if (assinaturaExistente) {
+            const img = new Image();
+            img.onload = () => ctx2.drawImage(img, 0, 0, rect.width, rect.height);
+            img.src = assinaturaExistente;
+        }
     }
+    redimensionarCanvas();
 
+    const ctx = canvas.getContext('2d');
     let lastX = 0;
     let lastY = 0;
 
+    // Converte coordenadas de tela para coordenadas do canvas (considera escala CSS)
+    function toCanvasCoords(clientX, clientY) {
+        const rect   = canvas.getBoundingClientRect();
+        const scaleX = canvas.width  / (rect.width  * (window.devicePixelRatio || 1));
+        const scaleY = canvas.height / (rect.height * (window.devicePixelRatio || 1));
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top)  * scaleY
+        };
+    }
+
     canvas.addEventListener('mousedown', (e) => {
         isDrawing = true;
-        const rect = canvas.getBoundingClientRect();
-        lastX = e.clientX - rect.left;
-        lastY = e.clientY - rect.top;
+        const { x, y } = toCanvasCoords(e.clientX, e.clientY);
+        lastX = x; lastY = y;
     });
 
     canvas.addEventListener('mousemove', (e) => {
         if (!isDrawing) return;
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const { x, y } = toCanvasCoords(e.clientX, e.clientY);
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(x, y);
         ctx.stroke();
-        lastX = x;
-        lastY = y;
+        lastX = x; lastY = y;
     });
 
-    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mouseup',  () => isDrawing = false);
     canvas.addEventListener('mouseout', () => isDrawing = false);
 
-    // Touch events para mobile
+    // Touch events — passive:false para permitir preventDefault e bloquear scroll
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         isDrawing = true;
-        const rect = canvas.getBoundingClientRect();
         const touch = e.touches[0];
-        lastX = touch.clientX - rect.left;
-        lastY = touch.clientY - rect.top;
-    });
+        const { x, y } = toCanvasCoords(touch.clientX, touch.clientY);
+        lastX = x; lastY = y;
+    }, { passive: false });
 
     canvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
         if (!isDrawing) return;
-        const rect = canvas.getBoundingClientRect();
         const touch = e.touches[0];
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
+        const { x, y } = toCanvasCoords(touch.clientX, touch.clientY);
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(x, y);
         ctx.stroke();
-        lastX = x;
-        lastY = y;
-    });
+        lastX = x; lastY = y;
+    }, { passive: false });
 
     canvas.addEventListener('touchend', () => isDrawing = false);
 }
