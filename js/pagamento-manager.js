@@ -358,19 +358,40 @@ function renderizarResumo() {
     var html = '';
     selecionadas.forEach(function(ig) {
         var val = parsearValor(ig.valor);
+        var chaveEsc = chaveIgreja(ig).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         html += '<div class="pag-resumo-item">' +
+            '<button class="pag-resumo-remover" onclick="desselecionarIgrejaResumo(\'' + chaveEsc + '\')" title="Remover do resumo"><i class="fas fa-times"></i></button>' +
             '<span class="pag-resumo-nome"><i class="fas fa-church"></i> ' + ig.nome + '</span>' +
             '<span class="pag-resumo-val' + (val > 0 ? '' : ' pag-sem-valor') + '">' + (val > 0 ? formatarMoeda(val) : '—') + '</span>' +
             '</div>';
     });
-    extras.forEach(function(item) {
+    extras.forEach(function(item, i) {
         var val = parsearValor(item.valor);
         html += '<div class="pag-resumo-item pag-resumo-extra">' +
+            '<button class="pag-resumo-remover" onclick="removerItemExtra(' + i + ')" title="Remover item extra"><i class="fas fa-times"></i></button>' +
             '<span class="pag-resumo-nome"><i class="fas fa-plus-circle"></i> ' + item.nome + '</span>' +
             '<span class="pag-resumo-val' + (val > 0 ? '' : ' pag-sem-valor') + '">' + (val > 0 ? formatarMoeda(val) : '—') + '</span>' +
             '</div>';
     });
     return html;
+}
+
+// Remove uma igreja da seleção diretamente pelo Resumo
+function desselecionarIgrejaResumo(chave) {
+    if (pagamentoState.igrejasSelecionadas[chave]) {
+        delete pagamentoState.igrejasSelecionadas[chave];
+        // Sincroniza visualmente o checkbox na lista (se visível)
+        var item = document.querySelector('[data-chave="' + chave.replace(/"/g, '&quot;') + '"]');
+        if (item) {
+            item.classList.remove('pag-selecionada');
+            var chk = item.querySelector('.pag-checkbox');
+            if (chk) chk.checked = false;
+            var inputValor = item.querySelector('.pag-valor-input');
+            if (inputValor) inputValor.remove();
+        }
+        atualizarResumoPagamento();
+        salvarDadosPagamento();
+    }
 }
 
 function renderizarTotal() {
@@ -1018,6 +1039,7 @@ window._aplicarDadosFirebasePagamento = _aplicarDadosFirebasePagamento;
 window.renderizarAbaPagamento = renderizarAbaPagamento;
 window.inicializarPagamento = inicializarPagamento;
 window.removerItemExtra = removerItemExtra;
+window.desselecionarIgrejaResumo = desselecionarIgrejaResumo;
 window.adicionarItemExtra = adicionarItemExtra;
 window.toggleIgrejaPagamento = toggleIgrejaPagamento;
 window.atualizarValorIgreja = atualizarValorIgreja;

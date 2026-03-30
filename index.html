@@ -3673,6 +3673,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 6px;
             padding: 8px 10px;
             border-radius: 8px;
             margin-bottom: 4px;
@@ -3684,7 +3685,28 @@
             border-left: 3px solid #f472b6;
         }
 
+        .pag-resumo-remover {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 3px 5px;
+            border-radius: 5px;
+            font-size: 0.75em;
+            line-height: 1;
+            opacity: 0.5;
+            transition: opacity 0.2s, color 0.2s, background 0.2s;
+        }
+
+        .pag-resumo-remover:hover {
+            opacity: 1;
+            color: var(--danger-color);
+            background: rgba(239,68,68,0.1);
+        }
+
         .pag-resumo-nome {
+            flex: 1;
             font-size: 0.88em;
             color: var(--text-color);
             display: flex;
