@@ -768,7 +768,12 @@ function sincronizarIgrejasRelatorio() {
         if (!nfDataStr) return;
 
         const nfData = JSON.parse(nfDataStr);
-        const igrejasNF = nfData.igrejas || [];
+        // Inclui igrejas ativas, arquivadas e especiais — arquivar no NF não remove do relatório
+        const igrejasNF = [
+            ...(Array.isArray(nfData.igrejas)    ? nfData.igrejas    : []),
+            ...(Array.isArray(nfData.arquivadas) ? nfData.arquivadas : []),
+            ...(Array.isArray(nfData.especiais)  ? nfData.especiais  : [])
+        ];
 
         // PASSO 1: Remover igrejas que não existem mais nas Notas Fiscais
         ['pendentes', 'gerados', 'pedidosSandro'].forEach(categoria => {

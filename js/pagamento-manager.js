@@ -988,8 +988,8 @@ function inicializarPagamento() {
 
 // Aplica dados recebidos do Firebase no estado local e re-renderiza
 function _aplicarDadosFirebasePagamento(dados) {
-    // Se acabamos de salvar (< 3s), ignora o eco para não interromper digitação
-    if (Date.now() - _pagSalvandoTs < 3000) {
+    // Ignora o eco por 8s após qualquer save local para não desfazer edições recentes
+    if (Date.now() - _pagSalvandoTs < 8000) {
         console.log('[Pagamento] Eco ignorado (cooldown pós-save)');
         return;
     }
@@ -1014,6 +1014,20 @@ function _aplicarDadosFirebasePagamento(dados) {
 }
 window._aplicarDadosFirebasePagamento = _aplicarDadosFirebasePagamento;
 
-// Expõe explicitamente no window para uso via main.js
+// Expõe explicitamente no window para uso via main.js e handlers inline (onclick)
 window.renderizarAbaPagamento = renderizarAbaPagamento;
 window.inicializarPagamento = inicializarPagamento;
+window.removerItemExtra = removerItemExtra;
+window.adicionarItemExtra = adicionarItemExtra;
+window.toggleIgrejaPagamento = toggleIgrejaPagamento;
+window.atualizarValorIgreja = atualizarValorIgreja;
+window.arquivarIgrejaPagamento = arquivarIgrejaPagamento;
+window.desarquivarIgrejaPagamento = desarquivarIgrejaPagamento;
+window.alternarAbaPagamento = alternarAbaPagamento;
+window.filtrarIgrejasPagamento = filtrarIgrejasPagamento;
+window.alterarMesPagamento = alterarMesPagamento;
+window.alterarAnoPagamento = alterarAnoPagamento;
+window.mascararValorInput = mascararValorInput;
+window.gerarImagemPagamento = gerarImagemPagamento;
+window.baixarImagemPagamento = baixarImagemPagamento;
+window.compartilharWhatsApp = compartilharWhatsApp;

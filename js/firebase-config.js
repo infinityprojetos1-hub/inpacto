@@ -431,7 +431,8 @@ function iniciarSincronizacaoTempoReal() {
         if (!local._ts) local._ts = Date.now();
         salvarNoDatabase('dados/pagamento', local);
       } catch (e) { /* ignora */ }
-    } else if (typeof window._aplicarDadosFirebasePagamento === 'function') {
+    } else if (!mesmoPag && typeof window._aplicarDadosFirebasePagamento === 'function') {
+      // Só aplica quando o dado do Firebase é genuinamente diferente (ts diferente)
       _fbDebouncedUI('pagamento', () => window._aplicarDadosFirebasePagamento(dados));
       console.log('🔄 Pagamento atualizado do Firebase');
     }

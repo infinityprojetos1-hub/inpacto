@@ -4639,53 +4639,6 @@
         </div>
     </div>
 
-    <script>
-        // ===== MODAL DE CONFIGURAÇÕES =====
-        
-        const modalConfig = document.getElementById('modalConfiguracoes');
-        document.getElementById('btnConfiguracoes').addEventListener('click', function() {
-            modalConfig.style.display = 'flex';
-            verificarStatusSistema();
-            
-            // Anima o botão
-            this.style.transform = 'rotate(180deg)';
-            setTimeout(() => {
-                this.style.transform = 'rotate(0deg)';
-            }, 300);
-        });
-        
-        function fecharModalConfiguracoes() {
-            modalConfig.style.display = 'none';
-        }
-
-        async function forcarSyncAgora(btn) {
-            if (typeof window.forcarSyncParaFirebase === 'function') {
-                const orig = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-                btn.disabled = true;
-                try {
-                    await window.forcarSyncParaFirebase(true);
-                    btn.innerHTML = '<i class="fas fa-check"></i> Confirmado no Firebase!';
-                } catch (e) {
-                    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro ao salvar';
-                }
-                setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 3000);
-            }
-        }
-        
-        // Fecha o modal ao clicar fora do conteúdo
-        modalConfig.addEventListener('click', function(e) {
-            if (e.target === modalConfig) fecharModalConfiguracoes();
-        });
-        
-        function verificarStatusSistema() {
-            if (typeof carregarConfigValores === 'function') carregarConfigValores();
-        }
-    </script>
-
-    <!-- Carregar script original primeiro -->
-    <script src="index.js"></script>
-
     <!-- Carregar scripts em ordem - sem usar módulos ES6 -->
     <script src="js/utils.js"></script>
     <script src="js/config.js"></script>
@@ -4712,6 +4665,44 @@
     <script src="js/main.js"></script>
     <script src="js/relatorio.js"></script>
     <script src="js/pagamento-manager.js"></script>
+
+    <!-- Modal de Configurações — inicializado após todos os scripts para garantir que
+         carregarConfigValores e forcarSyncParaFirebase já estejam disponíveis -->
+    <script>
+        (function() {
+            const modalConfig = document.getElementById('modalConfiguracoes');
+            if (!modalConfig) return;
+
+            document.getElementById('btnConfiguracoes').addEventListener('click', function() {
+                modalConfig.style.display = 'flex';
+                if (typeof carregarConfigValores === 'function') carregarConfigValores();
+                this.style.transform = 'rotate(180deg)';
+                setTimeout(() => { this.style.transform = 'rotate(0deg)'; }, 300);
+            });
+
+            window.fecharModalConfiguracoes = function() {
+                modalConfig.style.display = 'none';
+            };
+
+            window.forcarSyncAgora = async function(btn) {
+                if (typeof window.forcarSyncParaFirebase !== 'function') return;
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+                btn.disabled = true;
+                try {
+                    await window.forcarSyncParaFirebase(true);
+                    btn.innerHTML = '<i class="fas fa-check"></i> Confirmado no Firebase!';
+                } catch (e) {
+                    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro ao salvar';
+                }
+                setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 3000);
+            };
+
+            modalConfig.addEventListener('click', function(e) {
+                if (e.target === modalConfig) window.fecharModalConfiguracoes();
+            });
+        })();
+    </script>
 
     <script>
         // Função para mostrar notificação temporária
