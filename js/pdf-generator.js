@@ -294,6 +294,14 @@ function obterEmpresasConcorrentesPedidoEspecialUI(dadosOrcamento) {
     });
 }
 
+/** Nome do ficheiro na pasta ORÇAMENTO (mesmo padrão em gerar e regenerar) */
+function nomePdfConcorrenteOrcamentoPasta(nomeEmpresa) {
+    const base = String(nomeEmpresa || 'Concorrente')
+        .replace(/[<>:"/\\|?*]/g, '')
+        .replace(/\s+/g, '_');
+    return `Orcamento_${base}.pdf`;
+}
+
 // Função para gerar os PDFs
 async function gerarPDFs(dadosOrcamento, index, pdfsGerados) {
     try {
@@ -489,34 +497,37 @@ async function gerarPDFs(dadosOrcamento, index, pdfsGerados) {
                         blobPrincipal
                     );
 
-                    // Salva os PDFs dos concorrentes
+                    // Salva os PDFs dos concorrentes (nome alinhado ao usado na regeneração / substituição)
                     if (isEspecial) {
                         if (pdfConcorrenteMega) {
                             const blobMega = pdfConcorrenteMega.output('blob');
-                            await window.salvarPDFEmPasta(
-                                pastas.orcamento,
-                                `Orcamento_MEGA_EVENTOS.pdf`,
-                                blobMega
-                            );
+                            const nomeMega = nomePdfConcorrenteOrcamentoPasta(concorrenteMega.nome);
+                            if (typeof window.salvarPDFEmPastaSubstituir === 'function') {
+                                await window.salvarPDFEmPastaSubstituir(pastas.orcamento, nomeMega, blobMega);
+                            } else {
+                                await window.salvarPDFEmPasta(pastas.orcamento, nomeMega, blobMega);
+                            }
                         }
                         if (pdfConcorrenteTella) {
                             const blobTella = pdfConcorrenteTella.output('blob');
-                            await window.salvarPDFEmPasta(
-                                pastas.orcamento,
-                                `Orcamento_TELLA_VIDEO.pdf`,
-                                blobTella
-                            );
+                            const nomeTella = nomePdfConcorrenteOrcamentoPasta(concorrenteTella.nome);
+                            if (typeof window.salvarPDFEmPastaSubstituir === 'function') {
+                                await window.salvarPDFEmPastaSubstituir(pastas.orcamento, nomeTella, blobTella);
+                            } else {
+                                await window.salvarPDFEmPasta(pastas.orcamento, nomeTella, blobTella);
+                            }
                         }
                     } else if (pdfConcorrente) {
                         const empresaConcNome = concorrenteAleatorio.nome
                             .replace(/[<>:"/\\|?*]/g, '')
                             .replace(/\s+/g, '_');
                         const blobConc = pdfConcorrente.output('blob');
-                        await window.salvarPDFEmPasta(
-                            pastas.orcamento,
-                            `Orcamento_${empresaConcNome}.pdf`,
-                            blobConc
-                        );
+                        const nomeConc = `Orcamento_${empresaConcNome}.pdf`;
+                        if (typeof window.salvarPDFEmPastaSubstituir === 'function') {
+                            await window.salvarPDFEmPastaSubstituir(pastas.orcamento, nomeConc, blobConc);
+                        } else {
+                            await window.salvarPDFEmPasta(pastas.orcamento, nomeConc, blobConc);
+                        }
                     }
 
                     console.log(`✅ PDFs salvos automaticamente para: ${nomeIgreja}`);
@@ -1383,6 +1394,8 @@ async function regenerarPDFConcorrente(index) {
     if (!empresaNome) return;
 
     const dadosOrcamento = registro.orcamento;
+    const nomeIgreja = (dadosOrcamento.igreja && dadosOrcamento.igreja.nome) || 'IGREJA';
+    const empresaAnterior = registro.empresaConcorrente;
     const valorSuaEmpresa = dadosOrcamento.suaEmpresa.total || 0;
     const markup = 1.1 + (Math.random() * 0.05);
     const valorConcorrente = valorSuaEmpresa * markup;
@@ -1402,6 +1415,27 @@ async function regenerarPDFConcorrente(index) {
         const btn = document.getElementById(`btnConc_${index}`);
         if (btn) btn.textContent = `Baixar PDF ${empresaNome}`;
         console.log('PDF concorrente regenerado com sucesso para:', empresaNome);
+
+        const checkboxSalvar = document.getElementById('salvarAutomaticoPasta');
+        if (checkboxSalvar && checkboxSalvar.checked && typeof window.criarPastasIgreja === 'function' && typeof window.salvarPDFEmPastaSubstituir === 'function') {
+            try {
+                const pastas = await window.criarPastasIgreja(nomeIgreja);
+                if (pastas && pastas.orcamento) {
+                    const novoNomeArq = nomePdfConcorrenteOrcamentoPasta(empresaNome);
+                    const antigoNomeArq = nomePdfConcorrenteOrcamentoPasta(empresaAnterior);
+                    if (antigoNomeArq !== novoNomeArq) {
+                        try { await pastas.orcamento.removeEntry(antigoNomeArq); } catch (_) { /* não existia */ }
+                    }
+                    await window.salvarPDFEmPastaSubstituir(pastas.orcamento, novoNomeArq, pdfNovo.output('blob'));
+                }
+            } catch (errPasta) {
+                console.warn('Não foi possível atualizar PDF na pasta:', errPasta);
+            }
+        }
+
+        setTimeout(() => {
+            if (typeof window.baixarPDF === 'function') window.baixarPDF(String(index), 'concorrente');
+        }, 200);
     } catch (e) {
         console.error('Erro ao regenerar PDF concorrente:', e);
         if (typeof alert === 'function') alert('Erro ao regenerar PDF: ' + (e.message || 'Tente novamente'));
@@ -1452,6 +1486,10 @@ async function regenerarPDFsConcorrentesEspecial(indexStr) {
         btnReg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
     }
 
+    const nomeIgreja = (dadosOrcamento.igreja && dadosOrcamento.igreja.nome) || 'IGREJA';
+    const antigo1 = registro.empresaConcorrenteMega;
+    const antigo2 = registro.empresaConcorrenteTella;
+
     try {
         registro.pdfConcorrenteMega = await window.gerarPDFConcorrente(dadosOrcamento, mkObj(nome1, 1.12), 1);
         registro.pdfConcorrenteTella = await window.gerarPDFConcorrente(dadosOrcamento, mkObj(nome2, 1.15), 1);
@@ -1463,6 +1501,42 @@ async function regenerarPDFsConcorrentesEspecial(indexStr) {
         if (bMega) bMega.textContent = `Baixar PDF ${nome1}`;
         if (bTella) bTella.textContent = `Baixar PDF ${nome2}`;
         console.log('PDFs concorrentes (especial) regenerados:', nome1, nome2);
+
+        const checkboxSalvar = document.getElementById('salvarAutomaticoPasta');
+        if (checkboxSalvar && checkboxSalvar.checked && typeof window.criarPastasIgreja === 'function' && typeof window.salvarPDFEmPastaSubstituir === 'function') {
+            try {
+                const pastas = await window.criarPastasIgreja(nomeIgreja);
+                if (pastas && pastas.orcamento) {
+                    const novoArq1 = nomePdfConcorrenteOrcamentoPasta(nome1);
+                    const novoArq2 = nomePdfConcorrenteOrcamentoPasta(nome2);
+                    const manter = new Set([novoArq1, novoArq2]);
+                    const candidatosRemover = [
+                        nomePdfConcorrenteOrcamentoPasta(antigo1),
+                        nomePdfConcorrenteOrcamentoPasta(antigo2),
+                        'Orcamento_MEGA_EVENTOS.pdf',
+                        'Orcamento_TELLA_VIDEO.pdf'
+                    ];
+                    const visto = new Set();
+                    for (const nome of candidatosRemover) {
+                        if (!nome || visto.has(nome)) continue;
+                        visto.add(nome);
+                        if (manter.has(nome)) continue;
+                        try { await pastas.orcamento.removeEntry(nome); } catch (_) { /* não existia */ }
+                    }
+                    await window.salvarPDFEmPastaSubstituir(pastas.orcamento, novoArq1, registro.pdfConcorrenteMega.output('blob'));
+                    await window.salvarPDFEmPastaSubstituir(pastas.orcamento, novoArq2, registro.pdfConcorrenteTella.output('blob'));
+                }
+            } catch (errPasta) {
+                console.warn('Não foi possível atualizar PDFs na pasta:', errPasta);
+            }
+        }
+
+        setTimeout(() => {
+            if (typeof window.baixarPDF === 'function') window.baixarPDF(String(index), 'concorrenteMega');
+        }, 200);
+        setTimeout(() => {
+            if (typeof window.baixarPDF === 'function') window.baixarPDF(String(index), 'concorrenteTella');
+        }, 700);
     } catch (e) {
         console.error('Erro ao regenerar PDFs especiais:', e);
         if (typeof alert === 'function') alert('Erro ao regenerar: ' + (e.message || 'Tente novamente'));

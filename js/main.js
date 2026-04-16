@@ -140,6 +140,26 @@ async function salvarPDFEmPasta(pastaHandle, nomeArquivo, pdfBlob) {
     }
 }
 
+/** Substitui arquivo com o mesmo nome (remove o existente e grava de novo). Usado após regenerar concorrente. */
+async function salvarPDFEmPastaSubstituir(pastaHandle, nomeArquivo, pdfBlob) {
+    try {
+        try {
+            await pastaHandle.removeEntry(nomeArquivo);
+        } catch (_) {
+            // Arquivo não existia — segue para criar
+        }
+        const arquivoHandle = await pastaHandle.getFileHandle(nomeArquivo, { create: true });
+        const writable = await arquivoHandle.createWritable();
+        await writable.write(pdfBlob);
+        await writable.close();
+        console.log(`✅ PDF salvo (substituiu): ${nomeArquivo}`);
+        return true;
+    } catch (error) {
+        console.error(`❌ Erro ao substituir PDF ${nomeArquivo}:`, error);
+        return false;
+    }
+}
+
 // Funções para persistir o handle da pasta no IndexedDB
 async function abrirBDPastaTrabalho() {
     return new Promise((resolve, reject) => {
@@ -207,6 +227,7 @@ function atualizarStatusPastaTrabalho(nomePasta) {
 window.escolherPastaTrabalho = escolherPastaTrabalho;
 window.criarPastasIgreja = criarPastasIgreja;
 window.salvarPDFEmPasta = salvarPDFEmPasta;
+window.salvarPDFEmPastaSubstituir = salvarPDFEmPastaSubstituir;
 
 // ==========================================
 // FIM DO SISTEMA DE PASTA DE TRABALHO
