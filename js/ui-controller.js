@@ -1,5 +1,18 @@
 // Funções para controle da interface do usuário
 
+// Índice da igreja em edição na lista (null = modo adicionar)
+let _indiceEdicaoIgreja = null;
+
+function atualizarRotuloBotaoAdicionarIgreja() {
+    const btn = document.getElementById('adicionarIgreja');
+    if (!btn) return;
+    if (_indiceEdicaoIgreja !== null) {
+        btn.innerHTML = '<i class="fas fa-save"></i> Salvar alterações';
+    } else {
+        btn.innerHTML = '<i class="fas fa-plus-circle"></i> Adicionar Igreja';
+    }
+}
+
 // Controle de tabs com animação do fundo roxo
 function inicializarTabs() {
     const tabsContainer = document.querySelector('.tabs');
@@ -191,7 +204,7 @@ function inicializarGerenciamentoIgrejas() {
         // Verifica se deve usar texto personalizado
         const usarTextoPersonalizado = tipoTexto === 'personalizado';
 
-        // Adiciona à lista de igrejas
+        // Adiciona ou atualiza na lista de igrejas
         const igreja = {
             nome: nomeIgreja,
             id: idIgreja,
@@ -207,7 +220,14 @@ function inicializarGerenciamentoIgrejas() {
             tipoPedido: tipoPedido
         };
 
-        igrejasAdicionadas.push(igreja);
+        if (_indiceEdicaoIgreja !== null && _indiceEdicaoIgreja >= 0 && _indiceEdicaoIgreja < igrejasAdicionadas.length) {
+            igrejasAdicionadas[_indiceEdicaoIgreja] = igreja;
+            _indiceEdicaoIgreja = null;
+        } else {
+            igrejasAdicionadas.push(igreja);
+        }
+
+        atualizarRotuloBotaoAdicionarIgreja();
 
         // Atualiza a interface
         atualizarListaIgrejas();
@@ -232,12 +252,17 @@ function inicializarGerenciamentoIgrejas() {
         document.getElementById('tipoValorOrcamento').selectedIndex = 0;
         document.getElementById('tipoIgreja').selectedIndex = 0;
         document.getElementById('tipoTexto').selectedIndex = 0;
+        if (document.getElementById('tipoPedido')) document.getElementById('tipoPedido').value = 'padrao';
+        const grupoValorManual = document.getElementById('grupoValorManual');
+        if (grupoValorManual) grupoValorManual.style.display = 'none';
     });
 
     // Limpar a lista de igrejas
     document.getElementById('limparIgrejas').addEventListener('click', () => {
         if (confirm('Tem certeza que deseja limpar a lista de igrejas?')) {
             igrejasAdicionadas.length = 0; // Limpa o array
+            _indiceEdicaoIgreja = null;
+            atualizarRotuloBotaoAdicionarIgreja();
             atualizarListaIgrejas();
         }
     });
@@ -273,7 +298,12 @@ function atualizarListaIgrejas() {
             }</p>
             <p><strong>Tipo de pedido:</strong> ${igreja.tipoPedido === 'especial' ? 'Especial' : 'Padrão'}</p>
             ${igreja.tipoValorOrcamento === 'manual' && igreja.valorManual !== null && !isNaN(igreja.valorManual) ? `<p><strong>Valor Manual:</strong> R$ ${igreja.valorManual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
-            <button class="remover-igreja" data-index="${index}">×</button>
+            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+                <button type="button" class="btn-secondary editar-igreja" data-index="${index}" style="padding:6px 12px; font-size:13px;">
+                    <i class="fas fa-pen"></i> Editar
+                </button>
+                <button type="button" class="remover-igreja" data-index="${index}" style="padding:6px 12px;">× Remover</button>
+            </div>
         `;
 
         listaIgrejas.appendChild(itemIgreja);
@@ -282,9 +312,71 @@ function atualizarListaIgrejas() {
     // Adiciona eventos aos botões de remover
     document.querySelectorAll('.remover-igreja').forEach(btn => {
         btn.addEventListener('click', function () {
-            const index = parseInt(this.getAttribute('data-index'));
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            if (_indiceEdicaoIgreja === index) {
+                _indiceEdicaoIgreja = null;
+                atualizarRotuloBotaoAdicionarIgreja();
+            } else if (_indiceEdicaoIgreja !== null && _indiceEdicaoIgreja > index) {
+                _indiceEdicaoIgreja -= 1;
+            }
             igrejasAdicionadas.splice(index, 1);
             atualizarListaIgrejas();
+        });
+    });
+
+    document.querySelectorAll('.editar-igreja').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            const ig = igrejasAdicionadas[index];
+            if (!ig) return;
+            _indiceEdicaoIgreja = index;
+            atualizarRotuloBotaoAdicionarIgreja();
+
+            document.getElementById('nomeIgreja').value = ig.nome || '';
+            document.getElementById('idIgreja').value = ig.id || '';
+            document.getElementById('linkIgreja').value = ig.link || '';
+            document.getElementById('codigoIgreja').value = ig.codigo || '';
+            const selEmp = document.getElementById('empresaSelecionada');
+            if (selEmp) {
+                const opt = Array.from(selEmp.options).find(o => o.value === ig.empresa);
+                selEmp.selectedIndex = opt ? opt.index : 0;
+            }
+            const selTipoVal = document.getElementById('tipoValorOrcamento');
+            if (selTipoVal) {
+                selTipoVal.value = ig.tipoValorOrcamento === 'manual' ? 'manual' : 'auto';
+                if (!selTipoVal.value) selTipoVal.value = 'auto';
+                selTipoVal.dispatchEvent(new Event('change'));
+            }
+            const grupoValorManual = document.getElementById('grupoValorManual');
+            const elValorManual = document.getElementById('valorManual');
+            if (ig.tipoValorOrcamento === 'manual' && ig.valorManual != null && !isNaN(ig.valorManual)) {
+                if (grupoValorManual) grupoValorManual.style.display = '';
+                if (elValorManual) elValorManual.value = String(ig.valorManual);
+            } else {
+                if (grupoValorManual) grupoValorManual.style.display = 'none';
+                if (elValorManual) elValorManual.value = '';
+            }
+            const selTipoIgreja = document.getElementById('tipoIgreja');
+            if (selTipoIgreja && ig.tipoIgreja) {
+                selTipoIgreja.value = ig.tipoIgreja;
+                if (!selTipoIgreja.value) selTipoIgreja.selectedIndex = 0;
+            }
+            const selTipoTexto = document.getElementById('tipoTexto');
+            const blocoTxt = document.getElementById('blocoTextoOrcamento');
+            if (selTipoTexto) {
+                selTipoTexto.value = ig.tipoTexto || 'padrao';
+                if (blocoTxt) blocoTxt.style.display = (ig.tipoTexto === 'personalizado') ? '' : 'none';
+            }
+            const txtSuaEl = document.getElementById('textoOrcamentoSuaEmpresa');
+            const txtConcEl = document.getElementById('textoOrcamentoConcorrente');
+            if (txtSuaEl) txtSuaEl.value = ig.textoSuaEmpresa || '';
+            if (txtConcEl) txtConcEl.value = ig.textoConcorrente || '';
+
+            const selPedido = document.getElementById('tipoPedido');
+            if (selPedido) selPedido.value = ig.tipoPedido || 'padrao';
+
+            const nomeEl = document.getElementById('nomeIgreja');
+            if (nomeEl && nomeEl.scrollIntoView) nomeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
     });
 }
@@ -320,6 +412,7 @@ function inicializarInterface() {
     });
 
     // Inicializar a lista vazia quando a página carregar
+    atualizarRotuloBotaoAdicionarIgreja();
     atualizarListaIgrejas();
 }
 

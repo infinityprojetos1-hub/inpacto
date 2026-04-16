@@ -265,6 +265,35 @@ const EMPRESAS_CONCORRENTES = [
 ];
 window.EMPRESAS_CONCORRENTES = EMPRESAS_CONCORRENTES;
 
+/** Opções de concorrente para o select na aba Resultados (alinha com gerarPDFs) */
+function obterEmpresasConcorrentesParaSelectUI(dadosOrcamento) {
+    const empresaPrincipal = (dadosOrcamento && dadosOrcamento.suaEmpresa && dadosOrcamento.suaEmpresa.nome) || '';
+    const tipoTexto = ((dadosOrcamento && dadosOrcamento.tipoTexto) || '').toLowerCase();
+    const tipoPermiteGlauber = (tipoTexto === 'forro' || tipoTexto === 'vidro' || tipoTexto === 'personalizado');
+    let empresasPossiveis;
+    if (tipoPermiteGlauber) {
+        empresasPossiveis = ['Virtual Guitar Shop', 'GLAUBER SISTEMAS CONSTRUTIVOS'];
+    } else {
+        empresasPossiveis = EMPRESAS_CONCORRENTES
+            .filter(e => !empresaPrincipal.includes(e))
+            .filter(e => e !== 'GLAUBER SISTEMAS CONSTRUTIVOS');
+    }
+    if (empresasPossiveis.length === 0) empresasPossiveis = ['Virtual Guitar Shop'];
+    return empresasPossiveis;
+}
+
+/** Pedido especial: duas empresas à escolha (inclui MEGA EVENTOS e TELLA VIDEO) */
+function obterEmpresasConcorrentesPedidoEspecialUI(dadosOrcamento) {
+    const empresaPrincipal = (dadosOrcamento && dadosOrcamento.suaEmpresa && dadosOrcamento.suaEmpresa.nome) || '';
+    const base = [...EMPRESAS_CONCORRENTES, 'MEGA EVENTOS', 'TELLA VIDEO'];
+    const visto = new Set();
+    return base.filter(e => {
+        if (!e || empresaPrincipal.includes(e) || visto.has(e)) return false;
+        visto.add(e);
+        return true;
+    });
+}
+
 // Função para gerar os PDFs
 async function gerarPDFs(dadosOrcamento, index, pdfsGerados) {
     try {
@@ -1258,6 +1287,8 @@ function atualizarInterfaceResultados(dadosOrcamento, index, pdfsGerados) {
     let empresaConcorrente = "Empresa Concorrente";
     let temMega = false;
     let temTella = false;
+    let empresaMegaNome = "MEGA EVENTOS";
+    let empresaTellaNome = "TELLA VIDEO";
 
     // Usa o pdfsGerados que é passado como parâmetro para outras funções
     try {
@@ -1269,14 +1300,22 @@ function atualizarInterfaceResultados(dadosOrcamento, index, pdfsGerados) {
         }
         temMega = !!(pdfsGerados[pdfsGeradosKey] && pdfsGerados[pdfsGeradosKey].pdfConcorrenteMega);
         temTella = !!(pdfsGerados[pdfsGeradosKey] && pdfsGerados[pdfsGeradosKey].pdfConcorrenteTella);
+        if (pdfsGerados[pdfsGeradosKey] && pdfsGerados[pdfsGeradosKey].empresaConcorrenteMega) {
+            empresaMegaNome = pdfsGerados[pdfsGeradosKey].empresaConcorrenteMega;
+        }
+        if (pdfsGerados[pdfsGeradosKey] && pdfsGerados[pdfsGeradosKey].empresaConcorrenteTella) {
+            empresaTellaNome = pdfsGerados[pdfsGeradosKey].empresaConcorrenteTella;
+        }
     } catch (e) {
         console.warn("Não foi possível obter nome da empresa concorrente:", e);
     }
 
-    const empresasPossiveis = (!temMega && !temTella) && window.EMPRESAS_CONCORRENTES
-        ? window.EMPRESAS_CONCORRENTES.filter(e => !dadosOrcamento.suaEmpresa.nome.includes(e))
-        : [];
-    const optsConc = empresasPossiveis.map(e => `<option value="${e}" ${e === empresaConcorrente ? 'selected' : ''}>${e}</option>`).join('');
+    const listaUmConcorrente = (!temMega || !temTella) ? obterEmpresasConcorrentesParaSelectUI(dadosOrcamento) : [];
+    const optsConc = listaUmConcorrente.map(e => `<option value="${e.replace(/"/g, '&quot;')}" ${e === empresaConcorrente ? 'selected' : ''}>${e}</option>`).join('');
+
+    const listaEspecial = (temMega && temTella) ? obterEmpresasConcorrentesPedidoEspecialUI(dadosOrcamento) : [];
+    const optsE1 = listaEspecial.map(e => `<option value="${e.replace(/"/g, '&quot;')}" ${e === empresaMegaNome ? 'selected' : ''}>${e}</option>`).join('');
+    const optsE2 = listaEspecial.map(e => `<option value="${e.replace(/"/g, '&quot;')}" ${e === empresaTellaNome ? 'selected' : ''}>${e}</option>`).join('');
 
     const pdfCard = document.createElement('div');
     pdfCard.className = 'pdf-card';
@@ -1294,8 +1333,24 @@ function atualizarInterfaceResultados(dadosOrcamento, index, pdfsGerados) {
             <button class="btn-download" onclick="baixarPDF('${index}', 'suaEmpresa')">
                 Baixar PDF ${dadosOrcamento.suaEmpresa.nome}
             </button>
-            ${temMega ? `<button class="btn-download" onclick="baixarPDF('${index}', 'concorrenteMega')">Baixar PDF MEGA EVENTOS</button>` : ''}
-            ${temTella ? `<button class="btn-download" onclick="baixarPDF('${index}', 'concorrenteTella')">Baixar PDF TELLA VIDEO</button>` : ''}
+            ${temMega ? `<button class="btn-download" id="btnConcMega_${index}" onclick="baixarPDF('${index}', 'concorrenteMega')">Baixar PDF ${empresaMegaNome}</button>` : ''}
+            ${temTella ? `<button class="btn-download" id="btnConcTella_${index}" onclick="baixarPDF('${index}', 'concorrenteTella')">Baixar PDF ${empresaTellaNome}</button>` : ''}
+            ${(temMega && temTella) ? `
+                <div class="regenerar-concorrente-especial" style="margin-top:10px; display:flex; flex-direction:column; gap:8px; align-items:flex-start; max-width:100%;">
+                    <span style="font-size:12px; font-weight:600; color:#555;">Trocar os dois concorrentes (pedido especial):</span>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                        <label style="font-size:12px;">1º PDF:</label>
+                        <select id="selectConcMega_${index}" style="padding:6px 10px; font-size:13px; min-width:200px;">${optsE1}</select>
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                        <label style="font-size:12px;">2º PDF:</label>
+                        <select id="selectConcTella_${index}" style="padding:6px 10px; font-size:13px; min-width:200px;">${optsE2}</select>
+                    </div>
+                    <button type="button" class="btn-secondary" id="btnRegEsp_${index}" onclick="regenerarPDFsConcorrentesEspecial('${index}')" style="padding:6px 12px; font-size:12px;">
+                        <i class="fas fa-sync-alt"></i> Regenerar os dois PDFs
+                    </button>
+                </div>
+            ` : ''}
             ${(!temMega && !temTella) ? `
                 <button class="btn-download" id="btnConc_${index}" onclick="baixarPDF('${index}', 'concorrente')">Baixar PDF ${empresaConcorrente}</button>
                 <div class="regenerar-concorrente" style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -1303,7 +1358,7 @@ function atualizarInterfaceResultados(dadosOrcamento, index, pdfsGerados) {
                     <select id="selectConc_${index}" style="padding:6px 10px; font-size:13px; min-width:180px;">
                         ${optsConc}
                     </select>
-                    <button class="btn-secondary" onclick="regenerarPDFConcorrente('${index}')" style="padding:6px 12px; font-size:12px;">
+                    <button type="button" class="btn-secondary" onclick="regenerarPDFConcorrente('${index}')" style="padding:6px 12px; font-size:12px;">
                         <i class="fas fa-sync-alt"></i> Regenerar PDF
                     </button>
                 </div>
@@ -1353,9 +1408,76 @@ async function regenerarPDFConcorrente(index) {
     }
 }
 
+// Regenera os dois PDFs de concorrentes do pedido especial (MEGA/TELLA ou quaisquer duas empresas)
+async function regenerarPDFsConcorrentesEspecial(indexStr) {
+    const index = parseInt(indexStr, 10);
+    const pdfsGerados = window.pdfsGerados || {};
+    const key = `igreja_${index}`;
+    const registro = pdfsGerados[key];
+    if (!registro || !registro.orcamento) {
+        console.warn('Regenerar especial: registro não encontrado');
+        return;
+    }
+    const sel1 = document.getElementById(`selectConcMega_${index}`);
+    const sel2 = document.getElementById(`selectConcTella_${index}`);
+    const nome1 = sel1 ? sel1.value : null;
+    const nome2 = sel2 ? sel2.value : null;
+    if (!nome1 || !nome2) return;
+    if (nome1 === nome2) {
+        if (typeof alert === 'function') alert('Escolha duas empresas diferentes para os dois PDFs.');
+        return;
+    }
+
+    const dadosOrcamento = registro.orcamento;
+    const valorSuaEmpresa = dadosOrcamento.suaEmpresa.total || 0;
+    const itensBase = (dadosOrcamento.suaEmpresa.itens || []).map(it => ({ servico: it.servico }));
+    const fmt = typeof window.formatarMoeda === 'function' ? window.formatarMoeda : (v) => 'R$ ' + Number(v).toFixed(2);
+    const ext = typeof window.valorPorExtenso === 'function' ? window.valorPorExtenso : () => '';
+
+    const mkObj = (nome, markup) => {
+        const t = valorSuaEmpresa * markup;
+        return {
+            nome,
+            itens: itensBase,
+            total: t,
+            totalFormatado: fmt(t),
+            totalPorExtenso: ext(t)
+        };
+    };
+
+    const btnReg = document.getElementById(`btnRegEsp_${index}`);
+    const origHtml = btnReg ? btnReg.innerHTML : '';
+    if (btnReg) {
+        btnReg.disabled = true;
+        btnReg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+    }
+
+    try {
+        registro.pdfConcorrenteMega = await window.gerarPDFConcorrente(dadosOrcamento, mkObj(nome1, 1.12), 1);
+        registro.pdfConcorrenteTella = await window.gerarPDFConcorrente(dadosOrcamento, mkObj(nome2, 1.15), 1);
+        registro.empresaConcorrenteMega = nome1;
+        registro.empresaConcorrenteTella = nome2;
+
+        const bMega = document.getElementById(`btnConcMega_${index}`);
+        const bTella = document.getElementById(`btnConcTella_${index}`);
+        if (bMega) bMega.textContent = `Baixar PDF ${nome1}`;
+        if (bTella) bTella.textContent = `Baixar PDF ${nome2}`;
+        console.log('PDFs concorrentes (especial) regenerados:', nome1, nome2);
+    } catch (e) {
+        console.error('Erro ao regenerar PDFs especiais:', e);
+        if (typeof alert === 'function') alert('Erro ao regenerar: ' + (e.message || 'Tente novamente'));
+    } finally {
+        if (btnReg) {
+            btnReg.disabled = false;
+            btnReg.innerHTML = origHtml || '<i class="fas fa-sync-alt"></i> Regenerar os dois PDFs';
+        }
+    }
+}
+
 // Disponibiliza as funções globalmente
 window.gerarPDFs = gerarPDFs;
 window.baixarPDF = baixarPDF;
 window.baixarTodosPDFs = baixarTodosPDFs;
 window.atualizarInterfaceResultados = atualizarInterfaceResultados;
-window.regenerarPDFConcorrente = regenerarPDFConcorrente; 
+window.regenerarPDFConcorrente = regenerarPDFConcorrente;
+window.regenerarPDFsConcorrentesEspecial = regenerarPDFsConcorrentesEspecial; 
