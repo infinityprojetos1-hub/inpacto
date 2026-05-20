@@ -4,6 +4,7 @@
 
 // Materiais iniciais por igreja: { "id_nome": [{nome, quantidade}] }
 let previaMateriais = {};
+let abaAtivaPrevia = 'pendentes';
 
 function carregarPreviaMateriais() {
     try {
@@ -26,52 +27,96 @@ function _chaveIgreja(igreja) {
     return `${igreja.id}_${igreja.nome}`;
 }
 
-// Retorna lista de igrejas ativas do NF
-function obterIgrejasParaPrevia() {
-    if (typeof nfData === 'undefined') return [];
-    return (nfData.igrejas || []).concat(nfData.especiais || []);
+// Retorna igrejas por categoria (espelha as listas do Material)
+function _obterIgrejasPrevia(tipo) {
+    if (typeof materialData === 'undefined') return [];
+    if (tipo === 'pendentes')     return materialData.pendentes     || [];
+    if (tipo === 'arquivados')    return materialData.enviadas      || [];
+    if (tipo === 'pedidosSandro') return materialData.pedidosSandro || [];
+    return [];
 }
 
-// Gera a lista de necessidade: o que precisa pegar do fornecedor
+// Gera lista de necessidade: o que falta no estoque
 function calcularNecessidade(materiaisIniciais) {
     const itensEstoque = (typeof obterItensEstoque === 'function') ? obterItensEstoque() : [];
 
     return materiaisIniciais.map(item => {
         const nomeLower = String(item.nome || '').trim().toLowerCase();
         const itemEstoque = itensEstoque.find(e => String(e.nome || '').trim().toLowerCase() === nomeLower);
-        const emEstoque = itemEstoque ? (parseInt(itemEstoque.quantidade, 10) || 0) : 0;
-        const necessario = parseInt(item.quantidade, 10) || 0;
-        const pedirFornecedor = Math.max(0, necessario - emEstoque);
-        return { nome: item.nome, necessario, emEstoque, pedirFornecedor };
+        const emEstoque   = itemEstoque ? (parseInt(itemEstoque.quantidade, 10) || 0) : 0;
+        const necessario  = parseInt(item.quantidade, 10) || 0;
+        return { nome: item.nome, necessario, emEstoque, pedirFornecedor: Math.max(0, necessario - emEstoque) };
     });
 }
 
-// Renderiza a aba de prévia no estilo da aba Material
+// ── Renderização principal ────────────────────────────────────────────────────
 function renderizarAbaPrevia() {
     const container = document.getElementById('previaContainer');
     if (!container) return;
 
     carregarPreviaMateriais();
-    const igrejas = obterIgrejasParaPrevia();
 
-    if (igrejas.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-church"></i>
-                <h3>Nenhuma igreja encontrada</h3>
-                <p>Cadastre igrejas na aba <strong>NF</strong> para gerenciar as prévias de material.</p>
-            </div>`;
-        return;
-    }
+    const countPendentes  = (materialData && materialData.pendentes     ? materialData.pendentes.length     : 0);
+    const countArquivados = (materialData && materialData.enviadas       ? materialData.enviadas.length       : 0);
+    const countSandro     = (materialData && materialData.pedidosSandro  ? materialData.pedidosSandro.length  : 0);
 
-    // Botão atualizar no topo
     container.innerHTML = `
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
+            <div class="material-tabs">
+                <button class="material-tab-button ${abaAtivaPrevia === 'pendentes' ? 'active' : ''}" data-previa-tipo="pendentes">
+                    <i class="fas fa-clock"></i> Pendentes (${countPendentes})
+                </button>
+                <button class="material-tab-button ${abaAtivaPrevia === 'arquivados' ? 'active' : ''}" data-previa-tipo="arquivados">
+                    <i class="fas fa-archive"></i> Arquivados (${countArquivados})
+                </button>
+                <button class="material-tab-button ${abaAtivaPrevia === 'pedidosSandro' ? 'active' : ''}" data-previa-tipo="pedidosSandro">
+                    <i class="fas fa-user"></i> Sandro (${countSandro})
+                </button>
+            </div>
             <button onclick="renderizarAbaPrevia()" class="btn-primary" title="Atualizar lista">
                 <i class="fas fa-sync-alt"></i> Atualizar
             </button>
         </div>
-        <div id="previaTabela"></div>`;
+        <div class="previa-content-container"></div>`;
+
+    // Eventos das sub-abas (com suporte a touch igual ao Material)
+    const tabBtns = container.querySelectorAll('.material-tab-button[data-previa-tipo]');
+    tabBtns.forEach(btn => {
+        function ativar() {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            abaAtivaPrevia = btn.getAttribute('data-previa-tipo');
+            _mostrarListaPrevia(abaAtivaPrevia);
+        }
+        let _th = false, _tx = 0, _ty = 0;
+        btn.addEventListener('touchstart', e => { _tx = e.touches[0].clientX; _ty = e.touches[0].clientY; _th = false; }, { passive: true });
+        btn.addEventListener('touchend', e => {
+            if (Math.abs(e.changedTouches[0].clientX - _tx) < 15 && Math.abs(e.changedTouches[0].clientY - _ty) < 15) {
+                _th = true; ativar(); setTimeout(() => { _th = false; }, 500);
+            }
+        }, { passive: true });
+        btn.addEventListener('click', () => { if (_th) return; ativar(); });
+    });
+
+    _mostrarListaPrevia(abaAtivaPrevia);
+}
+
+// ── Lista de igrejas por sub-aba ──────────────────────────────────────────────
+function _mostrarListaPrevia(tipo) {
+    const contentContainer = document.querySelector('.previa-content-container');
+    if (!contentContainer) return;
+
+    const igrejas = _obterIgrejasPrevia(tipo);
+
+    if (igrejas.length === 0) {
+        contentContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h3>Nenhuma igreja nesta categoria</h3>
+                <p>As igrejas aparecem aqui conforme o status na aba <strong>Material</strong>.</p>
+            </div>`;
+        return;
+    }
 
     const tabela = document.createElement('div');
     tabela.className = 'material-table';
@@ -84,21 +129,21 @@ function renderizarAbaPrevia() {
 
     igrejas.forEach((ig) => {
         const chave = _chaveIgreja(ig);
-        const materiais = previaMateriais[chave] || [];
+        const materiais   = previaMateriais[chave] || [];
         const necessidade = calcularNecessidade(materiais);
-        const totalPedir = necessidade.reduce((s, i) => s + i.pedirFornecedor, 0);
-        const totalItens = materiais.length;
+        const totalPedir  = necessidade.reduce((s, i) => s + i.pedirFornecedor, 0);
+        const totalItens  = materiais.length;
 
         let statusClass, statusText;
         if (totalItens === 0) {
             statusClass = 'status-nao-enviado';
-            statusText = 'Sem lista';
+            statusText  = 'Sem lista';
         } else if (totalPedir > 0) {
             statusClass = 'status-nao-enviado';
-            statusText = `${totalPedir} a pedir`;
+            statusText  = `${totalPedir} a pedir`;
         } else {
             statusClass = 'status-enviado';
-            statusText = 'Estoque OK';
+            statusText  = 'Estoque OK';
         }
 
         const linha = document.createElement('div');
@@ -106,7 +151,9 @@ function renderizarAbaPrevia() {
         linha.style.cursor = 'pointer';
         linha.setAttribute('role', 'button');
         linha.setAttribute('tabindex', '0');
-        linha.setAttribute('title', 'Clique para ver prévia de material');
+
+        const chaveEsc = chave.replace(/'/g, "\\'");
+        const nomeEsc  = (ig.nome || '').replace(/'/g, "\\'");
 
         linha.innerHTML = `
             <div class="material-col-igreja">
@@ -118,59 +165,70 @@ function renderizarAbaPrevia() {
                 <span class="material-status ${statusClass}">${statusText}</span>
             </div>
             <div class="material-col-acoes" onclick="event.stopPropagation()">
-                <button class="btn-primary" onclick="event.stopPropagation(); abrirModalPrevia('${chave}', '${ig.nome.replace(/'/g, "\\'")}')">
+                <button class="btn-primary" onclick="event.stopPropagation(); abrirModalPrevia('${chaveEsc}','${nomeEsc}')">
                     <i class="fas fa-clipboard-list"></i> Ver Prévia
                 </button>
             </div>`;
 
-        linha.addEventListener('click', (e) => {
-            if (!e.target.closest('.material-col-acoes')) {
-                abrirModalPrevia(chave, ig.nome);
-            }
+        linha.addEventListener('click', e => {
+            if (!e.target.closest('.material-col-acoes')) abrirModalPrevia(chave, ig.nome);
         });
-        linha.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                if (!e.target.closest('.material-col-acoes')) abrirModalPrevia(chave, ig.nome);
+        linha.addEventListener('keydown', e => {
+            if ((e.key === 'Enter' || e.key === ' ') && !e.target.closest('.material-col-acoes')) {
+                e.preventDefault(); abrirModalPrevia(chave, ig.nome);
             }
         });
 
         tabela.appendChild(linha);
     });
 
-    document.getElementById('previaTabela').appendChild(tabela);
+    contentContainer.innerHTML = '';
+    contentContainer.appendChild(tabela);
 }
 
-// Abre modal de prévia/edição para uma igreja
+// ── Modal de prévia / edição ──────────────────────────────────────────────────
 window.abrirModalPrevia = function(chave, nomeIgreja) {
-    const materiais = previaMateriais[chave] ? [...previaMateriais[chave]] : [];
+    const materiais   = previaMateriais[chave] ? [...previaMateriais[chave]] : [];
     const necessidade = calcularNecessidade(materiais);
-    const totalPedir = necessidade.reduce((s, i) => s + i.pedirFornecedor, 0);
+    const totalPedir  = necessidade.reduce((s, i) => s + i.pedirFornecedor, 0);
 
-    const tabelaHTML = necessidade.length > 0 ? `
-        <div style="overflow-x:auto;margin-bottom:16px;">
-            <table style="width:100%;border-collapse:collapse;font-size:13px;">
-                <thead>
-                    <tr style="background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;">
-                        <th style="padding:10px;text-align:left;border-radius:6px 0 0 0;">Material</th>
-                        <th style="padding:10px;text-align:center;">Necessário</th>
-                        <th style="padding:10px;text-align:center;">Em Estoque</th>
-                        <th style="padding:10px;text-align:center;border-radius:0 6px 0 0;">Pedir Fornecedor</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${necessidade.map(item => `
-                        <tr style="border-bottom:1px solid #f0f0f0;">
-                            <td style="padding:8px 10px;">${item.nome}</td>
-                            <td style="padding:8px 10px;text-align:center;">${item.necessario}</td>
-                            <td style="padding:8px 10px;text-align:center;color:${item.emEstoque >= item.necessario ? '#2e7d32' : '#e53935'};font-weight:bold;">${item.emEstoque}</td>
-                            <td style="padding:8px 10px;text-align:center;font-weight:bold;color:${item.pedirFornecedor > 0 ? '#e53935' : '#2e7d32'};">${item.pedirFornecedor > 0 ? item.pedirFornecedor : '—'}</td>
-                        </tr>`).join('')}
-                </tbody>
-            </table>
-        </div>
-        ${totalPedir > 0 ? `<div style="background:#ffebee;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#c62828;"><i class="fas fa-exclamation-triangle"></i> <strong>${totalPedir} item(s)</strong> precisam ser pedidos ao fornecedor.</div>` : `<div style="background:#e8f5e9;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#2e7d32;"><i class="fas fa-check-circle"></i> Estoque suficiente para todos os itens.</div>`}`
-        : `<div style="background:#f5f5f5;border-radius:8px;padding:16px;text-align:center;color:#aaa;margin-bottom:16px;font-size:13px;"><i class="fas fa-clipboard" style="display:block;font-size:24px;margin-bottom:8px;"></i>Nenhum material inicial cadastrado para esta igreja.</div>`;
+    let tabelaHTML;
+    if (necessidade.length === 0) {
+        tabelaHTML = `
+            <div style="background:#f5f5f5;border-radius:8px;padding:16px;text-align:center;color:#aaa;margin-bottom:16px;font-size:13px;">
+                <i class="fas fa-clipboard" style="display:block;font-size:24px;margin-bottom:8px;"></i>
+                Nenhum material inicial cadastrado para esta igreja.
+            </div>`;
+    } else {
+        const resumoBadge = totalPedir > 0
+            ? `<div style="background:#ffebee;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#c62828;"><i class="fas fa-exclamation-triangle"></i> <strong>${totalPedir} item(s)</strong> precisam ser pedidos ao fornecedor.</div>`
+            : `<div style="background:#e8f5e9;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#2e7d32;"><i class="fas fa-check-circle"></i> Estoque suficiente para todos os itens.</div>`;
+
+        tabelaHTML = resumoBadge + `
+            <div style="overflow-x:auto;margin-bottom:16px;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                        <tr style="background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;">
+                            <th style="padding:10px;text-align:left;">Material</th>
+                            <th style="padding:10px;text-align:center;">Necessário</th>
+                            <th style="padding:10px;text-align:center;">Em Estoque</th>
+                            <th style="padding:10px;text-align:center;">Pedir Fornecedor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${necessidade.map(item => `
+                            <tr style="border-bottom:1px solid #f0f0f0;">
+                                <td style="padding:8px 10px;">${item.nome}</td>
+                                <td style="padding:8px 10px;text-align:center;">${item.necessario}</td>
+                                <td style="padding:8px 10px;text-align:center;font-weight:bold;color:${item.emEstoque >= item.necessario ? '#2e7d32' : '#e53935'};">${item.emEstoque}</td>
+                                <td style="padding:8px 10px;text-align:center;font-weight:bold;color:${item.pedirFornecedor > 0 ? '#e53935' : '#2e7d32'};">${item.pedirFornecedor > 0 ? item.pedirFornecedor : '—'}</td>
+                            </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    const chaveEsc = chave.replace(/'/g, "\\'");
 
     const modal = document.createElement('div');
     modal.className = 'material-modal';
@@ -182,12 +240,12 @@ window.abrirModalPrevia = function(chave, nomeIgreja) {
                 <button onclick="this.closest('.material-modal').remove()" style="background:rgba(255,255,255,0.2);border:none;font-size:18px;cursor:pointer;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;">&times;</button>
             </div>
             <div style="padding:20px;">
-                <p style="font-size:13px;color:#666;margin-bottom:16px;">Materiais iniciais necessários e comparação com o estoque atual.</p>
+                <p style="font-size:13px;color:#666;margin-bottom:12px;">Comparação dos materiais iniciais com o estoque atual.</p>
                 ${tabelaHTML}
 
                 <div style="border-top:1px solid #eee;padding-top:16px;">
-                    <h4 style="margin:0 0 12px;font-size:14px;color:#444;"><i class="fas fa-edit"></i> Editar Lista de Materiais Iniciais</h4>
-                    <div id="previaListaItens" style="margin-bottom:12px;"></div>
+                    <h4 style="margin:0 0 10px;font-size:14px;color:#444;"><i class="fas fa-edit"></i> Editar Lista de Materiais Iniciais</h4>
+                    <div id="previaListaItens" style="margin-bottom:10px;"></div>
                     <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
                         <input type="text" id="previaNovoNome" placeholder="Nome do material"
                             style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
@@ -201,7 +259,7 @@ window.abrirModalPrevia = function(chave, nomeIgreja) {
                     <div style="display:flex;justify-content:flex-end;gap:10px;">
                         <button onclick="this.closest('.material-modal').remove()"
                             style="background:#f0f0f0;color:#333;border:none;border-radius:6px;padding:10px 20px;cursor:pointer;">Fechar</button>
-                        <button onclick="_previasSalvar('${chave}')"
+                        <button onclick="_previasSalvar('${chaveEsc}')"
                             style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:10px 20px;cursor:pointer;font-weight:bold;"><i class="fas fa-save"></i> Salvar</button>
                     </div>
                 </div>
@@ -236,10 +294,10 @@ window._previaRenderizarItens = function() {
 
 window._previaAdicionarItem = function() {
     const nomeEl = document.getElementById('previaNovoNome');
-    const qtdEl = document.getElementById('previaNovaQtd');
+    const qtdEl  = document.getElementById('previaNovaQtd');
     if (!nomeEl || !qtdEl) return;
     const nome = nomeEl.value.trim();
-    const qtd = parseInt(qtdEl.value, 10) || 1;
+    const qtd  = parseInt(qtdEl.value, 10) || 1;
     if (!nome) { nomeEl.focus(); return; }
     if (!window._previaItensTemp) window._previaItensTemp = [];
     const existente = window._previaItensTemp.findIndex(i => i.nome.toLowerCase() === nome.toLowerCase());
@@ -248,9 +306,7 @@ window._previaAdicionarItem = function() {
     } else {
         window._previaItensTemp.push({ nome, quantidade: qtd });
     }
-    nomeEl.value = '';
-    qtdEl.value = '1';
-    nomeEl.focus();
+    nomeEl.value = ''; qtdEl.value = '1'; nomeEl.focus();
     _previaRenderizarItens();
 };
 
@@ -265,7 +321,7 @@ window._previasSalvar = function(chave) {
     salvarPreviaMateriais();
     const modal = document.querySelector('.material-modal');
     if (modal) modal.remove();
-    renderizarAbaPrevia();
+    _mostrarListaPrevia(abaAtivaPrevia);
 };
 
 function inicializarPrevia() {
@@ -273,4 +329,4 @@ function inicializarPrevia() {
 }
 
 window.renderizarAbaPrevia = renderizarAbaPrevia;
-window.inicializarPrevia = inicializarPrevia;
+window.inicializarPrevia   = inicializarPrevia;
