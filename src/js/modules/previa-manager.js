@@ -225,141 +225,278 @@ function _mostrarListaPrevia(tipo) {
     contentContainer.appendChild(tabela);
 }
 
-// ── Modal de prévia / edição ──────────────────────────────────────────────────
+// ── Modal principal (igual ao abrirModalMaterial) ────────────────────────────
 window.abrirModalPrevia = function(chave, nomeIgreja) {
-    const materiais   = previaMateriais[chave] ? [...previaMateriais[chave]] : [];
-    const necessidade = calcularNecessidade(materiais);
-    const totalPedir  = necessidade.reduce((s, i) => s + i.pedirFornecedor, 0);
-
-    let tabelaHTML;
-    if (necessidade.length === 0) {
-        tabelaHTML = `
-            <div style="background:#f5f5f5;border-radius:8px;padding:16px;text-align:center;color:#aaa;margin-bottom:16px;font-size:13px;">
-                <i class="fas fa-clipboard" style="display:block;font-size:24px;margin-bottom:8px;"></i>
-                Nenhum material inicial cadastrado para esta igreja.
-            </div>`;
-    } else {
-        const resumoBadge = totalPedir > 0
-            ? `<div style="background:#ffebee;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#c62828;"><i class="fas fa-exclamation-triangle"></i> <strong>${totalPedir} item(s)</strong> precisam ser pedidos ao fornecedor.</div>`
-            : `<div style="background:#e8f5e9;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#2e7d32;"><i class="fas fa-check-circle"></i> Estoque suficiente para todos os itens.</div>`;
-
-        tabelaHTML = resumoBadge + `
-            <div style="overflow-x:auto;margin-bottom:16px;">
-                <table style="width:100%;border-collapse:collapse;font-size:13px;">
-                    <thead>
-                        <tr style="background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;">
-                            <th style="padding:10px;text-align:left;">Material</th>
-                            <th style="padding:10px;text-align:center;">Necessário</th>
-                            <th style="padding:10px;text-align:center;">Em Estoque</th>
-                            <th style="padding:10px;text-align:center;">Pedir Fornecedor</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${necessidade.map(item => `
-                            <tr style="border-bottom:1px solid #f0f0f0;">
-                                <td style="padding:8px 10px;">${item.nome}</td>
-                                <td style="padding:8px 10px;text-align:center;">${item.necessario}</td>
-                                <td style="padding:8px 10px;text-align:center;font-weight:bold;color:${item.emEstoque >= item.necessario ? '#2e7d32' : '#e53935'};">${item.emEstoque}</td>
-                                <td style="padding:8px 10px;text-align:center;font-weight:bold;color:${item.pedirFornecedor > 0 ? '#e53935' : '#2e7d32'};">${item.pedirFornecedor > 0 ? item.pedirFornecedor : '—'}</td>
-                            </tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>`;
-    }
-
-    const chaveEsc = chave.replace(/'/g, "\\'");
-
     const modal = document.createElement('div');
     modal.className = 'material-modal';
-    modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    modal.id = 'previaModalPrincipal';
     modal.innerHTML = `
-        <div style="background:#fff;border-radius:12px;width:95%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #eee;background:linear-gradient(90deg,#667eea,#764ba2);border-radius:12px 12px 0 0;">
-                <h3 style="margin:0;font-size:16px;color:#fff;"><i class="fas fa-clipboard-list"></i> ${nomeIgreja}</h3>
-                <button onclick="this.closest('.material-modal').remove()" style="background:rgba(255,255,255,0.2);border:none;font-size:18px;cursor:pointer;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;">&times;</button>
+        <div class="material-modal-content" style="animation: modalSlideIn 0.3s ease;">
+            <div class="material-modal-header">
+                <h3><i class="fas fa-clipboard-list" style="margin-right:10px;"></i>Prévia de Material — ${nomeIgreja}</h3>
+                <button class="material-modal-close" onclick="this.closest('.material-modal').remove()">×</button>
             </div>
-            <div style="padding:20px;">
-                <p style="font-size:13px;color:#666;margin-bottom:12px;">Comparação dos materiais iniciais com o estoque atual.</p>
-                ${tabelaHTML}
-
-                <div style="border-top:1px solid #eee;padding-top:16px;">
-                    <h4 style="margin:0 0 10px;font-size:14px;color:#444;"><i class="fas fa-edit"></i> Editar Lista de Materiais Iniciais</h4>
-                    <div id="previaListaItens" style="margin-bottom:10px;"></div>
-                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
-                        <input type="text" id="previaNovoNome" placeholder="Nome do material"
-                            style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
-                        <input type="number" id="previaNovaQtd" placeholder="Qtd" min="1" value="1"
-                            style="width:70px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
-                        <button onclick="_previaAdicionarItem()"
-                            style="background:#4A6FDC;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px;">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </div>
-                    <div style="display:flex;justify-content:flex-end;gap:10px;">
-                        <button onclick="this.closest('.material-modal').remove()"
-                            style="background:#f0f0f0;color:#333;border:none;border-radius:6px;padding:10px 20px;cursor:pointer;">Fechar</button>
-                        <button onclick="_previasSalvar('${chaveEsc}')"
-                            style="background:#2e7d32;color:#fff;border:none;border-radius:6px;padding:10px 20px;cursor:pointer;font-weight:bold;"><i class="fas fa-save"></i> Salvar</button>
-                    </div>
+            <div class="material-modal-body">
+                <div id="previaComparacaoContainer"></div>
+                <div class="material-actions">
+                    <button class="btn-success" onclick="_previaAbrirAdicionarItem('${chave.replace(/'/g,"\\'")}')">
+                        <i class="fas fa-plus"></i> Adicionar Item
+                    </button>
                 </div>
+                <div id="previaListaItensModal_${chave.replace(/[^a-z0-9]/gi,'_')}" class="material-lista"></div>
             </div>
         </div>`;
 
     document.body.appendChild(modal);
-    window._previaItensTemp = [...materiais];
-    _previaRenderizarItens();
-
-    const inputNome = document.getElementById('previaNovoNome');
-    if (inputNome) inputNome.addEventListener('keydown', e => { if (e.key === 'Enter') _previaAdicionarItem(); });
+    _previaAtualizarComparacao(chave);
+    _previaAtualizarListaModal(chave);
 };
 
-window._previaRenderizarItens = function() {
-    const container = document.getElementById('previaListaItens');
+// Tabela de comparação com estoque (dentro do modal principal)
+function _previaAtualizarComparacao(chave) {
+    const container = document.getElementById('previaComparacaoContainer');
     if (!container) return;
-    if (!window._previaItensTemp || window._previaItensTemp.length === 0) {
-        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Nenhum item na lista.</p>';
+
+    const materiais   = previaMateriais[chave] || [];
+    const necessidade = calcularNecessidade(materiais);
+    const totalPedir  = necessidade.reduce((s, i) => s + i.pedirFornecedor, 0);
+
+    if (necessidade.length === 0) {
+        container.innerHTML = '';
         return;
     }
-    container.innerHTML = window._previaItensTemp.map((item, idx) => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:#f9f9f9;border-radius:6px;margin-bottom:5px;">
-            <span style="font-size:13px;flex:1;">${item.nome}</span>
-            <span style="font-size:13px;font-weight:bold;margin:0 12px;color:#555;">x${item.quantidade}</span>
-            <button onclick="_previaRemoverItem(${idx})"
-                style="background:#ffebee;color:#e53935;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>`).join('');
-};
 
-window._previaAdicionarItem = function() {
-    const nomeEl = document.getElementById('previaNovoNome');
-    const qtdEl  = document.getElementById('previaNovaQtd');
-    if (!nomeEl || !qtdEl) return;
-    const nome = nomeEl.value.trim();
-    const qtd  = parseInt(qtdEl.value, 10) || 1;
-    if (!nome) { nomeEl.focus(); return; }
-    if (!window._previaItensTemp) window._previaItensTemp = [];
-    const existente = window._previaItensTemp.findIndex(i => i.nome.toLowerCase() === nome.toLowerCase());
-    if (existente >= 0) {
-        window._previaItensTemp[existente].quantidade += qtd;
-    } else {
-        window._previaItensTemp.push({ nome, quantidade: qtd });
+    const badge = totalPedir > 0
+        ? `<div style="background:#ffebee;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#c62828;"><i class="fas fa-exclamation-triangle"></i> <strong>${totalPedir} item(s)</strong> precisam ser pedidos ao fornecedor.</div>`
+        : `<div style="background:#e8f5e9;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#2e7d32;"><i class="fas fa-check-circle"></i> Estoque suficiente para todos os itens.</div>`;
+
+    container.innerHTML = badge + `
+        <div style="overflow-x:auto;margin-bottom:16px;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;">
+                        <th style="padding:10px;text-align:left;">Material</th>
+                        <th style="padding:10px;text-align:center;">Necessário</th>
+                        <th style="padding:10px;text-align:center;">Em Estoque</th>
+                        <th style="padding:10px;text-align:center;">Pedir Fornecedor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${necessidade.map(item => `
+                        <tr style="border-bottom:1px solid #f0f0f0;">
+                            <td style="padding:8px 10px;">${item.nome}</td>
+                            <td style="padding:8px 10px;text-align:center;">${item.necessario}</td>
+                            <td style="padding:8px 10px;text-align:center;font-weight:bold;color:${item.emEstoque >= item.necessario ? '#2e7d32' : '#e53935'};">${item.emEstoque}</td>
+                            <td style="padding:8px 10px;text-align:center;font-weight:bold;color:${item.pedirFornecedor > 0 ? '#e53935' : '#2e7d32'};">${item.pedirFornecedor > 0 ? item.pedirFornecedor : '—'}</td>
+                        </tr>`).join('')}
+                </tbody>
+            </table>
+        </div>`;
+}
+
+// Lista de itens editável dentro do modal principal
+function _previaAtualizarListaModal(chave) {
+    const listaId  = `previaListaItensModal_${chave.replace(/[^a-z0-9]/gi,'_')}`;
+    const lista    = document.getElementById(listaId);
+    if (!lista) return;
+
+    const materiais = previaMateriais[chave] || [];
+
+    if (materiais.length === 0) {
+        lista.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><h3>Nenhum material inicial cadastrado</h3><p>Clique em "Adicionar Item" para começar</p></div>';
+        return;
     }
-    nomeEl.value = ''; qtdEl.value = '1'; nomeEl.focus();
-    _previaRenderizarItens();
+
+    lista.innerHTML = '<h4 style="color:var(--gradient-start);margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--gradient-start);"><i class="fas fa-list"></i> Materiais Iniciais:</h4>';
+
+    const tabela = document.createElement('div');
+    tabela.className = 'material-items-table';
+
+    materiais.forEach((mat, idx) => {
+        const item = document.createElement('div');
+        item.className = 'material-item';
+        item.innerHTML = `
+            <div class="material-item-info" onclick="_previaEditarItem('${chave.replace(/'/g,"\\'")}', ${idx})" style="cursor:pointer;" title="Clique para editar">
+                <span class="material-item-nome"><i class="fas fa-box" style="margin-right:8px;color:var(--gradient-start);"></i>${mat.nome}</span>
+                <span class="material-item-qtd"><i class="fas fa-hashtag" style="margin-right:5px;"></i>Quantidade: ${mat.quantidade}</span>
+            </div>
+            <button class="btn-danger" onclick="_previaRemoverItemModal('${chave.replace(/'/g,"\\'")}', ${idx})" title="Remover">
+                <i class="fas fa-trash"></i>
+            </button>`;
+        tabela.appendChild(item);
+    });
+
+    lista.appendChild(tabela);
+}
+
+// ── Sub-modal: Adicionar Item (sem limite de estoque) ─────────────────────────
+window._previaAbrirAdicionarItem = function(chave) {
+    const itensEstoque = typeof obterItensEstoque === 'function' ? obterItensEstoque() : [];
+    const optsEstoque  = itensEstoque.map(it =>
+        `<option value="${(it.nome || '').replace(/"/g,'&quot;')}">${it.nome} (${it.quantidade} disp.)</option>`
+    ).join('');
+    const temEstoque = optsEstoque.length > 0;
+
+    const modal = document.createElement('div');
+    modal.className = 'material-modal material-modal-small';
+    modal.innerHTML = `
+        <div class="material-modal-content material-modal-content-small" style="animation: modalSlideIn 0.3s ease;">
+            <div class="material-modal-header">
+                <h3><i class="fas fa-plus-circle" style="margin-right:10px;"></i>Adicionar Item</h3>
+                <button class="material-modal-close" onclick="this.closest('.material-modal').remove()">×</button>
+            </div>
+            <div class="material-modal-form-body">
+                <form id="formPreviaAdicionarItem" onsubmit="_previaConfirmarAdicionarItem(event, '${chave.replace(/'/g,"\\'")}')">
+                    ${temEstoque ? `
+                    <div class="form-group">
+                        <label><i class="fas fa-boxes"></i> Origem:</label>
+                        <select id="previaItemOrigem" onchange="_previaToggleOrigem(this.value)">
+                            <option value="estoque">Do estoque (sugestão)</option>
+                            <option value="livre">Digitar manualmente</option>
+                        </select>
+                    </div>` : ''}
+                    <div class="form-group" id="previGrupoEstoque" style="${temEstoque ? '' : 'display:none'}">
+                        <label><i class="fas fa-tag"></i> Item do estoque:</label>
+                        <select id="previaItemEstoqueSelect">
+                            <option value="">Selecione...</option>
+                            ${optsEstoque}
+                        </select>
+                    </div>
+                    <div class="form-group" id="previaGrupoLivre" style="${temEstoque ? 'display:none' : ''}">
+                        <label><i class="fas fa-tag"></i> Item:</label>
+                        <input type="text" id="previaItemNome" placeholder="Ex: Cabo HDMI">
+                    </div>
+                    <div class="form-group">
+                        <label for="previaItemQtd"><i class="fas fa-sort-numeric-up"></i> Quantidade necessária:</label>
+                        <input type="number" id="previaItemQtd" placeholder="Ex: 5" min="1" required>
+                    </div>
+                    <div class="material-modal-buttons">
+                        <button type="submit" class="btn-primary"><i class="fas fa-check"></i> Adicionar</button>
+                        <button type="button" class="btn-secondary" onclick="this.closest('.material-modal').remove()"><i class="fas fa-times"></i> Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>`;
+
+    document.body.appendChild(modal);
+    setTimeout(() => {
+        const sel = document.getElementById('previaItemEstoqueSelect');
+        const inp = document.getElementById('previaItemNome');
+        if (sel && sel.closest('[style]') && !sel.closest('[style]').style.display.includes('none')) sel.focus();
+        else if (inp) inp.focus();
+    }, 100);
 };
 
-window._previaRemoverItem = function(idx) {
-    if (!window._previaItensTemp) return;
-    window._previaItensTemp.splice(idx, 1);
-    _previaRenderizarItens();
+window._previaToggleOrigem = function(valor) {
+    const grupoEstoque = document.getElementById('previGrupoEstoque');
+    const grupoLivre   = document.getElementById('previaGrupoLivre');
+    const selEstoque   = document.getElementById('previaItemEstoqueSelect');
+    const inpLivre     = document.getElementById('previaItemNome');
+    if (valor === 'estoque') {
+        if (grupoEstoque) grupoEstoque.style.display = '';
+        if (grupoLivre)   grupoLivre.style.display   = 'none';
+        if (selEstoque)   { selEstoque.required = true;  selEstoque.focus(); }
+        if (inpLivre)     { inpLivre.required = false;   inpLivre.value = ''; }
+    } else {
+        if (grupoEstoque) grupoEstoque.style.display = 'none';
+        if (grupoLivre)   grupoLivre.style.display   = '';
+        if (selEstoque)   { selEstoque.required = false; selEstoque.value = ''; }
+        if (inpLivre)     { inpLivre.required = true;    inpLivre.focus(); }
+    }
 };
 
-window._previasSalvar = function(chave) {
-    previaMateriais[chave] = [...(window._previaItensTemp || [])];
+window._previaConfirmarAdicionarItem = function(event, chave) {
+    event.preventDefault();
+    const origemEl = document.getElementById('previaItemOrigem');
+    const qtd      = parseInt(document.getElementById('previaItemQtd').value, 10) || 0;
+    if (qtd < 1) return;
+
+    let nome = '';
+    if (origemEl && origemEl.value === 'estoque') {
+        const sel = document.getElementById('previaItemEstoqueSelect');
+        nome = sel ? sel.value.trim() : '';
+    } else {
+        const inp = document.getElementById('previaItemNome');
+        nome = inp ? inp.value.trim() : '';
+    }
+    if (!nome) return;
+
+    if (!previaMateriais[chave]) previaMateriais[chave] = [];
+    const existente = previaMateriais[chave].findIndex(i => i.nome.toLowerCase() === nome.toLowerCase());
+    if (existente >= 0) {
+        previaMateriais[chave][existente].quantidade = (parseInt(previaMateriais[chave][existente].quantidade, 10) || 0) + qtd;
+    } else {
+        previaMateriais[chave].push({ nome, quantidade: qtd });
+    }
+
     salvarPreviaMateriais();
-    const modal = document.querySelector('.material-modal');
-    if (modal) modal.remove();
+    event.target.closest('.material-modal').remove();
+    _previaAtualizarComparacao(chave);
+    _previaAtualizarListaModal(chave);
+    _mostrarListaPrevia(abaAtivaPrevia);
+};
+
+// ── Sub-modal: Editar Item ─────────────────────────────────────────────────────
+window._previaEditarItem = function(chave, idx) {
+    const mat = (previaMateriais[chave] || [])[idx];
+    if (!mat) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'material-modal material-modal-small';
+    modal.innerHTML = `
+        <div class="material-modal-content material-modal-content-small" style="animation: modalSlideIn 0.3s ease;">
+            <div class="material-modal-header">
+                <h3><i class="fas fa-edit" style="margin-right:10px;"></i>Editar Item</h3>
+                <button class="material-modal-close" onclick="this.closest('.material-modal').remove()">×</button>
+            </div>
+            <div class="material-modal-form-body">
+                <form id="formPreviaEditarItem" onsubmit="_previaConfirmarEditar(event, '${chave.replace(/'/g,"\\'")}', ${idx})">
+                    <div class="form-group">
+                        <label for="previaEditNome"><i class="fas fa-tag"></i> Item:</label>
+                        <input type="text" id="previaEditNome" value="${mat.nome}" placeholder="Ex: Cabo HDMI" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="previaEditQtd"><i class="fas fa-sort-numeric-up"></i> Quantidade necessária:</label>
+                        <input type="number" id="previaEditQtd" value="${mat.quantidade}" min="1" required>
+                    </div>
+                    <div class="material-modal-buttons">
+                        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar</button>
+                        <button type="button" class="btn-secondary" onclick="this.closest('.material-modal').remove()"><i class="fas fa-times"></i> Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>`;
+
+    document.body.appendChild(modal);
+    setTimeout(() => {
+        const el = document.getElementById('previaEditNome');
+        if (el) { el.focus(); el.select(); }
+    }, 100);
+};
+
+window._previaConfirmarEditar = function(event, chave, idx) {
+    event.preventDefault();
+    const nome = document.getElementById('previaEditNome').value.trim();
+    const qtd  = parseInt(document.getElementById('previaEditQtd').value, 10) || 0;
+    if (!nome || qtd < 1) return;
+
+    if (!previaMateriais[chave]) previaMateriais[chave] = [];
+    previaMateriais[chave][idx] = { nome, quantidade: qtd };
+
+    salvarPreviaMateriais();
+    event.target.closest('.material-modal').remove();
+    _previaAtualizarComparacao(chave);
+    _previaAtualizarListaModal(chave);
+    _mostrarListaPrevia(abaAtivaPrevia);
+};
+
+window._previaRemoverItemModal = function(chave, idx) {
+    if (!confirm('Deseja remover este item?')) return;
+    if (!previaMateriais[chave]) return;
+    previaMateriais[chave].splice(idx, 1);
+    salvarPreviaMateriais();
+    _previaAtualizarComparacao(chave);
+    _previaAtualizarListaModal(chave);
     _mostrarListaPrevia(abaAtivaPrevia);
 };
 
