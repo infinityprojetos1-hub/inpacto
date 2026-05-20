@@ -184,7 +184,6 @@ function inicializarGerenciamentoIgrejas() {
         const tipoIgreja = document.getElementById('tipoIgreja').value;
         const tipoTexto = (document.getElementById('tipoTexto') && document.getElementById('tipoTexto').value) || 'padrao';
         const tipoPedido = (document.getElementById('tipoPedido') && document.getElementById('tipoPedido').value) || 'padrao';
-        const numeroPedido = (document.getElementById('numeroPedidoIgreja') && document.getElementById('numeroPedidoIgreja').value.trim()) || '';
 
         if (!nomeIgreja || !idIgreja) {
             alert('Por favor, preencha pelo menos o nome e o ID da igreja.');
@@ -221,8 +220,7 @@ function inicializarGerenciamentoIgrejas() {
             tipoTexto: tipoTexto,
             textoSuaEmpresa: usarTextoPersonalizado ? txtSua : '',
             textoConcorrente: usarTextoPersonalizado ? txtConc : '',
-            tipoPedido: tipoPedido,
-            numeroPedido: numeroPedido
+            tipoPedido: tipoPedido
         };
 
         if (_indiceEdicaoIgreja !== null && _indiceEdicaoIgreja >= 0 && _indiceEdicaoIgreja < igrejasAdicionadas.length) {
@@ -258,7 +256,6 @@ function inicializarGerenciamentoIgrejas() {
         document.getElementById('tipoIgreja').selectedIndex = 0;
         document.getElementById('tipoTexto').selectedIndex = 0;
         if (document.getElementById('tipoPedido')) document.getElementById('tipoPedido').value = 'padrao';
-        if (document.getElementById('numeroPedidoIgreja')) document.getElementById('numeroPedidoIgreja').value = '';
         const grupoValorManual = document.getElementById('grupoValorManual');
         if (grupoValorManual) grupoValorManual.style.display = 'none';
     });
@@ -303,7 +300,6 @@ function atualizarListaIgrejas() {
                         igreja.tipoTexto === 'personalizado' ? 'Personalizado' : 'Padrão'
             }</p>
             <p><strong>Tipo de pedido:</strong> ${igreja.tipoPedido === 'especial' ? 'Especial' : 'Padrão'}</p>
-            ${igreja.numeroPedido ? `<p><strong>Nº Pedido:</strong> <span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:bold;">${igreja.numeroPedido}</span></p>` : ''}
             ${igreja.tipoValorOrcamento === 'manual' && igreja.valorManual !== null && !isNaN(igreja.valorManual) ? `<p><strong>Valor Manual:</strong> R$ ${igreja.valorManual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>` : ''}
             <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
                 <button type="button" class="btn-secondary editar-igreja" data-index="${index}" style="padding:6px 12px; font-size:13px;">
@@ -381,9 +377,6 @@ function atualizarListaIgrejas() {
 
             const selPedido = document.getElementById('tipoPedido');
             if (selPedido) selPedido.value = ig.tipoPedido || 'padrao';
-
-            const numPedidoEl = document.getElementById('numeroPedidoIgreja');
-            if (numPedidoEl) numPedidoEl.value = ig.numeroPedido || '';
 
             const nomeEl = document.getElementById('nomeIgreja');
             if (nomeEl && nomeEl.scrollIntoView) nomeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -529,9 +522,11 @@ window.removerPedidoPendente = function(idx) {
 };
 
 // Remove pedido da lista pelo número (chamado após geração de orçamento)
+// Compara o ID da igreja com cada pedido pendente (trim + case-insensitive)
 window.removerPedidoPendenteByNumero = function(numero) {
     if (!numero) return;
-    const idx = pedidosPendentes.indexOf(numero);
+    const val = String(numero).trim().toLowerCase();
+    const idx = pedidosPendentes.findIndex(p => String(p).trim().toLowerCase() === val);
     if (idx >= 0) {
         pedidosPendentes.splice(idx, 1);
         salvarPedidosPendentes();

@@ -619,9 +619,9 @@ async function iniciarGeracaoOrcamentos() {
                     console.error("Função atualizarInterfaceResultados não encontrada");
                 }
 
-                // Remove pedido pendente se a igreja tiver número de pedido vinculado
-                if (igreja.numeroPedido && typeof window.removerPedidoPendenteByNumero === 'function') {
-                    window.removerPedidoPendenteByNumero(igreja.numeroPedido);
+                // Remove pedido pendente se o ID da igreja coincidir com algum item pendente
+                if (igreja.id && typeof window.removerPedidoPendenteByNumero === 'function') {
+                    window.removerPedidoPendenteByNumero(String(igreja.id).trim());
                 }
 
                 // Pausa breve para permitir que a UI atualize
