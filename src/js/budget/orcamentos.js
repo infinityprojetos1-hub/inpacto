@@ -54,8 +54,12 @@ function gerarDadosOrcamento(igreja, dataOrcamento, prazoExecucao, config, empre
 
     const aleatorio = new Math.seedrandom(semente.toString());
 
-    // Define um intervalo efetivo com maior variação para evitar valores semelhantes
-    const margem = 0.03 + (aleatorio() * 0.05); // Margem entre 3% e 8%
+    // Define um intervalo efetivo com maior variação para evitar valores semelhantes.
+    // A margem é limitada para não ultrapassar 20% da metade do range configurado,
+    // evitando inversão de min/max em faixas estreitas (ex: 3850–3900).
+    const rangeConfigurado = valorMaximoBase - valorMinimoBase;
+    const margemMaxPermitida = rangeConfigurado > 0 ? Math.min(0.08, (rangeConfigurado * 0.4) / valorMinimoBase) : 0;
+    const margem = margemMaxPermitida > 0 ? (0.03 + (aleatorio() * (margemMaxPermitida - 0.03))) : 0;
 
     // Aplica a margem para evitar valores exatos nos limites
     const valorMinimo = valorMinimoBase + (valorMinimoBase * margem * aleatorio());
@@ -69,12 +73,15 @@ function gerarDadosOrcamento(igreja, dataOrcamento, prazoExecucao, config, empre
         valorUsadoComoBase = igreja.valorManual;
     } else {
         // Gera valor normalmente (automático)
-        // Gera um valor alvo mais variável dentro dos limites ajustados
+        const rangeEfetivo = Math.max(valorMinimo, valorMinimoBase);
+        const limiteEfetivo = Math.min(Math.max(valorMaximo, rangeEfetivo), valorMaximoBase);
         const fatorDistribuicao = Math.pow(aleatorio(), 0.7);
-        const valorAlvoTotal = valorMinimo + (fatorDistribuicao * (valorMaximo - valorMinimo));
+        const valorAlvoTotal = rangeEfetivo + (fatorDistribuicao * (limiteEfetivo - rangeEfetivo));
         // Garante que o valor tenha centavos aleatórios
         const centavosAleatorios = Math.floor(aleatorio() * 99) + 1;
         valorAlvoComCentavos = Math.floor(valorAlvoTotal) + (centavosAleatorios / 100);
+        // Clamp final: garante que o valor sempre fique dentro do range configurado
+        valorAlvoComCentavos = Math.max(valorMinimoBase, Math.min(valorMaximoBase, valorAlvoComCentavos));
         valorUsadoComoBase = valorAlvoComCentavos;
     }
 
